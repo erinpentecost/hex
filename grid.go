@@ -52,9 +52,8 @@ func (h HexFractional) ToHex() Hex {
 		q = -r - s
 	} else if rd > sd {
 		r = -q - s
-	} else {
-		s = -q - r
 	}
+
 	return Hex{
 		Q: q,
 		R: r,
