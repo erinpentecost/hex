@@ -8,10 +8,9 @@ _obj
 _test
 bazel-bin
 bazel-genfiles
-bazel-heatgame
+bazel-hexcoord
 bazel-out
 bazel-testlogs
-bazel-deterbus
 
 # Architecture specific extensions/prefixes
 *.[568vq]
