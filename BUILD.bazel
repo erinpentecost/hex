@@ -1,0 +1,30 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# A Gazelle executable for auto-generating Go BUILD definitions
+gazelle(
+    name = "gazelle",
+    prefix = "github.com/erinpentecost/hexcoord",
+)
+
+# Import project dependencies.
+# This is done automatically by gazelle.
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "area.go",
+        "grid.go",
+    ],
+    importpath = "github.com/erinpentecost/hexcoord",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["grid_test.go"],
+    embed = [":go_default_library"],
+    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
+)
