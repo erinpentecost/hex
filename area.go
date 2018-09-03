@@ -8,11 +8,23 @@ import (
 // Area wraps up hexes into an Area.
 func Area(h ...Hex) <-chan Hex {
 	hgen := make(chan Hex)
-	defer close(hgen)
-	for _, c := range h {
-		hgen <- c
-	}
+	go func() {
+		defer close(hgen)
+		for _, c := range h {
+			hgen <- c
+		}
+	}()
 	return hgen
+}
+
+// AreaToSlice iterates over a chan of hexes and stores them in
+// in a single slice.
+func AreaToSlice(area <-chan Hex) []Hex {
+	hslice := make([]Hex, 0)
+	for h := range area {
+		hslice = append(hslice, h)
+	}
+	return hslice
 }
 
 // LineArea returns all hexes in a line from point x to point b, inclusive.
@@ -150,7 +162,7 @@ func AreaFlatMap(
 			select {
 			case <-done:
 				return
-			case agen <- transform(done, h):
+			case agen <- (transform(done, h)):
 			}
 		}
 	}()

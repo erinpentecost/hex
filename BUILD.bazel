@@ -16,7 +16,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "area.go",
-        "grid.go",
+        "hex.go",
     ],
     importpath = "github.com/erinpentecost/hexcoord",
     visibility = ["//visibility:public"],
@@ -24,7 +24,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["grid_test.go"],
+    srcs = ["hexcoord_test.go"],
     embed = [":go_default_library"],
     deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
 )

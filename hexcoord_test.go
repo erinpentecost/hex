@@ -109,6 +109,56 @@ func TestAreaSpiralVsRingEqual(t *testing.T) {
 	assert.True(t, hexcoord.AreaEqual(area1, area2), "Areas are not equal.")
 }
 
+func TestAreaSum(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	area1 := hexcoord.HexOrigin().SpiralArea(done, 5)
+
+	area2 := make(chan (<-chan hexcoord.Hex))
+
+	go func() {
+		defer close(area2)
+
+		for i := 0; i <= 5; i++ {
+			area2 <- hexcoord.HexOrigin().RingArea(done, i)
+		}
+	}()
+
+	assert.True(t, hexcoord.AreaEqual(area1, hexcoord.AreaSum(done, area2)), "Areas are not equal.")
+}
+
+func TestAreaFlatMap(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	line := hexcoord.AreaToSlice(hexcoord.HexOrigin().LineArea(done, hexcoord.Hex{
+		Q: 14,
+		R: 14,
+	}))
+
+	widenTransform := func(d <-chan interface{}, h hexcoord.Hex) <-chan hexcoord.Hex {
+		return h.HexArea(d, 3)
+	}
+
+	area1 := hexcoord.AreaFlatMap(done, hexcoord.Area(line...), widenTransform)
+
+	area2 := make(chan hexcoord.Hex)
+
+	go func() {
+		defer close(area2)
+		for _, h := range line {
+			wide := widenTransform(done, h)
+			for wh := range wide {
+				area2 <- wh
+			}
+		}
+	}()
+
+	assert.True(t, hexcoord.AreaEqual(area1, area2), "Areas are not equal.")
+
+}
+
 func TestAreaEqual(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
