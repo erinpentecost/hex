@@ -5,6 +5,16 @@ import (
 	"sync"
 )
 
+// DeclareArea wraps up hexes into an Area.
+func DeclareArea(h ...Hex) <-chan Hex {
+	hgen := make(chan Hex)
+	defer close(hgen)
+	for _, c := range h {
+		hgen <- c
+	}
+	return hgen
+}
+
 // LineArea returns all hexes in a line from point x to point b, inclusive.
 // The order of elements is a line as you would expect.
 func (h Hex) LineArea(done <-chan interface{}, x Hex) <-chan Hex {
@@ -122,6 +132,72 @@ func AreaMap(
 	return hgen
 }
 
+// AreaFlatMap applies a function (transform) to each element in
+// input (a collection of hexes) and returns a new collection
+// with the output.
+func AreaFlatMap(
+	done <-chan interface{},
+	input <-chan Hex,
+	transform func(done <-chan interface{}, hex Hex) <-chan Hex) <-chan Hex {
+
+	agen := make(chan (<-chan Hex))
+
+	// Convert each input hex into a chan of chans
+	// by applying transform()
+	go func() {
+		defer close(agen)
+		for h := range input {
+			select {
+			case <-done:
+				return
+			case agen <- transform(done, h):
+			}
+		}
+	}()
+
+	return AreaSum(done, agen)
+}
+
+// AreaSum flattens input areas into a single area using the bridge
+// pattern. This does not remove duplicates, but does preserve order.
+func AreaSum(done <-chan interface{}, areas <-chan <-chan Hex) <-chan Hex {
+	flatStream := make(chan Hex)
+
+	go func() {
+		defer close(flatStream)
+
+		for {
+			// Pop off area
+			var area <-chan Hex
+			select {
+			case <-done:
+				return
+			case foundArea, ok := <-areas:
+				if !ok {
+					return
+				}
+				area = foundArea
+			}
+
+			// Pop off hexes from area
+		loop:
+			for {
+				select {
+				case <-done:
+					break loop
+				case foundHex, ok := <-area:
+					if !ok {
+						break loop
+					}
+					flatStream <- foundHex
+				}
+			}
+		}
+	}()
+
+	return flatStream
+}
+
 // combine merges two or more collections of areas, dropping duplicates.
 // Set countFilter to 1 to return all hexes that appear at least 1 time.
 // This is equivalent to a union of all areas.
@@ -182,7 +258,8 @@ func combine(
 	return combination
 }
 
-// AreaUnion returns all hexes in all areas, with duplicates removed.
+// AreaUnion returns all hexes in all areas.
+// Order is not preserved. Duplicates are removed.
 func AreaUnion(
 	done <-chan interface{},
 	areas ...<-chan Hex) <-chan Hex {
@@ -190,8 +267,8 @@ func AreaUnion(
 	return combine(done, 1, areas...)
 }
 
-// AreaIntersection returns only those hexes that are in all areas,
-// with duplicates removed.
+// AreaIntersection returns only those hexes that are in all areas.
+// Order is not preserved. Duplicates are removed.
 func AreaIntersection(
 	done <-chan interface{},
 	areas ...<-chan Hex) <-chan Hex {
@@ -200,8 +277,8 @@ func AreaIntersection(
 	return combine(done, areaCount, areas...)
 }
 
-// AreaDifference returns hexes that are only in one area,
-// with duplicates removed.
+// AreaDifference returns hexes that are only in one area.
+// Order is not preserved. Duplicates are removed.
 // This won't return any elements until all input channels are closed.
 func AreaDifference(
 	done <-chan interface{},
