@@ -5,8 +5,8 @@ import (
 	"sync"
 )
 
-// DeclareArea wraps up hexes into an Area.
-func DeclareArea(h ...Hex) <-chan Hex {
+// Area wraps up hexes into an Area.
+func Area(h ...Hex) <-chan Hex {
 	hgen := make(chan Hex)
 	defer close(hgen)
 	for _, c := range h {
