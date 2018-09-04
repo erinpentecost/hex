@@ -271,7 +271,7 @@ func combine(
 }
 
 // AreaUnion returns all hexes in all areas.
-// Order is not preserved. Duplicates are removed.
+// Order is not preserved between areas. Duplicates are removed.
 func AreaUnion(
 	done <-chan interface{},
 	areas ...<-chan Hex) <-chan Hex {
@@ -279,8 +279,16 @@ func AreaUnion(
 	return combine(done, 1, areas...)
 }
 
+// AreaUnique removes duplicates but retains order.
+func AreaUnique(
+	done <-chan interface{},
+	area <-chan Hex) <-chan Hex {
+
+	return combine(done, 1, area)
+}
+
 // AreaIntersection returns only those hexes that are in all areas.
-// Order is not preserved. Duplicates are removed.
+// Order is not preserved between areas. Duplicates are removed.
 func AreaIntersection(
 	done <-chan interface{},
 	areas ...<-chan Hex) <-chan Hex {
