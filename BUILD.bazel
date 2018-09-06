@@ -17,6 +17,7 @@ go_library(
     srcs = [
         "area.go",
         "hex.go",
+        "path.go",
     ],
     importpath = "github.com/erinpentecost/hexcoord",
     visibility = ["//visibility:public"],

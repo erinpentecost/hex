@@ -203,6 +203,15 @@ func (h Hex) Neighbor(direction int) Hex {
 	return h.Add(d)
 }
 
+// Neighbors returns the neighbors.
+func (h Hex) Neighbors() []Hex {
+	n := make([]Hex, 7)
+	for i := 0; i <= 6; i++ {
+		n[i] = h.Neighbor(i)
+	}
+	return n
+}
+
 // Rotate rotates a hex X times clockwise.
 // The value can be negative.
 // The number of degrees rotated is 60*direction
