@@ -10,6 +10,7 @@ type pqItem struct {
 	index    int
 }
 
+// priorityQueue from https://golang.org/pkg/container/heap/#example__priorityQueue
 type priorityQueue []*pqItem
 
 func (pq priorityQueue) Len() int { return len(pq) }
@@ -35,7 +36,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
-	item.index = -1 // for safety
+	item.index = -1
 	*pq = old[0 : n-1]
 	return item
 }
