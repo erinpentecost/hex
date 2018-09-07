@@ -33,7 +33,7 @@ func (p patherImp) Cost(a hexcoord.Hex, direction int) int {
 }
 
 func (p patherImp) EstimatedCost(a, b hexcoord.Hex) int {
-	return a.DistanceTo(b)
+	return 2 * a.DistanceTo(b)
 }
 
 func concentricMaze(maxSize int) <-chan hexcoord.Hex {

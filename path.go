@@ -105,7 +105,7 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 		// Look at all neigbors
 		for i, next := range h.Neighbors() {
 			newCost := extras[current].cost + pather.Cost(current, i)
-			_, ok := extras[next]
+			c, ok := extras[next]
 			if !ok {
 				extras[next] = aStarInfo{
 					parent: current,
@@ -115,6 +115,15 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 					value:    next,
 					priority: newCost + pather.EstimatedCost(next, target),
 				})
+			} else if c.cost > newCost {
+				// Since we ran into a point we already saw,
+				// lets check if this is a better path to it
+				// than the previous one and swap if it is.
+				extras[next] = aStarInfo{
+					parent: current,
+					cost:   newCost,
+				}
+				// Need to also update it in the heap, probably...
 			}
 		}
 	}
