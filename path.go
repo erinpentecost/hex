@@ -66,6 +66,16 @@ type Pather interface {
 
 // PathTo finds a near-optimal path to the target hex.
 func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool) {
+	// Init output variables
+	path = make([]Hex, 0)
+	cost = 0
+	found = false
+
+	if h == target {
+		found = true
+		return
+	}
+
 	// Init supporting data structures.
 	pq := make(priorityQueue, 1)
 	extras := make(map[Hex]aStarInfo)
@@ -83,9 +93,12 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 
 	// Begin A*
 	for pq.Len() > 0 {
-		currentHeapItem := pq.Pop().(pqItem)
+		currentHeapItem := *(pq.Pop().(*pqItem))
 		current := currentHeapItem.value
+
+		// Quit if we found it
 		if current == target {
+			found = true
 			break
 		}
 
@@ -106,16 +119,14 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 		}
 	}
 
-	// Unwind to get path
-	path = make([]Hex, 0)
-	cost = 0
-	cur := target
-	curExtras, found := extras[cur]
-
 	// Quit if the target is not in the found set.
 	if !found {
-		return path, cost, found
+		return
 	}
+
+	// Unwind to get path
+	cur := target
+	curExtras, _ := extras[cur]
 
 	// Begin unwind
 	for {
@@ -123,10 +134,10 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 		cost = cost + curExtras.cost
 
 		if cur == h {
-			return path, cost, true
+			return
 		}
 
 		cur = curExtras.parent
-		curExtras, found = extras[cur]
+		curExtras, _ = extras[cur]
 	}
 }
