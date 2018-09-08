@@ -5,15 +5,15 @@
 
 hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagonal Grids* articles. This package focuses on hexagonal grid math. It doesn't concern itself with the rendering or storage of hexes or hex maps.
 
-## [hex.go](../blob/master/hex.go)
+## [hex.go](../master/hex.go)
 
 hex.go contains Hex, the base coordinate type defined in this package, along with a bunch of functions for transforming Hexes.
 
-## [area.go](../blob/master/area.go)
+## [area.go](../master/area.go)
 
 area.go contains functions for creating and manipulating Hex [pipelines](https://blog.golang.org/pipelines). Use the functions here to procedurally generate shapes like lines, rings, and so on.
 
-## [path.go](../blob/master/path.go)
+## [path.go](../master/path.go)
 
 path.go contains an implementation of A* that works on hexagonal maps.
 
