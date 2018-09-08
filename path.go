@@ -10,7 +10,6 @@ type pqItem struct {
 	index    int
 }
 
-// priorityQueue from https://golang.org/pkg/container/heap/#example__priorityQueue
 type priorityQueue []*pqItem
 
 func (pq priorityQueue) Len() int { return len(pq) }
