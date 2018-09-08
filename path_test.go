@@ -33,7 +33,7 @@ func (p patherImp) Cost(a hexcoord.Hex, direction int) int {
 }
 
 func (p patherImp) EstimatedCost(a, b hexcoord.Hex) int {
-	return 2 * a.DistanceTo(b)
+	return a.ManhattanDistanceTo(b)
 }
 
 func concentricMaze(maxSize int) <-chan hexcoord.Hex {
@@ -63,15 +63,15 @@ func directPath(t *testing.T, target hexcoord.Hex) {
 	emptyMap := newPatherImp(0)
 	path, cost, found := hexcoord.HexOrigin().PathTo(target, emptyMap)
 
-	assert.True(t, found, fmt.Sprintf("Can't find path to %v, %v away from source.", target, target.Length()))
-
 	if found {
 		assert.Equal(t, target.Length(), cost, fmt.Sprintf("Path to %v has unexpected cost.", target))
 
-		if len(path) > 1 {
-			assert.Equal(t, 1, path[0].Length(), "First element in path is not next to start point.")
+		if len(path) > 0 {
+			assert.Equal(t, hexcoord.HexOrigin(), path[0], "First element in path is not the start point.")
 			assert.Equal(t, target, path[len(path)-1], "Last element in path is not target point.")
 		}
+	} else {
+		assert.True(t, found, fmt.Sprintf("Can't find path to %v, %v away from source.", target, target.Length()))
 	}
 }
 
@@ -79,7 +79,7 @@ func TestDirectPaths(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	for i := 3; i < 11; i = i + 2 {
+	for i := 1; i < 11; i = i + 2 {
 		for h := range hexcoord.HexOrigin().RingArea(done, i) {
 			directPath(t, h)
 		}

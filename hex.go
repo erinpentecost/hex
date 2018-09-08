@@ -192,6 +192,12 @@ func (h Hex) Length() int {
 	return (absInt(h.Q) + absInt(h.R) + absInt(h.S())) / 2
 }
 
+// ManhattanDistanceTo returns the Manhattan distance between
+// two hexes.
+func (h Hex) ManhattanDistanceTo(x Hex) int {
+	return (absInt(h.Q-x.Q) + absInt(h.R-x.R) + absInt(h.S()-x.S())) / 2
+}
+
 // DistanceTo returns the distance between two hexes.
 func (h Hex) DistanceTo(x Hex) int {
 	return h.Subtract(x).Length()
