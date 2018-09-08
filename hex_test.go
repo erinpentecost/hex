@@ -12,6 +12,16 @@ func TestHexHashIdentity(t *testing.T) {
 	o1 := hexcoord.HexOrigin()
 	o2 := hexcoord.HexOrigin()
 	assert.Equal(t, o1, o2, "Origin copy is not equal.")
+
+	p1 := hexcoord.Hex{
+		Q: 10,
+		R: -8888888,
+	}
+	p2 := hexcoord.Hex{
+		Q: 10,
+		R: -8888888,
+	}
+	assert.Equal(t, p1, p2, "Hex copy is not equal.")
 }
 
 func TestHexAdd(t *testing.T) {

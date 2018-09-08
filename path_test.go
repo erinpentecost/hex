@@ -33,7 +33,8 @@ func (p patherImp) Cost(a hexcoord.Hex, direction int) int {
 }
 
 func (p patherImp) EstimatedCost(a, b hexcoord.Hex) int {
-	return a.ManhattanDistanceTo(b)
+	return 0
+	//a.DistanceTo(b)
 }
 
 func concentricMaze(maxSize int) <-chan hexcoord.Hex {
@@ -64,7 +65,9 @@ func directPath(t *testing.T, target hexcoord.Hex) {
 	path, cost, found := hexcoord.HexOrigin().PathTo(target, emptyMap)
 
 	if found {
-		assert.Equal(t, target.Length(), cost, fmt.Sprintf("Path to %v has unexpected cost.", target))
+		assert.Equal(t, hexcoord.HexOrigin().DistanceTo(target)+1, len(path), fmt.Sprintf("Path to %v (%v away, %v cost) has unexpected length.", target, target.Length(), cost))
+
+		assert.Equal(t, hexcoord.HexOrigin().DistanceTo(target), cost, fmt.Sprintf("Path to %v (%v away) has unexpected cost.", target, target.Length()))
 
 		if len(path) > 0 {
 			assert.Equal(t, hexcoord.HexOrigin(), path[0], "First element in path is not the start point.")

@@ -30,6 +30,8 @@ func (pq *priorityQueue) Push(x interface{}) {
 	item := x.(*pqItem)
 	item.index = n
 	*pq = append(*pq, item)
+
+	//heap.Fix(pq, item.index)
 }
 
 func (pq *priorityQueue) Pop() interface{} {
@@ -39,12 +41,6 @@ func (pq *priorityQueue) Pop() interface{} {
 	item.index = -1
 	*pq = old[0 : n-1]
 	return item
-}
-
-func (pq *priorityQueue) update(item *pqItem, value Hex, priority int) {
-	item.value = value
-	item.priority = priority
-	heap.Fix(pq, item.index)
 }
 
 type aStarInfo struct {
@@ -65,6 +61,8 @@ type Pather interface {
 }
 
 // PathTo finds a near-optimal path to the target hex.
+// The first element in the path will be the starting hex,
+// and the last will be the target hex.
 func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool) {
 	// Init output variables
 	path = make([]Hex, 0)
@@ -77,15 +75,14 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 	}
 
 	// Init supporting data structures.
-	pq := make(priorityQueue, 1)
-	extras := make(map[Hex]aStarInfo)
-
-	// Prime with start node.
-	pq[0] = &pqItem{
+	pq := &priorityQueue{&pqItem{
 		value:    h,
 		priority: 0,
 		index:    0,
-	}
+	}}
+	heap.Init(pq)
+
+	extras := make(map[Hex]aStarInfo)
 	extras[h] = aStarInfo{
 		parent: h,
 		cost:   0,
@@ -93,8 +90,12 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 
 	// Begin A*
 	for pq.Len() > 0 {
-		currentHeapItem := *(pq.Pop().(*pqItem))
+		//spew.Printf("%v\r\n", pq)
+
+		currentHeapItem := *(heap.Pop(pq).(*pqItem))
 		current := currentHeapItem.value
+
+		//fmt.Printf("popped %v with prio %v.\r\n", current, currentHeapItem.priority)
 
 		// Quit if we found it
 		if current == target {
@@ -111,11 +112,15 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 					parent: current,
 					cost:   newCost,
 				}
-				pq.Push(&pqItem{
+				heap.Push(pq, &pqItem{
 					value:    next,
 					priority: newCost + pather.EstimatedCost(next, target),
 				})
 			}
+
+			//if next == target {
+			//	fmt.Printf("%v inserted with prio %v.\r\n", next, newCost+pather.EstimatedCost(next, target))
+			//}
 		}
 	}
 
@@ -127,11 +132,11 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 	// Unwind to get path
 	cur := target
 	curExtras, _ := extras[cur]
+	cost = curExtras.cost
 
 	// Begin unwind
 	for {
 		path = append([]Hex{cur}, path...)
-		cost = cost + curExtras.cost
 
 		if cur == h {
 			return
