@@ -30,8 +30,6 @@ func (pq *priorityQueue) Push(x interface{}) {
 	item := x.(*pqItem)
 	item.index = n
 	*pq = append(*pq, item)
-
-	//heap.Fix(pq, item.index)
 }
 
 func (pq *priorityQueue) Pop() interface{} {
@@ -52,11 +50,12 @@ type aStarInfo struct {
 type Pather interface {
 	// Cost indicates the move cost between a hex and one
 	// of its neighbors. Higher values are less desirable.
+	// Negative costs are treated as impassable.
 	Cost(a Hex, direction int) int
 
 	// EstimatedCost returns the estimated cost between
 	// two hexes that are not necessarily neighbors.
-	//
+	// Negative costs are treated as impassable.
 	EstimatedCost(a, b Hex) int
 }
 
@@ -90,12 +89,8 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 
 	// Begin A*
 	for pq.Len() > 0 {
-		//spew.Printf("%v\r\n", pq)
-
 		currentHeapItem := *(heap.Pop(pq).(*pqItem))
 		current := currentHeapItem.value
-
-		//fmt.Printf("popped %v with prio %v.\r\n", current, currentHeapItem.priority)
 
 		// Quit if we found it
 		if current == target {
@@ -105,7 +100,12 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 
 		// Look at all neigbors
 		for i, next := range current.Neighbors() {
-			newCost := extras[current].cost + pather.Cost(current, i)
+			edgeCost := pather.Cost(current, i)
+			// Negative costs are a special case
+			if edgeCost < 0 {
+				continue
+			}
+			newCost := extras[current].cost + edgeCost
 			c, ok := extras[next]
 			if !ok || c.cost > newCost {
 				extras[next] = aStarInfo{
@@ -117,10 +117,6 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 					priority: newCost + pather.EstimatedCost(next, target),
 				})
 			}
-
-			//if next == target {
-			//	fmt.Printf("%v inserted with prio %v.\r\n", next, newCost+pather.EstimatedCost(next, target))
-			//}
 		}
 	}
 

@@ -18,7 +18,8 @@ func newPatherImp(size int) patherImp {
 	}
 
 	for h := range concentricMaze(size) {
-		pi.cost[h] = 900000
+		// Negative values are impassable
+		pi.cost[h] = -1
 	}
 
 	return pi
@@ -33,8 +34,9 @@ func (p patherImp) Cost(a hexcoord.Hex, direction int) int {
 }
 
 func (p patherImp) EstimatedCost(a, b hexcoord.Hex) int {
+	// This makes the alg perform like Djikstra's alg.
+	// Used for testing to help ensure determinism.
 	return 0
-	//a.DistanceTo(b)
 }
 
 func concentricMaze(maxSize int) <-chan hexcoord.Hex {
@@ -60,6 +62,7 @@ func concentricMaze(maxSize int) <-chan hexcoord.Hex {
 	return mazeGen
 }
 
+// directPath sets up a test in a map with uniform hex costs.
 func directPath(t *testing.T, target hexcoord.Hex) {
 	emptyMap := newPatherImp(0)
 	path, cost, found := hexcoord.HexOrigin().PathTo(target, emptyMap)
@@ -85,6 +88,32 @@ func TestDirectPaths(t *testing.T) {
 	for i := 1; i < 11; i = i + 2 {
 		for h := range hexcoord.HexOrigin().RingArea(done, i) {
 			directPath(t, h)
+		}
+	}
+}
+
+// indirectPath sets up a test in a map with different hex costs.
+func indirectPath(t *testing.T, target hexcoord.Hex) {
+	mazeMap := newPatherImp(target.Length() + 4)
+	path, _, found := hexcoord.HexOrigin().PathTo(target, mazeMap)
+
+	if found {
+		if len(path) > 0 {
+			assert.Equal(t, hexcoord.HexOrigin(), path[0], "First element in path is not the start point.")
+			assert.Equal(t, target, path[len(path)-1], "Last element in path is not target point.")
+		}
+	} else {
+		assert.True(t, found, fmt.Sprintf("Can't find path to %v, %v away from source.", target, target.Length()))
+	}
+}
+
+func TestIndirectPaths(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	for i := 1; i < 11; i = i + 2 {
+		for h := range hexcoord.HexOrigin().RingArea(done, i) {
+			indirectPath(t, h)
 		}
 	}
 }
