@@ -150,14 +150,18 @@ func lerpInt(a int, b int, t float64) float64 {
 	return lerpFloat(float64(a), float64(b), t)
 }
 
-func lerpHexFractional(a Hex, b Hex, t float64) HexFractional {
+// LerpHexFractional finds a point between a and b weighted by t.
+// See https://en.wikipedia.org/wiki/Linear_interpolation
+func LerpHexFractional(a Hex, b Hex, t float64) HexFractional {
 	return HexFractional{
 		lerpInt(a.Q, b.Q, t),
 		lerpInt(a.R, b.R, t),
 	}
 }
 
-func lerpHex(a Hex, b Hex, t float64) Hex {
+// LerpHex finds a point between a and b weighted by t.
+// See https://en.wikipedia.org/wiki/Linear_interpolation
+func LerpHex(a Hex, b Hex, t float64) Hex {
 	hf := HexFractional{
 		lerpInt(a.Q, b.Q, t),
 		lerpInt(a.R, b.R, t),

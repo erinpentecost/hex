@@ -39,7 +39,7 @@ func (h Hex) LineArea(done <-chan interface{}, x Hex) <-chan Hex {
 			select {
 			case <-done:
 				return
-			case hgen <- lerpHex(h, x, step*float64(i)):
+			case hgen <- LerpHex(h, x, step*float64(i)):
 			}
 		}
 	}()
