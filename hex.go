@@ -1,3 +1,4 @@
+// Package hexcoord provides hexagonal grid math and utility functions.
 package hexcoord
 
 // Hex is a coordinate defined axially.
