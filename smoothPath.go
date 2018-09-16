@@ -4,6 +4,87 @@ import (
 	"math"
 )
 
+// curveSegmenter is a continuous curve segment.
+type curveSegmenter interface {
+	// Sample returns a point on the curve.
+	// t is valid for 0 to 1, inclusive.
+	Sample(t float64) (position, tangent, curvature HexFractional)
+
+	// Length returns the length of the curve.
+	Length() float64
+}
+
+type curveSegmenterImpl struct {
+	sample func(t float64) (position, tangent, curvature HexFractional)
+	length float64
+}
+
+func (csi curveSegmenterImpl) Sample(t float64) (position, tangent, curvature HexFractional) {
+	return csi.sample(t)
+}
+
+func (csi curveSegmenterImpl) Length() float64 {
+	return csi.length
+}
+
+type circularArc struct {
+	// i is the initial point.
+	i HexFractional
+	// tiu is the tangent unit vector at the initial point.
+	tiu HexFractional
+	// e is the end point.
+	e HexFractional
+}
+
+func (ca circularArc) CurveSegmenter() curveSegmenterImpl {
+
+	v := ca.e.Subtract(ca.i)
+	vtDot := v.Normalize().DotProduct(ca.tiu)
+	if vtDot == 0.0 {
+		// This is the semicircle case.
+	} else if vtDot == 1.0 {
+		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
+		return lineSegment(ca.i, ca.e)
+	} else {
+		// This is the circular arc case.
+	}
+}
+
+// lineSegment creates a lineSegment curve.
+// Inputs are start and end points.
+// Outputs are point, tangent, and curvature.
+func lineSegment(pi, pe HexFractional) curveSegmenterImpl {
+	slope := pi.Subtract(pe).Normalize()
+
+	return curveSegmenterImpl{
+		sample: func(t float64) (position, tangent, curvature HexFractional) {
+			position = LerpHexFractional(pi, pe, t)
+			tangent = slope
+			curvature = HexFractional{0.0, 0.0}
+			return
+		},
+		length: pi.DistanceTo(pe),
+	}
+}
+
+func semiCircleSegment(pi, tiu, pe HexFractional) curveSegmenterImpl {
+	diameter := pi.DistanceTo(pe)
+	center := pe.Subtract(pi).Multiply(0.5).Add(pi)
+	arcLength := math.Pi * diameter / 2.0
+	scalarCurvature := 2.0 / diameter
+	centralAngle := math.Pi
+
+	return curveSegmenterImpl{
+		sample: func(t float64) (position, tangent, curvature HexFractional) {
+			position = 
+			tangent = slope
+			curvature = position.Subtract(center).Normalize().Multiply(scalarCurvature)
+			return
+		},
+		length: arcLength,
+	}
+}
+
 // SmoothPath takes as input a slice of connected Hexes.
 // As output, it will return a function that describes a
 // series of connected circular arcs that pass through all
@@ -38,7 +119,7 @@ func SmoothPath(ti, te, path []HexFractional) func(t float64) (m0, m1, m2 HexFra
 // r is a ratio that narrows the result set to one function. Generally,
 // a value of 1.0 is good enough, and tries to keep the curvatures of
 // the two arcs close.
-func GenerateBiarc(pi, ti, pe, te HexFractional, r float64) func(t float64) (m0, m1, m2 HexFractional) {
+func GenerateBiarc(pi, ti, pe, te HexFractional, r float64) (arcs []circularArc) {
 	// Tangents should be unit vectors.
 	tiu := ti.Normalize()
 	teu := te.Normalize()
@@ -97,32 +178,12 @@ func GenerateBiarc(pi, ti, pe, te HexFractional, r float64) func(t float64) (m0,
 // Each segment in the slice is given equal weight.
 // If these were travel paths, the same amount of time would be spent in
 // each segment. Movement would be faster for shorter segments.
-func combineSegments(segmentFns [](func(t float64) (m0, m1, m2 HexFractional))) func(t float64) (m0, m1, m2 HexFractional) {
+// TODO: Weight (re: t) to be based on path length instead.
+func combineSegments(arcs []curveSegmenterImpl) curveSegmenterImpl {
 	return func(t float64) (m0, m1, m2 HexFractional) {
 		// segment is the segment we are in.
 		segment := int(t / float64(len(segmentFns)))
 		remappedT := t / float64(segment+1)
 		return segmentFns[segment](remappedT)
 	}
-}
-
-// lineSegment creates a lineSegment function.
-// Inputs are start and end points.
-// Outputs are point, tangent, and curvature.
-func lineSegment(pi, pe HexFractional) func(t float64) (m0, m1, m2 HexFractional) {
-	slope := pi.Subtract(pe).Normalize()
-	return func(t float64) (m0, m1, m2 HexFractional) {
-		m0 = LerpHexFractional(pi, pe, t)
-		m1 = slope
-		m2 = HexFractional{0.0, 0.0}
-		return
-	}
-}
-
-// arc creates an arc function.
-// Inputs are start point, curvature point, and end point.
-// The curvature point is the intersection of the tangents of the start and end points.
-// Outputs are point, tangent, and curvature.
-func arc(pi, pr, pe HexFractional) func(t float64) (m0, m1, m2 HexFractional) {
-	panic("not yet implemented")
 }
