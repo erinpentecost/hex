@@ -9,6 +9,10 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 
 hex.go contains Hex, the base coordinate type defined in this package, along with a bunch of functions for transforming Hexes.
 
+## [hexFractional.go](../master/hexFractional.go)
+
+hexFractional.go contains HexFractional, the corresponding Real-valued type to the discrete-valued Hex.
+
 ## [area.go](../master/area.go)
 
 area.go contains functions for creating and manipulating Hex [pipelines](https://blog.golang.org/pipelines). Use the functions here to procedurally generate shapes like lines, rings, and so on.

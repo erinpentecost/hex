@@ -17,9 +17,12 @@ func SmoothPath(path []Hex) func(t float64) (HexFractional, HexFractional) {
 	// https://en.wikipedia.org/wiki/Arc_length
 	// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 	// https://www.redblobgames.com/articles/curved-paths/
+	// http://www.ryanjuckett.com/programming/biarc-interpolation/
 
 	// Ok, so a few things to note:
 	// The distance between center points on two adjacent hexes is 1.
 	// Their shared edge has length 0.57735, or 1/(sqrt(3)).
+	// A radius of 0.5 would make the arc blow out the top of the two
+	// allowed hexes.
 
 }
