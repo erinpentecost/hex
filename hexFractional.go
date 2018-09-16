@@ -124,3 +124,9 @@ func (h HexFractional) DistanceTo(x HexFractional) float64 {
 func (h HexFractional) Normalize() HexFractional {
 	return h.Multiply(1.0 / h.Length())
 }
+
+// DotProduct returns the dot product.
+// See https://en.wikipedia.org/wiki/Dot_product
+func (h HexFractional) DotProduct(x HexFractional) float64 {
+	return h.Q*x.Q + h.R*x.R
+}
