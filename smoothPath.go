@@ -4,8 +4,8 @@ import (
 	"math"
 )
 
-// curveSegmenter is a continuous curve segment.
-type curveSegmenter interface {
+// CurveSegmenter is a continuous curve segment.
+type CurveSegmenter interface {
 	// Sample returns a point on the curve.
 	// t is valid for 0 to 1, inclusive.
 	Sample(t float64) (position, tangent, curvature HexFractional)
@@ -36,24 +36,27 @@ type circularArc struct {
 	e HexFractional
 }
 
-func (ca circularArc) CurveSegmenter() curveSegmenterImpl {
-
+func (ca circularArc) CurveSegmenter() CurveSegmenter {
+	// This is split into 3 cases in an attempt to work
+	// around inaccuracies introduced by using floating points.
 	v := ca.e.Subtract(ca.i)
 	vtDot := v.Normalize().DotProduct(ca.tiu)
-	if vtDot == 0.0 {
+	if closeEnough(vtDot, 0.0) {
 		// This is the semicircle case.
-	} else if vtDot == 1.0 {
+		return semiCircleSegment(ca.i, ca.tiu, ca.e)
+	} else if closeEnough(vtDot, 1.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
 		return lineSegment(ca.i, ca.e)
 	} else {
 		// This is the circular arc case.
+		panic("not implemented yet")
 	}
 }
 
 // lineSegment creates a lineSegment curve.
 // Inputs are start and end points.
 // Outputs are point, tangent, and curvature.
-func lineSegment(pi, pe HexFractional) curveSegmenterImpl {
+func lineSegment(pi, pe HexFractional) CurveSegmenter {
 	slope := pi.Subtract(pe).Normalize()
 
 	return curveSegmenterImpl{
@@ -67,18 +70,26 @@ func lineSegment(pi, pe HexFractional) curveSegmenterImpl {
 	}
 }
 
-func semiCircleSegment(pi, tiu, pe HexFractional) curveSegmenterImpl {
+func semiCircleSegment(pi, tiu, pe HexFractional) CurveSegmenter {
 	diameter := pi.DistanceTo(pe)
 	center := pe.Subtract(pi).Multiply(0.5).Add(pi)
 	arcLength := math.Pi * diameter / 2.0
 	scalarCurvature := 2.0 / diameter
 	centralAngle := math.Pi
 
+	// t = 0 is arcLength = 0 = arclength to pi
+	// t = 1 is arcLength = max arcLength = arclength to pe
+
 	return curveSegmenterImpl{
 		sample: func(t float64) (position, tangent, curvature HexFractional) {
-			position = 
-			tangent = slope
-			curvature = position.Subtract(center).Normalize().Multiply(scalarCurvature)
+			// sweep by some ratio of the maximal central angle to get position.
+			position = pi.Rotate(center, t*centralAngle)
+
+			// TODO
+			tangent = 0.0
+
+			// curvature points toward the center of the circle
+			curvature = position.Subtract(center).Normalize().Multiply(scalarCurvature * (-1.0))
 			return
 		},
 		length: arcLength,
@@ -96,7 +107,7 @@ func semiCircleSegment(pi, tiu, pe HexFractional) curveSegmenterImpl {
 // Unlike other functions in this package, it assumes hexes
 // are regular.
 // This function can be used to generate smooth movement.
-func SmoothPath(ti, te, path []HexFractional) func(t float64) (m0, m1, m2 HexFractional) {
+func SmoothPath(ti, te, path []HexFractional) CurveSegmenter {
 	panic("not implemented yet")
 	// http://kaj.uniwersytetradom.pl/prace/Biarcs.pdf
 	// https://en.wikipedia.org/wiki/Arc_length
@@ -104,6 +115,7 @@ func SmoothPath(ti, te, path []HexFractional) func(t float64) (m0, m1, m2 HexFra
 	// https://www.redblobgames.com/articles/curved-paths/
 	// http://www.ryanjuckett.com/programming/biarc-interpolation/
 	// https://stag-ws.zcu.cz/ws/services/rest/kvalifikacniprace/downloadPraceContent?adipIdno=17817
+	// https://www.ajdesigner.com/phpcircle/circle_arc_length_s.php
 
 	// Ok, so a few things to note:
 	// The distance between center points on two adjacent hexes is 1.
@@ -179,7 +191,7 @@ func GenerateBiarc(pi, ti, pe, te HexFractional, r float64) (arcs []circularArc)
 // If these were travel paths, the same amount of time would be spent in
 // each segment. Movement would be faster for shorter segments.
 // TODO: Weight (re: t) to be based on path length instead.
-func combineSegments(arcs []curveSegmenterImpl) curveSegmenterImpl {
+func combineSegments(arcs []CurveSegmenter) CurveSegmenter {
 	return func(t float64) (m0, m1, m2 HexFractional) {
 		// segment is the segment we are in.
 		segment := int(t / float64(len(segmentFns)))

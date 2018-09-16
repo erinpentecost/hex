@@ -48,26 +48,11 @@ func round(f float64) int {
 	return int(f - 0.5)
 }
 
-func absFloat(k float64) float64 {
-	if k > 0 {
-		return k
-	}
+const eps float64 = float64(5.0) * math.SmallestNonzeroFloat64
 
-	return -1 * k
-}
-
-func maxFloat(a, k float64) float64 {
-	if a > k {
-		return a
-	}
-	return k
-}
-
-func minFloat(a, k float64) float64 {
-	if a < k {
-		return a
-	}
-	return k
+func closeEnough(a, b float64) bool {
+	actualEpsilon := math.Abs(a - b)
+	return actualEpsilon < eps
 }
 
 // Add combines two hexes.
@@ -95,6 +80,17 @@ func (h HexFractional) Multiply(k float64) HexFractional {
 		R: h.R * k,
 	}
 	return o
+}
+
+// Rotate should move a hex about a center point by some number of radians.
+// TODO: this is probably broken because it doesn't account for the
+// difference in coordinate systems.
+func (h HexFractional) Rotate(center HexFractional, radians float64) HexFractional {
+	v := h.Subtract(center)
+	return HexFractional{
+		Q: v.Q*math.Cos(radians) + v.R*math.Sin(radians),
+		R: v.R*math.Cos(radians) - v.R*math.Sin(radians),
+	}.Add(center)
 }
 
 // LerpHexFractional finds a point between a and b weighted by t.
