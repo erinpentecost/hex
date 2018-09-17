@@ -41,10 +41,7 @@ func (ca circularArc) CurveSegmenter() CurveSegmenter {
 	// around inaccuracies introduced by using floating points.
 	v := ca.e.Subtract(ca.i)
 	vtDot := v.Normalize().DotProduct(ca.tiu)
-	if closeEnough(vtDot, 0.0) {
-		// This is the semicircle case.
-		return semiCircleSegment(ca.i, ca.tiu, ca.e)
-	} else if closeEnough(vtDot, 1.0) {
+	if closeEnough(vtDot, 1.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
 		return lineSegment(ca.i, ca.e)
 	} else {
@@ -70,6 +67,7 @@ func lineSegment(pi, pe HexFractional) CurveSegmenter {
 	}
 }
 
+// this should be dropped and generalized
 func semiCircleSegment(pi, tiu, pe HexFractional) CurveSegmenter {
 	diameter := pi.DistanceTo(pe)
 	center := pe.Subtract(pi).Multiply(0.5).Add(pi)
@@ -85,8 +83,7 @@ func semiCircleSegment(pi, tiu, pe HexFractional) CurveSegmenter {
 			// sweep by some ratio of the maximal central angle to get position.
 			position = pi.Rotate(center, t*centralAngle)
 
-			// TODO
-			tangent = 0.0
+			tangent = getTangent(center, position)
 
 			// curvature points toward the center of the circle
 			curvature = position.Subtract(center).Normalize().Multiply(scalarCurvature * (-1.0))
@@ -94,6 +91,13 @@ func semiCircleSegment(pi, tiu, pe HexFractional) CurveSegmenter {
 		},
 		length: arcLength,
 	}
+}
+
+// getTangent returns the tangent at arcPoint for the circle
+// defined by the given center and a radius equal to
+// arcPoint.Subtract(center).Length().
+func getTangent(center, arcPoint HexFractional) HexFractional {
+	panic("not implemented yet")
 }
 
 // SmoothPath takes as input a slice of connected Hexes.
@@ -125,77 +129,100 @@ func SmoothPath(ti, te, path []HexFractional) CurveSegmenter {
 
 }
 
-// GenerateBiarc returns a function that represents a biarc.
-// pi is the initial point. ti is the starting tangent of that point.
-// pe is the end point. te is the ending tangent of that point.
-// r is a ratio that narrows the result set to one function. Generally,
-// a value of 1.0 is good enough, and tries to keep the curvatures of
-// the two arcs close.
-func GenerateBiarc(pi, ti, pe, te HexFractional, r float64) (arcs []circularArc) {
+// biarc returns a list of circular arcs that connect pi to pe,
+// with ti being the tangent at pi and te being the tangent at pe.
+// This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
+// Modeling" by Ulugbek Khudayarov.
+func biarc(pi, ti, pe, te HexFractional) (arcs []circularArc) {
 	// Tangents should be unit vectors.
-	tiu := ti.Normalize()
-	teu := te.Normalize()
+	ti = ti.Normalize()
+	te = te.Normalize()
 
-	// r should be positive.
-	if r <= 0 {
-		panic("r must be positive")
+	t := ti.Add(te)
+
+	v := pe.Subtract(pi)
+
+	// j is the joint point between the two arcs.
+	var j HexFractional
+	// tj is the tangent at point j
+	var tj HexFractional
+	// d is an intermediate discriminant value.
+	var d float64
+	// a is some intermediate constant.
+	var a float64
+
+	// This is the line segment case.
+	if closeEnough(v.Normalize().DotProduct(t), 1.0) {
+		return []circularArc{
+			circularArc{pi, ti, pe},
+		}
 	}
 
-	// r = α/β, and all terms are positive.
-	// I need to find α and β.
+	// Start and end tangents are parallel. (N2)
+	if closeEnough(t.Length(), 2.0) {
+		// Semicircle case. (N3)
+		if closeEnough(v.DotProduct(ti), 0.0) {
+			j = pi.Add(v.Multiply(0.5))
+			tj = ti.Multiply(-1.0)
 
-	// Build up quadratic formula for β.
-	v := pi.Subtract(pe)
-	a := v.DotProduct(v)
-	b := 2 * v.DotProduct(tiu.Multiply(r).Add(teu))
-	c := 2 * r * (tiu.DotProduct(teu) - 1)
-
-	// Is this a special case?
-	// If the vectors v, ti, te are collinear, this is a line segment.
-	if c == 0 {
-		panic("start and end tangents (ti and te) aren't allowed to face in the same direction")
-		// this can be fixed by returning two semicircles in an s shape.
-	} else if b == 0 {
-		//panic("this needs 4 arcs")
-		// this is probably the straight-line case.
-		return lineSegment(pi, pe)
+			return []circularArc{
+				circularArc{pi, ti, j},
+				circularArc{j, tj, pe},
+			}
+		}
+		// Calculate d from 2.6
+		vdt := v.DotProduct(t)
+		vl := v.Length()
+		tl := t.Length()
+		d = vdt*vdt + vl*vl*(4-tl*tl)
+		// Calculate a from 2.7
+		a = (math.Sqrt(d) - vdt) / (4 - tl*tl)
+	} else { // N4
+		// Calculate d from 2.6
+		vdt := v.DotProduct(t)
+		vl := v.Length()
+		tl := t.Length()
+		d = vdt*vdt + vl*vl*(4-tl*tl)
+		// Calculate a from 2.8
+		a = (vl * vl) / (4 * v.DotProduct(ti))
 	}
 
-	// Solve for β.
-	// Pick a positive root, if able.
-	beta := (math.Sqrt(b*b-4.0*a*c) - b) / (2.0 * a)
-	if beta <= 0 {
-		beta = -1.0 * (math.Sqrt(b*b-4.0*a*c) + b) / (2.0 * a)
+	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
+	tj = v.Subtract(t.Multiply(a)).Multiply(-2 * a)
+
+	return []circularArc{
+		circularArc{pi, ti, j},
+		circularArc{j, tj, pe},
 	}
-
-	if beta == 0 {
-		panic("can't find a nonzero root")
-	}
-
-	// Solve for α.
-	alpha := r * beta
-
-	// Arc control points.
-	// These need weights assigned to them?
-	arcFirst := pi.Add(ti.Multiply(alpha))
-	arcSecond := pe.Subtract(te.Multiply(beta))
-
-	// Inflection / connection point.
-	inflection := arcFirst.Multiply(beta / (alpha + beta)).Add(arcSecond.Multiply(alpha / (alpha + beta)))
-
-	panic("not yet implemented")
 }
 
-// combineSegments presents a slice of segments as a single segment.
-// Each segment in the slice is given equal weight.
-// If these were travel paths, the same amount of time would be spent in
-// each segment. Movement would be faster for shorter segments.
-// TODO: Weight (re: t) to be based on path length instead.
-func combineSegments(arcs []CurveSegmenter) CurveSegmenter {
-	return func(t float64) (m0, m1, m2 HexFractional) {
-		// segment is the segment we are in.
-		segment := int(t / float64(len(segmentFns)))
-		remappedT := t / float64(segment+1)
-		return segmentFns[segment](remappedT)
+// CombineSegments presents a slice of segments as a single segment.
+func CombineSegments(arcs []CurveSegmenter) CurveSegmenter {
+
+	totalLength := float64(0.0)
+	for _, a := range arcs {
+		totalLength += a.Length()
+	}
+
+	return curveSegmenterImpl{
+		sample: func(t float64) (position, tangent, curvature HexFractional) {
+			lenT := t * totalLength
+			// determine which sub-segment t lands us in.
+			prevLength := float64(0.0)
+			runningLength := float64(0.0)
+			for _, a := range arcs {
+				runningLength += a.Length()
+				if lenT <= runningLength {
+					// we are in the current segment
+					// now we need to remap t for it
+
+					remappedT := (lenT - prevLength) / runningLength
+					return a.Sample(remappedT)
+				}
+				prevLength += a.Length()
+			}
+			panic("t is out of scope")
+		},
+		length: totalLength,
 	}
 }

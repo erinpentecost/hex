@@ -48,11 +48,17 @@ func round(f float64) int {
 	return int(f - 0.5)
 }
 
-const eps float64 = float64(5.0) * math.SmallestNonzeroFloat64
+const eps float64 = float64(10.0) * math.SmallestNonzeroFloat64
 
 func closeEnough(a, b float64) bool {
 	actualEpsilon := math.Abs(a - b)
 	return actualEpsilon < eps
+}
+
+// AlmostEquals returns true when h and x are equal or close
+// enough to equal for practical matters.
+func (h HexFractional) AlmostEquals(x HexFractional) bool {
+	return closeEnough(h.Q, x.Q) && closeEnough(h.R, x.R)
 }
 
 // Add combines two hexes.

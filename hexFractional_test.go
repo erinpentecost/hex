@@ -56,7 +56,25 @@ func TestHexFractionalNormalize(t *testing.T) {
 	defer close(done)
 	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
 	for h := range testHexes {
-		assert.InEpsilonf(t, 1.0, 0.0000001, h.ToHexFractional().Normalize().Length(), fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
+		len := h.ToHexFractional().Normalize().Length()
+		assert.InEpsilonf(t, 1.0, 0.0000001, len, fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
 	}
 
+}
+
+func TestRotate(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	radianStep := float64(math.Pi / 3.0)
+
+	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	for h := range testHexes {
+		hf := h.ToHexFractional()
+		for i, n := range h.Neighbors() {
+			nfe := n.ToHexFractional()
+			nft := h.Neighbor(0).ToHexFractional().Rotate(hf, float64(i)*radianStep)
+			assert.True(t, nfe.AlmostEquals(nft), fmt.Sprintf("Hex rotate (%v, direction %v) does not match HexFractional rotate (%v) about center %v.", nfe, i, nft, hf))
+		}
+	}
 }

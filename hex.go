@@ -164,14 +164,16 @@ func (h Hex) Neighbors() []Hex {
 
 // Rotate rotates a hex X times clockwise.
 // The value can be negative.
-// The number of degrees rotated is 60*direction
-// This could be made faster.
+// The number of degrees rotated is 60*direction.
 func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	d := BoundFacing(direction)
 
 	if d == 0 {
 		return h
 	}
+
+	// This could be faster. Recursion is not really
+	// necessary.
 
 	rotated := Hex{
 		Q: -h.S(),
