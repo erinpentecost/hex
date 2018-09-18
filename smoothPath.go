@@ -44,10 +44,9 @@ func (ca circularArc) CurveSegmenter() CurveSegmenter {
 	if closeEnough(vtDot, 1.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
 		return lineSegment(ca.i, ca.e)
-	} else {
-		// This is the circular arc case.
-		panic("not implemented yet")
 	}
+	// This is the circular arc case.
+	panic("not implemented yet")
 }
 
 // lineSegment creates a lineSegment curve.
