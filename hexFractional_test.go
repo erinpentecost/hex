@@ -80,13 +80,14 @@ func TestRotate(t *testing.T) {
 
 	radianStep := float64(math.Pi / 3.0)
 
-	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	testHexes := hexcoord.HexOrigin().SpiralArea(done, 10)
 	for h := range testHexes {
 		hf := h.ToHexFractional()
 		for i, n := range h.Neighbors() {
 			nfe := n.ToHexFractional()
 			nft := h.Neighbor(0).ToHexFractional().Rotate(hf, float64(i)*radianStep)
-			assert.True(t, nfe.AlmostEquals(nft), fmt.Sprintf("Hex rotate (%v, direction %v) does not match HexFractional rotate (%v) about center %v.", nfe, i, nft, hf))
+			assert.True(t, nfe.AlmostEquals(nft),
+				fmt.Sprintf("Rotated %v about %v by %v˚. Expected %v, got %v.", h.Neighbor(0), hf, i*60, nfe, nft))
 		}
 	}
 }

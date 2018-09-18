@@ -134,7 +134,7 @@ func (h HexFractional) Rotate(center HexFractional, radians float64) HexFraction
 
 	cartX, cartY := h.Subtract(center).ToCartesian()
 
-	rotation := complex(math.Cos(radians), math.Sin(radians))
+	rotation := complex(math.Cos(-radians), math.Sin(-radians))
 	rotated := complex(cartX, cartY) * rotation
 
 	return HexFractionalFromCartesian(real(rotated), imag(rotated)).Add(center)
