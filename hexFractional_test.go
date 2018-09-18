@@ -62,6 +62,18 @@ func TestHexFractionalNormalize(t *testing.T) {
 
 }
 
+func TestCartesian(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	for h := range testHexes {
+		hf := h.ToHexFractional()
+		converted := hexcoord.HexFractionalFromCartesian(hf.ToCartesian())
+		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("%v is not %v", hf, converted))
+	}
+}
+
 func TestRotate(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)

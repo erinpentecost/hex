@@ -48,11 +48,11 @@ func round(f float64) int {
 	return int(f - 0.5)
 }
 
-const eps float64 = float64(10.0) * math.SmallestNonzeroFloat64
-
 func closeEnough(a, b float64) bool {
-	actualEpsilon := math.Abs(a - b)
-	return actualEpsilon < eps
+	if a == b {
+		return true
+	}
+	return math.Abs(a-b) < 1e-10
 }
 
 // AlmostEquals returns true when h and x are equal or close
@@ -88,17 +88,6 @@ func (h HexFractional) Multiply(k float64) HexFractional {
 	return o
 }
 
-// Rotate should move a hex about a center point by some number of radians.
-// TODO: this is probably broken because it doesn't account for the
-// difference in coordinate systems.
-func (h HexFractional) Rotate(center HexFractional, radians float64) HexFractional {
-	v := h.Subtract(center)
-	return HexFractional{
-		Q: v.Q*math.Cos(radians) + v.R*math.Sin(radians),
-		R: v.R*math.Cos(radians) - v.R*math.Sin(radians),
-	}.Add(center)
-}
-
 // LerpHexFractional finds a point between a and b weighted by t.
 // See https://en.wikipedia.org/wiki/Linear_interpolation
 func LerpHexFractional(a HexFractional, b HexFractional, t float64) HexFractional {
@@ -131,4 +120,44 @@ func (h HexFractional) Normalize() HexFractional {
 // See https://en.wikipedia.org/wiki/Dot_product
 func (h HexFractional) DotProduct(x HexFractional) float64 {
 	return h.Q*x.Q + h.R*x.R
+}
+
+// ProjectOn projects h onto x.
+// It returns a vector parallel to x.
+func (h HexFractional) ProjectOn(x HexFractional) HexFractional {
+	return h.Multiply(h.DotProduct(x) / x.DotProduct(x))
+}
+
+// Rotate should move a hex about a center point counterclockwise
+// by some number of radians.
+func (h HexFractional) Rotate(center HexFractional, radians float64) HexFractional {
+
+	cartX, cartY := h.Subtract(center).ToCartesian()
+
+	rotation := complex(math.Cos(radians), math.Sin(radians))
+	rotated := complex(cartX, cartY) * rotation
+
+	return HexFractionalFromCartesian(real(rotated), imag(rotated)).Add(center)
+}
+
+var sqrt3 float64
+
+func init() {
+	sqrt3 = math.Sqrt(3.0)
+}
+
+// ToCartesian returns the hex in Cartesian Coordinates.
+func (h HexFractional) ToCartesian() (x, y float64) {
+	x = sqrt3*h.Q + sqrt3*h.R/2.0
+	y = 1.5 * h.R
+	return
+}
+
+// HexFractionalFromCartesian returns the hex in Cartesian Coordinates.
+func HexFractionalFromCartesian(x, y float64) HexFractional {
+	// rotate y by 30 degrees to get R
+	return HexFractional{
+		Q: x*sqrt3/3.0 - y*1.0/3.0,
+		R: 2.0 / 3.0 * y,
+	}
 }

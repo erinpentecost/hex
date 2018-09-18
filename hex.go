@@ -29,7 +29,9 @@ func HexOrigin() Hex {
 }
 
 // HexDirection returns a new hex coord offset from the origin
-// in the given direction, which is a number from 0 to 5, inclusive
+// in the given direction, which is a number from 0 to 5, inclusive.
+// Positive Q axis is in the 0 direction.
+// Positive R axis is in the 5 direction.
 func HexDirection(direction int) Hex {
 	d := BoundFacing(direction)
 
@@ -162,7 +164,7 @@ func (h Hex) Neighbors() []Hex {
 	return n
 }
 
-// Rotate rotates a hex X times clockwise.
+// Rotate rotates a hex X times counterclockwise.
 // The value can be negative.
 // The number of degrees rotated is 60*direction.
 func (h Hex) Rotate(pivot Hex, direction int) Hex {
