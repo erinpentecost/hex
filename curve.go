@@ -47,14 +47,28 @@ func NewLineSegment(i, e HexFractional) LineSegment {
 
 // ArcSegment is a CurveSegmenter.
 type ArcSegment struct {
-	sample func(t float64) (position, tangent, curvature HexFractional)
-	length float64
+	i               HexFractional
+	e               HexFractional
+	tiu             HexFractional
+	diameter        float64
+	center          HexFractional
+	arcLength       float64
+	scalarCurvature float64
+	centralAngle    float64
+	length          float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
 func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
-	return ac.sample(t)
+	// sweep by some ratio of the maximal central angle to get position.
+	position = ac.i.Rotate(ac.center, t*ac.centralAngle)
+
+	tangent = getTangent(ac.center, position)
+
+	// curvature points toward the center of the circle
+	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature * (-1.0))
+	return
 }
 
 // Length returns the length of the curve.
@@ -133,30 +147,3 @@ func NewCurveSegmenter(ca circularArc) CurveSegmenter {
 	// This is the circular arc case.
 	return NewArcSegment(ca.i, ca.tiu, ca.e)
 }
-
-// this should be dropped and generalized
-/*func semiCircleSegment(pi, tiu, pe HexFractional) CurveSegmenter {
-	diameter := pi.DistanceTo(pe)
-	center := pe.Subtract(pi).Multiply(0.5).Add(pi)
-	arcLength := math.Pi * diameter / 2.0
-	scalarCurvature := 2.0 / diameter
-	centralAngle := math.Pi
-
-	// t = 0 is arcLength = 0 = arclength to pi
-	// t = 1 is arcLength = max arcLength = arclength to pe
-
-	return curveSegmenterImpl{
-		sample: func(t float64) (position, tangent, curvature HexFractional) {
-			// sweep by some ratio of the maximal central angle to get position.
-			position = pi.Rotate(center, t*centralAngle)
-
-			tangent = getTangent(center, position)
-
-			// curvature points toward the center of the circle
-			curvature = position.Subtract(center).Normalize().Multiply(scalarCurvature * (-1.0))
-			return
-		},
-		length: arcLength,
-	}
-}
-*/
