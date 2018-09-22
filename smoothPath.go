@@ -14,13 +14,6 @@ type circularArc struct {
 	e HexFractional
 }
 
-// getTangent returns the tangent at arcPoint for the circle
-// defined by the given center and a radius equal to
-// arcPoint.Subtract(center).Length().
-func getTangent(center, arcPoint HexFractional) HexFractional {
-	panic("not implemented yet")
-}
-
 // SmoothPath takes as input a slice of connected Hexes.
 // As output, it will return a function that describes a
 // series of connected circular arcs that pass through all

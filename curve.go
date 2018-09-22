@@ -49,7 +49,6 @@ func NewLineSegment(i, e HexFractional) LineSegment {
 type ArcSegment struct {
 	ca              circularArc
 	center          HexFractional
-	arcLength       float64
 	scalarCurvature float64
 	centralAngle    float64
 	length          float64
@@ -90,8 +89,25 @@ func (ac ArcSegment) Length() float64 {
 
 // NewArcSegment creates a circular arc segment curve.
 func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
-	// TODO
-	panic("not implemented yet")
+
+	// Find the center by projecting the midpoint on
+	// the chord to a vector orthogonal to the tangent.
+	center := LerpHexFractional(pi, pe, 0.5).ProjectOn(HexFractional{
+		Q: -1 * tiu.R,
+		R: tiu.Q,
+	}.Add(pi))
+
+	radius := pi.Subtract(center)
+
+	centralAngle := radius.AngleTo(pe.Subtract(center))
+
+	return ArcSegment{
+		ca:              circularArc{pi, tiu, pe},
+		center:          center,
+		scalarCurvature: float64(1.0) / radius.Length(),
+		centralAngle:    centralAngle,
+		length:          radius.Length() * centralAngle,
+	}
 }
 
 // combinationSegment is a CurveSegmenter.
@@ -146,10 +162,8 @@ func JoinSegments(arcs ...CurveSegmenter) CurveSegmenter {
 	return cs
 }
 
-// NewCurveSegmenter converts a circular arc into a sample-able curve.
-func NewCurveSegmenter(ca circularArc) CurveSegmenter {
-	// This is split into 3 cases in an attempt to work
-	// around inaccuracies introduced by using floating points.
+// newCurveSegmenter converts a circular arc into a sample-able curve.
+func newCurveSegmenter(ca circularArc) CurveSegmenter {
 	v := ca.e.Subtract(ca.i)
 	vtDot := v.Normalize().DotProduct(ca.tiu)
 	if closeEnough(vtDot, 1.0) {

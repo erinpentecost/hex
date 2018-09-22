@@ -140,6 +140,11 @@ func (h HexFractional) Rotate(center HexFractional, radians float64) HexFraction
 	return HexFractionalFromCartesian(real(rotated), imag(rotated)).Add(center)
 }
 
+// TODO
+func (h HexFractional) AngleTo(a HexFractional) float64 {
+	panic("todo")
+}
+
 var sqrt3 float64
 
 func init() {
