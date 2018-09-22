@@ -47,10 +47,7 @@ func NewLineSegment(i, e HexFractional) LineSegment {
 
 // ArcSegment is a CurveSegmenter.
 type ArcSegment struct {
-	i               HexFractional
-	e               HexFractional
-	tiu             HexFractional
-	diameter        float64
+	ca              circularArc
 	center          HexFractional
 	arcLength       float64
 	scalarCurvature float64
@@ -62,9 +59,24 @@ type ArcSegment struct {
 // t is valid for 0 to 1, inclusive.
 func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
 	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.i.Rotate(ac.center, t*ac.centralAngle)
+	position = ac.ca.i.Rotate(ac.center, t*ac.centralAngle)
 
-	tangent = getTangent(ac.center, position)
+	// This should be perpendicular to the radius,
+	// but the direction may be wrong.
+	tangentLine := HexFractional{
+		Q: -1 * position.R,
+		R: position.Q,
+	}
+
+	// By projecting the end position onto the tangent line,
+	// I get a tangent vector that is pointing toward it.
+	if tangentLine.DotProduct(ac.ca.e) != 0 {
+		tangent = ac.ca.e.ProjectOn(tangentLine).Normalize()
+	} else {
+		// If we are on the end line, we need to use start position
+		// and then reverse.
+		tangent = ac.ca.i.ProjectOn(tangentLine).Multiply(-1).Normalize()
+	}
 
 	// curvature points toward the center of the circle
 	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature * (-1.0))
@@ -115,7 +127,7 @@ func (cs combinationSegment) Length() float64 {
 }
 
 // JoinSegments creates a multipart curve.
-func JoinSegments(arcs []CurveSegmenter) CurveSegmenter {
+func JoinSegments(arcs ...CurveSegmenter) CurveSegmenter {
 
 	// Don't wrap a single element.
 	if len(arcs) == 1 {
