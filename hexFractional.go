@@ -143,11 +143,13 @@ func (h HexFractional) Rotate(center HexFractional, radians float64) HexFraction
 
 // AngleTo returns the angle to x in radians.
 func (h HexFractional) AngleTo(x HexFractional) float64 {
-	panic("this breaks the build")
+	//panic("this breaks the build")
 	hi := complex(h.ToCartesian())
 	xi := complex(x.ToCartesian())
 
-	return real(xi / hi)
+	r := xi / hi
+
+	return math.Acos(real(r))
 }
 
 var sqrt3 float64

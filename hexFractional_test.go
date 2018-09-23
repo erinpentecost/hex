@@ -56,7 +56,7 @@ func TestHexFractionalNormalize(t *testing.T) {
 	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
 	for h := range testHexes {
 		len := h.ToHexFractional().Normalize().Length()
-		assert.InEpsilonf(t, 1.0, 0.0000001, len, fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
+		assert.InEpsilonf(t, 1.0, len, 0.0000001, fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
 	}
 
 }
@@ -92,14 +92,14 @@ func TestRotate(t *testing.T) {
 }
 
 func TestAngleTo(t *testing.T) {
-	sqrt3 := math.Sqrt(3.0)
+	pid3 := math.Pi / 3.0
 	o := hexcoord.HexOrigin()
 
 	for ia, ra := range o.Neighbors() {
 		for ib, rb := range o.Neighbors() {
-			diff := ia - ib
+			diff := (ib - ia) % 6
 			assert.Equal(t,
-				sqrt3*(float64(diff)),
+				pid3*(float64(diff)),
 				ra.ToHexFractional().AngleTo(rb.ToHexFractional()),
 				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, diff))
 		}

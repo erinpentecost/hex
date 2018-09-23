@@ -1,5 +1,9 @@
 package hexcoord
 
+import (
+	"math"
+)
+
 // CurveSegmenter is a continuous curve segment.
 // It can be used to draw a curve.
 type CurveSegmenter interface {
@@ -52,6 +56,8 @@ type ArcSegment struct {
 	scalarCurvature float64
 	centralAngle    float64
 	length          float64
+	longWay         bool
+	clockwise       bool
 }
 
 // Sample returns a point on the curve.
@@ -90,6 +96,9 @@ func (ac ArcSegment) Length() float64 {
 // NewArcSegment creates a circular arc segment curve.
 func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 
+	clockwise := false
+	// TODO: determine clockwise vs counterclockwise
+
 	// Find the center by projecting the midpoint on
 	// the chord to a vector orthogonal to the tangent.
 	center := LerpHexFractional(pi, pe, 0.5).ProjectOn(HexFractional{
@@ -99,7 +108,14 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 
 	radius := pi.Subtract(center)
 
+	// This gets the internal angle 100% of the time.
 	centralAngle := radius.AngleTo(pe.Subtract(center))
+	longWay := false
+	// But I may need the complimentary angle instead.
+	if pi.Add(tiu).Subtract(center).AngleTo(pe.Subtract(center)) > centralAngle {
+		centralAngle = 2*math.Pi - centralAngle
+		longWay = true
+	}
 
 	return ArcSegment{
 		ca:              circularArc{pi, tiu, pe},
@@ -107,6 +123,8 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 		scalarCurvature: float64(1.0) / radius.Length(),
 		centralAngle:    centralAngle,
 		length:          radius.Length() * centralAngle,
+		longWay:         longWay,
+		clockwise:       clockwise,
 	}
 }
 
