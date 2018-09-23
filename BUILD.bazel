@@ -16,6 +16,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "area.go",
+        "curve.go",
         "hex.go",
         "hexFractional.go",
         "path.go",

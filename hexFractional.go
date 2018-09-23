@@ -132,17 +132,22 @@ func (h HexFractional) ProjectOn(x HexFractional) HexFractional {
 // by some number of radians.
 func (h HexFractional) Rotate(center HexFractional, radians float64) HexFractional {
 
-	cartX, cartY := h.Subtract(center).ToCartesian()
+	cart := complex(h.Subtract(center).ToCartesian())
 
 	rotation := complex(math.Cos(-radians), math.Sin(-radians))
-	rotated := complex(cartX, cartY) * rotation
+
+	rotated := cart * rotation
 
 	return HexFractionalFromCartesian(real(rotated), imag(rotated)).Add(center)
 }
 
-// TODO
-func (h HexFractional) AngleTo(a HexFractional) float64 {
-	panic("todo")
+// AngleTo returns the angle to x in radians.
+func (h HexFractional) AngleTo(x HexFractional) float64 {
+	panic("this breaks the build")
+	hi := complex(h.ToCartesian())
+	xi := complex(x.ToCartesian())
+
+	return real(xi / hi)
 }
 
 var sqrt3 float64

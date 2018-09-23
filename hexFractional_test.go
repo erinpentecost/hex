@@ -22,12 +22,11 @@ func TestHexFractionalHashIdentity(t *testing.T) {
 }
 
 func TestHexFractionalLength(t *testing.T) {
-	type test struct {
+
+	tests := []struct {
 		H hexcoord.HexFractional
 		E float64
-	}
-
-	tests := []test{
+	}{
 		{H: hexcoord.HexFractional{Q: 0, R: -1}, E: 1},
 		{H: hexcoord.HexFractional{Q: 1, R: -1}, E: 1},
 		{H: hexcoord.HexFractional{Q: 1, R: 0}, E: 1},
@@ -70,7 +69,7 @@ func TestCartesian(t *testing.T) {
 	for h := range testHexes {
 		hf := h.ToHexFractional()
 		converted := hexcoord.HexFractionalFromCartesian(hf.ToCartesian())
-		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("%v is not %v", hf, converted))
+		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("Expected %v, got %v.", hf, converted))
 	}
 }
 
@@ -88,6 +87,21 @@ func TestRotate(t *testing.T) {
 			nft := h.Neighbor(0).ToHexFractional().Rotate(hf, float64(i)*radianStep)
 			assert.True(t, nfe.AlmostEquals(nft),
 				fmt.Sprintf("Rotated %v about %v by %v˚. Expected %v, got %v.", h.Neighbor(0), hf, i*60, nfe, nft))
+		}
+	}
+}
+
+func TestAngleTo(t *testing.T) {
+	sqrt3 := math.Sqrt(3.0)
+	o := hexcoord.HexOrigin()
+
+	for ia, ra := range o.Neighbors() {
+		for ib, rb := range o.Neighbors() {
+			diff := ia - ib
+			assert.Equal(t,
+				sqrt3*(float64(diff)),
+				ra.ToHexFractional().AngleTo(rb.ToHexFractional()),
+				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, diff))
 		}
 	}
 }
