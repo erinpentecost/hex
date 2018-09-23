@@ -57,14 +57,14 @@ type ArcSegment struct {
 	centralAngle    float64
 	length          float64
 	longWay         bool
-	clockwise       bool
+	direction       float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
 func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
 	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.ca.i.Rotate(ac.center, t*ac.centralAngle)
+	position = ac.ca.i.Rotate(ac.center, t*ac.centralAngle).Multiply(ac.direction)
 
 	// This should be perpendicular to the radius,
 	// but the direction may be wrong.
@@ -96,9 +96,6 @@ func (ac ArcSegment) Length() float64 {
 // NewArcSegment creates a circular arc segment curve.
 func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 
-	clockwise := false
-	// TODO: determine clockwise vs counterclockwise
-
 	// Find the center by projecting the midpoint on
 	// the chord to a vector orthogonal to the tangent.
 	center := LerpHexFractional(pi, pe, 0.5).ProjectOn(HexFractional{
@@ -117,6 +114,19 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 		longWay = true
 	}
 
+	// Determine clockwise vs counterclockwise
+	// For a small central angle, the sign of the area for the tiangle works.
+	var direction float64
+	clockwise := math.Signbit((pi.Q-center.Q)*(pe.R-center.R) - (pi.R-center.R)*(pe.Q-center.Q))
+	if longWay {
+		clockwise = !clockwise
+	}
+	if clockwise {
+		direction = -1.0
+	} else {
+		direction = 1.0
+	}
+
 	return ArcSegment{
 		ca:              circularArc{pi, tiu, pe},
 		center:          center,
@@ -124,7 +134,7 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 		centralAngle:    centralAngle,
 		length:          radius.Length() * centralAngle,
 		longWay:         longWay,
-		clockwise:       clockwise,
+		direction:       direction,
 	}
 }
 
