@@ -15,8 +15,8 @@ type CurveSegmenter interface {
 	Length() float64
 }
 
-// LineSegment is a CurveSegmenter.
-type LineSegment struct {
+// lineSegment is a CurveSegmenter.
+type lineSegment struct {
 	i      HexFractional
 	e      HexFractional
 	length float64
@@ -25,7 +25,7 @@ type LineSegment struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ls LineSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ls lineSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
 	position = LerpHexFractional(ls.i, ls.e, t)
 	tangent = ls.slope
 	curvature = HexFractional{0.0, 0.0}
@@ -33,25 +33,25 @@ func (ls LineSegment) Sample(t float64) (position, tangent, curvature HexFractio
 }
 
 // Length returns the length of the curve.
-func (ls LineSegment) Length() float64 {
+func (ls lineSegment) Length() float64 {
 	return ls.i.DistanceTo(ls.e)
 }
 
-// NewLineSegment creates a line segment curve.
+// newLineSegment creates a line segment curve.
 // Inputs are start and end points.
-func NewLineSegment(i, e HexFractional) LineSegment {
+func newLineSegment(i, e HexFractional) lineSegment {
 
-	return LineSegment{
+	return lineSegment{
 		i:      i,
 		e:      e,
 		length: i.DistanceTo(e),
-		slope:  i.Subtract(e).Normalize(),
+		slope:  e.Subtract(i).Normalize(),
 	}
 }
 
-// ArcSegment is a CurveSegmenter.
-type ArcSegment struct {
-	ca              circularArc
+// arcSegment is a CurveSegmenter.
+type arcSegment struct {
+	ca              CircularArc
 	center          HexFractional
 	scalarCurvature float64
 	centralAngle    float64
@@ -62,9 +62,9 @@ type ArcSegment struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ac arcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
 	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.ca.i.Rotate(ac.center, t*ac.centralAngle).Multiply(ac.direction)
+	position = ac.ca.I.Rotate(ac.center, t*ac.centralAngle).Multiply(ac.direction)
 
 	// This should be perpendicular to the radius,
 	// but the direction may be wrong.
@@ -75,12 +75,12 @@ func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFraction
 
 	// By projecting the end position onto the tangent line,
 	// I get a tangent vector that is pointing toward it.
-	if tangentLine.DotProduct(ac.ca.e) != 0 {
-		tangent = ac.ca.e.ProjectOn(tangentLine).Normalize()
+	if tangentLine.DotProduct(ac.ca.E) != 0 {
+		tangent = ac.ca.E.ProjectOn(tangentLine).Normalize()
 	} else {
 		// If we are on the end line, we need to use start position
 		// and then reverse.
-		tangent = ac.ca.i.ProjectOn(tangentLine).Multiply(-1).Normalize()
+		tangent = ac.ca.I.ProjectOn(tangentLine).Multiply(-1).Normalize()
 	}
 
 	// curvature points toward the center of the circle
@@ -89,12 +89,12 @@ func (ac ArcSegment) Sample(t float64) (position, tangent, curvature HexFraction
 }
 
 // Length returns the length of the curve.
-func (ac ArcSegment) Length() float64 {
+func (ac arcSegment) Length() float64 {
 	return ac.length
 }
 
-// NewArcSegment creates a circular arc segment curve.
-func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
+// newArcSegment creates a circular arc segment curve.
+func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
 
 	// Find the center by projecting the midpoint on
 	// the chord to a vector orthogonal to the tangent.
@@ -116,6 +116,7 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 
 	// Determine clockwise vs counterclockwise
 	// For a small central angle, the sign of the area for the tiangle works.
+	// I think this is the "scalar triple product"
 	var direction float64
 	clockwise := math.Signbit((pi.Q-center.Q)*(pe.R-center.R) - (pi.R-center.R)*(pe.Q-center.Q))
 	if longWay {
@@ -127,8 +128,8 @@ func NewArcSegment(pi, tiu, pe HexFractional) ArcSegment {
 		direction = 1.0
 	}
 
-	return ArcSegment{
-		ca:              circularArc{pi, tiu, pe},
+	return arcSegment{
+		ca:              CircularArc{pi, tiu, pe},
 		center:          center,
 		scalarCurvature: float64(1.0) / radius.Length(),
 		centralAngle:    centralAngle,
@@ -170,9 +171,8 @@ func (cs combinationSegment) Length() float64 {
 	return cs.length
 }
 
-// JoinSegments creates a multipart curve.
-func JoinSegments(arcs ...CurveSegmenter) CurveSegmenter {
-
+// JoinCurves creates a multipart curve.
+func JoinCurves(arcs ...CurveSegmenter) CurveSegmenter {
 	// Don't wrap a single element.
 	if len(arcs) == 1 {
 		return arcs[0]
@@ -190,14 +190,14 @@ func JoinSegments(arcs ...CurveSegmenter) CurveSegmenter {
 	return cs
 }
 
-// newCurveSegmenter converts a circular arc into a sample-able curve.
-func newCurveSegmenter(ca circularArc) CurveSegmenter {
-	v := ca.e.Subtract(ca.i)
-	vtDot := v.Normalize().DotProduct(ca.tiu)
+// Curve converts a circular arc into a sample-able curve.
+func (ca CircularArc) Curve() CurveSegmenter {
+	v := ca.E.Subtract(ca.I)
+	vtDot := v.Normalize().DotProduct(ca.T.Normalize())
 	if closeEnough(vtDot, 1.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
-		return NewLineSegment(ca.i, ca.e)
+		return newLineSegment(ca.I, ca.E)
 	}
 	// This is the circular arc case.
-	return NewArcSegment(ca.i, ca.tiu, ca.e)
+	return newArcSegment(ca.I, ca.T, ca.E)
 }

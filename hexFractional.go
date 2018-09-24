@@ -119,7 +119,12 @@ func (h HexFractional) Normalize() HexFractional {
 // DotProduct returns the dot product.
 // See https://en.wikipedia.org/wiki/Dot_product
 func (h HexFractional) DotProduct(x HexFractional) float64 {
-	return h.Q*x.Q + h.R*x.R
+	// TODO: this is broke
+	//return h.Q*x.Q + h.R*x.R + h.Q*h.R
+	return h.Q*x.Q + h.R*x.R + h.S()*x.S()
+	// hx, hy := h.ToCartesian()
+	// xx, xy := x.ToCartesian()
+	// return hx*xx + hy*xy
 }
 
 // ProjectOn projects h onto x.
@@ -142,8 +147,8 @@ func (h HexFractional) Rotate(center HexFractional, radians float64) HexFraction
 }
 
 // AngleTo returns the angle to x in radians.
+// Will always return the inner (smaller) angle.
 func (h HexFractional) AngleTo(x HexFractional) float64 {
-	//panic("this breaks the build")
 	hi := complex(h.ToCartesian())
 	xi := complex(x.ToCartesian())
 

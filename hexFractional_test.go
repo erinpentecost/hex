@@ -91,17 +91,56 @@ func TestRotate(t *testing.T) {
 	}
 }
 
+func TestDotProduct(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := hexcoord.HexOrigin().SpiralArea(done, 10)
+	for h := range testHexes {
+		hf := h.ToHexFractional()
+		lensq := hf.Length() * hf.Length()
+		assert.Equal(t, lensq, hf.DotProduct(hf), fmt.Sprintf("%v dot %v (same)", hf, hf))
+		orth := hexcoord.HexFractional{Q: -1.0 * hf.R, R: hf.Q}
+		assert.Equal(t, 0.0, hf.DotProduct(orth), fmt.Sprintf("%v dot %v (orth)", hf, orth))
+		rev := hf.Multiply(-1.0)
+		assert.Equal(t, -1*lensq, hf.DotProduct(rev), fmt.Sprintf("%v dot %v (rev)", hf, rev))
+	}
+}
+
 func TestAngleTo(t *testing.T) {
-	pid3 := math.Pi / 3.0
+
 	o := hexcoord.HexOrigin()
+
+	pid3 := math.Pi / 3.0
+	toRad := func(a, b int) float64 {
+		// get inner angle at all times
+		rot := ((a % 6) - (b % 6)) % 6
+		if rot < 0 {
+			rot = rot * (-1)
+		}
+		if rot == 4 {
+			rot = 2
+		}
+		if rot == 5 {
+			rot = 1
+		}
+
+		// convert to rads
+		return pid3 * (float64(rot))
+	}
+
+	closeEnough := func(a, b float64) bool {
+		if a == b {
+			return true
+		}
+		return math.Abs(a-b) < 1e-10
+	}
 
 	for ia, ra := range o.Neighbors() {
 		for ib, rb := range o.Neighbors() {
-			diff := (ib - ia) % 6
-			assert.Equal(t,
-				pid3*(float64(diff)),
-				ra.ToHexFractional().AngleTo(rb.ToHexFractional()),
-				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, diff))
+			assert.True(t,
+				closeEnough(toRad(ia, ib), ra.ToHexFractional().AngleTo(rb.ToHexFractional())),
+				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, ia-ib))
 		}
 	}
 }

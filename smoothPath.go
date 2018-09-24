@@ -4,14 +4,14 @@ import (
 	"math"
 )
 
-// circularArc defines a circular arc in three vectors.
-type circularArc struct {
-	// i is the initial point.
-	i HexFractional
-	// tiu is the tangent unit vector at the initial point.
-	tiu HexFractional
-	// e is the end point.
-	e HexFractional
+// CircularArc defines a circular arc in three vectors.
+type CircularArc struct {
+	// I is the initial point.
+	I HexFractional
+	// T is the tangent unit vector at the initial point.
+	T HexFractional
+	// E is the end point.
+	E HexFractional
 }
 
 // SmoothPath takes as input a slice of connected Hexes.
@@ -47,7 +47,7 @@ func SmoothPath(done <-chan interface{}, ti, te, path []HexFractional) <-chan Cu
 // with ti being the tangent at pi and te being the tangent at pe.
 // This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
 // Modeling" by Ulugbek Khudayarov.
-func biarc(pi, ti, pe, te HexFractional) (arcs []circularArc) {
+func biarc(pi, ti, pe, te HexFractional) (arcs []CircularArc) {
 	// Tangents should be unit vectors.
 	ti = ti.Normalize()
 	te = te.Normalize()
@@ -67,8 +67,8 @@ func biarc(pi, ti, pe, te HexFractional) (arcs []circularArc) {
 
 	// This is the line segment case.
 	if closeEnough(v.Normalize().DotProduct(t), 1.0) {
-		return []circularArc{
-			circularArc{pi, ti, pe},
+		return []CircularArc{
+			CircularArc{pi, ti, pe},
 		}
 	}
 
@@ -79,9 +79,9 @@ func biarc(pi, ti, pe, te HexFractional) (arcs []circularArc) {
 			j = pi.Add(v.Multiply(0.5))
 			tj = ti.Multiply(-1.0)
 
-			return []circularArc{
-				circularArc{pi, ti, j},
-				circularArc{j, tj, pe},
+			return []CircularArc{
+				CircularArc{pi, ti, j},
+				CircularArc{j, tj, pe},
 			}
 		}
 		// Calculate d from 2.6
@@ -104,8 +104,8 @@ func biarc(pi, ti, pe, te HexFractional) (arcs []circularArc) {
 	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
 	tj = v.Subtract(t.Multiply(a)).Multiply(-2 * a)
 
-	return []circularArc{
-		circularArc{pi, ti, j},
-		circularArc{j, tj, pe},
+	return []CircularArc{
+		CircularArc{pi, ti, j},
+		CircularArc{j, tj, pe},
 	}
 }
