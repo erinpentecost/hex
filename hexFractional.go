@@ -119,12 +119,7 @@ func (h HexFractional) Normalize() HexFractional {
 // DotProduct returns the dot product.
 // See https://en.wikipedia.org/wiki/Dot_product
 func (h HexFractional) DotProduct(x HexFractional) float64 {
-	// TODO: this is broke
-	//return h.Q*x.Q + h.R*x.R + h.Q*h.R
 	return h.Q*x.Q + h.R*x.R + h.S()*x.S()
-	// hx, hy := h.ToCartesian()
-	// xx, xy := x.ToCartesian()
-	// return hx*xx + hy*xy
 }
 
 // ProjectOn projects h onto x.

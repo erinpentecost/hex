@@ -91,22 +91,6 @@ func TestRotate(t *testing.T) {
 	}
 }
 
-func TestDotProduct(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-
-	testHexes := hexcoord.HexOrigin().SpiralArea(done, 10)
-	for h := range testHexes {
-		hf := h.ToHexFractional()
-		lensq := hf.Length() * hf.Length()
-		assert.Equal(t, lensq, hf.DotProduct(hf), fmt.Sprintf("%v dot %v (same)", hf, hf))
-		orth := hexcoord.HexFractional{Q: -1.0 * hf.R, R: hf.Q}
-		assert.Equal(t, 0.0, hf.DotProduct(orth), fmt.Sprintf("%v dot %v (orth)", hf, orth))
-		rev := hf.Multiply(-1.0)
-		assert.Equal(t, -1*lensq, hf.DotProduct(rev), fmt.Sprintf("%v dot %v (rev)", hf, rev))
-	}
-}
-
 func TestAngleTo(t *testing.T) {
 
 	o := hexcoord.HexOrigin()

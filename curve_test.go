@@ -34,22 +34,20 @@ func TestLineCurve(t *testing.T) {
 				continue
 			}
 
-			tempT := e.ToHexFractional().Subtract(i.ToHexFractional())
-
-			if tempT.AlmostEquals(origin) {
-				continue
-			}
+			tangent := e.ToHexFractional().Subtract(i.ToHexFractional()).Normalize()
 
 			line := hexcoord.CircularArc{
 				I: i.ToHexFractional(),
-				T: tempT.Normalize(),
+				T: tangent,
 				E: e.ToHexFractional(),
 			}
 
 			curve := line.Curve()
 
 			assertSample(t, 0.0, curve, line.I, line.T, origin)
+			assertSample(t, 0.1, curve, hexcoord.LerpHexFractional(line.I, line.E, 0.1), line.T, origin)
 			assertSample(t, 0.5, curve, hexcoord.LerpHexFractional(line.I, line.E, 0.5), line.T, origin)
+			assertSample(t, 0.75, curve, hexcoord.LerpHexFractional(line.I, line.E, 0.75), line.T, origin)
 			assertSample(t, 1.0, curve, line.E, line.T, origin)
 		}
 	}

@@ -93,6 +93,14 @@ func (ac arcSegment) Length() float64 {
 	return ac.length
 }
 
+// area determines the triangular area between three points.
+// It's not what you'd expect (euclidean). This is just here
+// to aid in testing for collinearity and clockwise/cc detection.
+// http://mathworld.wolfram.com/Collinear.html
+func area(a, b, c HexFractional) float64 {
+	return a.Q*(b.R-c.R) + b.Q*(c.R-a.R) + c.Q*(a.R-b.R)
+}
+
 // newArcSegment creates a circular arc segment curve.
 func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
 
@@ -118,7 +126,7 @@ func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
 	// For a small central angle, the sign of the area for the tiangle works.
 	// I think this is the "scalar triple product"
 	var direction float64
-	clockwise := math.Signbit((pi.Q-center.Q)*(pe.R-center.R) - (pi.R-center.R)*(pe.Q-center.Q))
+	clockwise := math.Signbit(area(pi, center, pe))
 	if longWay {
 		clockwise = !clockwise
 	}
@@ -192,9 +200,7 @@ func JoinCurves(arcs ...CurveSegmenter) CurveSegmenter {
 
 // Curve converts a circular arc into a sample-able curve.
 func (ca CircularArc) Curve() CurveSegmenter {
-	v := ca.E.Subtract(ca.I)
-	vtDot := v.Normalize().DotProduct(ca.T.Normalize())
-	if closeEnough(vtDot, 1.0) {
+	if closeEnough(area(ca.I, ca.T.Add(ca.I), ca.E), 0.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
 		return newLineSegment(ca.I, ca.E)
 	}
