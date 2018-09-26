@@ -25,7 +25,7 @@ type CircularArc struct {
 // Unlike other functions in this package, it assumes hexes
 // are regular.
 // This function can be used to generate smooth movement.
-func SmoothPath(done <-chan interface{}, ti, te, path []HexFractional) <-chan CurveSegmenter {
+func SmoothPath(done <-chan interface{}, ti, te, path []HexFractional) <-chan Curver {
 	panic("not implemented yet")
 	// http://kaj.uniwersytetradom.pl/prace/Biarcs.pdf
 	// https://en.wikipedia.org/wiki/Arc_length

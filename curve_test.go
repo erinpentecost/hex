@@ -12,7 +12,7 @@ func printArc(c hexcoord.CircularArc) string {
 	return fmt.Sprintf("arc(I:%v,%vy; T:%v%v; E:%v%v)", c.I.Q, c.I.R, c.T.Q, c.T.R, c.E.Q, c.E.R)
 }
 
-func assertSample(t *testing.T, f float64, c hexcoord.CurveSegmenter, sp, st, sc hexcoord.HexFractional) {
+func assertSample(t *testing.T, f float64, c hexcoord.Curver, sp, st, sc hexcoord.HexFractional) {
 
 	cp, ct, cc := c.Sample(f)
 	assert.True(t, sp.AlmostEquals(cp), fmt.Sprintf("At sample %v, got position %v but expected %v.", f, cp, sp))
@@ -25,7 +25,7 @@ func TestLineCurve(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	testHexes := hexcoord.AreaToSlice(hexcoord.HexOrigin().SpiralArea(done, 2))
+	testHexes := hexcoord.AreaToSlice(hexcoord.HexOrigin().SpiralArea(done, 4))
 	origin := hexcoord.HexOrigin().ToHexFractional()
 
 	for _, i := range testHexes {

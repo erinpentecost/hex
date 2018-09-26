@@ -4,9 +4,9 @@ import (
 	"math"
 )
 
-// CurveSegmenter is a continuous curve segment.
+// Curver is a continuous curve segment.
 // It can be used to draw a curve.
-type CurveSegmenter interface {
+type Curver interface {
 	// Sample returns a point on the curve.
 	// t is valid for 0 to 1, inclusive.
 	Sample(t float64) (position, tangent, curvature HexFractional)
@@ -15,8 +15,8 @@ type CurveSegmenter interface {
 	Length() float64
 }
 
-// lineSegment is a CurveSegmenter.
-type lineSegment struct {
+// lineCurve is a Curver.
+type lineCurve struct {
 	i      HexFractional
 	e      HexFractional
 	length float64
@@ -25,7 +25,7 @@ type lineSegment struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ls lineSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ls lineCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 	position = LerpHexFractional(ls.i, ls.e, t)
 	tangent = ls.slope
 	curvature = HexFractional{0.0, 0.0}
@@ -33,15 +33,15 @@ func (ls lineSegment) Sample(t float64) (position, tangent, curvature HexFractio
 }
 
 // Length returns the length of the curve.
-func (ls lineSegment) Length() float64 {
+func (ls lineCurve) Length() float64 {
 	return ls.i.DistanceTo(ls.e)
 }
 
-// newLineSegment creates a line segment curve.
+// newLine creates a line segment curve.
 // Inputs are start and end points.
-func newLineSegment(i, e HexFractional) lineSegment {
+func newLine(i, e HexFractional) lineCurve {
 
-	return lineSegment{
+	return lineCurve{
 		i:      i,
 		e:      e,
 		length: i.DistanceTo(e),
@@ -49,8 +49,8 @@ func newLineSegment(i, e HexFractional) lineSegment {
 	}
 }
 
-// arcSegment is a CurveSegmenter.
-type arcSegment struct {
+// arcCurve is a Curver.
+type arcCurve struct {
 	ca              CircularArc
 	center          HexFractional
 	scalarCurvature float64
@@ -62,7 +62,7 @@ type arcSegment struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ac arcSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 	// sweep by some ratio of the maximal central angle to get position.
 	position = ac.ca.I.Rotate(ac.center, t*ac.centralAngle).Multiply(ac.direction)
 
@@ -89,7 +89,7 @@ func (ac arcSegment) Sample(t float64) (position, tangent, curvature HexFraction
 }
 
 // Length returns the length of the curve.
-func (ac arcSegment) Length() float64 {
+func (ac arcCurve) Length() float64 {
 	return ac.length
 }
 
@@ -101,8 +101,8 @@ func area(a, b, c HexFractional) float64 {
 	return a.Q*(b.R-c.R) + b.Q*(c.R-a.R) + c.Q*(a.R-b.R)
 }
 
-// newArcSegment creates a circular arc segment curve.
-func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
+// newArc creates a circular arc segment curve.
+func newArc(pi, tiu, pe HexFractional) arcCurve {
 
 	// Find the center by projecting the midpoint on
 	// the chord to a vector orthogonal to the tangent.
@@ -136,7 +136,7 @@ func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
 		direction = 1.0
 	}
 
-	return arcSegment{
+	return arcCurve{
 		ca:              CircularArc{pi, tiu, pe},
 		center:          center,
 		scalarCurvature: float64(1.0) / radius.Length(),
@@ -147,15 +147,15 @@ func newArcSegment(pi, tiu, pe HexFractional) arcSegment {
 	}
 }
 
-// combinationSegment is a CurveSegmenter.
-type combinationSegment struct {
-	segments []CurveSegmenter
+// combinationCurve is a CurveSegmenter.
+type combinationCurve struct {
+	segments []Curver
 	length   float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (cs combinationSegment) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (cs combinationCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 	lenT := t * cs.length
 	// determine which sub-segment t lands us in.
 	prevLength := float64(0.0)
@@ -175,18 +175,18 @@ func (cs combinationSegment) Sample(t float64) (position, tangent, curvature Hex
 }
 
 // Length returns the length of the curve.
-func (cs combinationSegment) Length() float64 {
+func (cs combinationCurve) Length() float64 {
 	return cs.length
 }
 
 // JoinCurves creates a multipart curve.
-func JoinCurves(arcs ...CurveSegmenter) CurveSegmenter {
+func JoinCurves(arcs ...Curver) Curver {
 	// Don't wrap a single element.
 	if len(arcs) == 1 {
 		return arcs[0]
 	}
 
-	cs := combinationSegment{
+	cs := combinationCurve{
 		segments: arcs,
 		length:   float64(0.0),
 	}
@@ -199,11 +199,11 @@ func JoinCurves(arcs ...CurveSegmenter) CurveSegmenter {
 }
 
 // Curve converts a circular arc into a sample-able curve.
-func (ca CircularArc) Curve() CurveSegmenter {
+func (ca CircularArc) Curve() Curver {
 	if closeEnough(area(ca.I, ca.T.Add(ca.I), ca.E), 0.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
-		return newLineSegment(ca.I, ca.E)
+		return newLine(ca.I, ca.E)
 	}
 	// This is the circular arc case.
-	return newArcSegment(ca.I, ca.T, ca.E)
+	return newArc(ca.I, ca.T, ca.E)
 }
