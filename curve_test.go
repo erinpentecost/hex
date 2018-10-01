@@ -59,13 +59,23 @@ func lerpFloat(a, b, t float64) float64 {
 	return a*(1.0-t) + b*t
 }
 
-func TestArcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
+func TestArcCurve(t *testing.T) {
 
 	done := make(chan interface{})
 	defer close(done)
 
+	testHexes := hexcoord.AreaToSlice(hexcoord.HexOrigin().SpiralArea(done, 4))
+	for _, i := range testHexes {
+		for r := float64(1.0); r < 3.0; r = r + 0.5 {
+			arcCurve(t, r, i.ToHexFractional())
+		}
+	}
+}
+
+func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
+
 	sampleStep := math.Pi / 5.0
-	radV := hexcoord.HexFractional{1.0, 1.0}.Multiply(radius)
+	radV := hexcoord.HexFractional{Q: 1.0, R: 1.0}.Multiply(radius)
 
 	for ex := float64(0.0); ex < math.Pi*2; ex = ex + sampleStep {
 		for ix := float64(0.0); ix < math.Pi*2; ix = ix + sampleStep {
@@ -73,9 +83,9 @@ func TestArcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 			end := radV.Add(center).Rotate(center, ex)
 			init := radV.Add(center).Rotate(center, ix)
 
-			scalarCurvature := float64(1.0) / radius
+			initTangent := center.Subtract(init).Normalize()
 
-			initTangent := panic("not done")
+			scalarCurvature := float64(1.0) / radius
 
 			arc := hexcoord.CircularArc{
 				I: init,
@@ -83,16 +93,20 @@ func TestArcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 				E: end,
 			}
 
-			curve := line.Curve()
+			curve := arc.Curve()
 
-			// Test ends, which are easy.
-			assertSample(t, 0.0, curve, line.I, line.T, origin)
-			assertSample(t, 1.0, curve, line.E, line.T, origin)
-
-			// Test other points.
-			for s := float64(0.01); s < 1.0; s = s + 0.3 {
+			// Test points.
+			for s := float64(0.0); s <= 1.0; s = s + 0.25 {
 				sPoint := radV.Add(center).Rotate(center, lerpFloat(ix, ex, s))
-				sTan := panic("not done")
+				tangentLine := hexcoord.HexFractional{
+					Q: -1 * sPoint.R,
+					R: sPoint.Q,
+				}
+				dir := float64(1.0)
+				if clockwise {
+					dir = -1.0
+				}
+				sTan := sPoint.Rotate(center, dir).ProjectOn(tangentLine).Normalize()
 				sCurve := center.Subtract(sPoint).Normalize().Multiply(scalarCurvature)
 				assertSample(t, 0.1, curve, sPoint, sTan, sCurve)
 			}

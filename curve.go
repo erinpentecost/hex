@@ -73,15 +73,9 @@ func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 		R: position.Q,
 	}
 
-	// By projecting the end position onto the tangent line,
-	// I get a tangent vector that is pointing toward it.
-	if tangentLine.DotProduct(ac.ca.E) != 0 {
-		tangent = ac.ca.E.ProjectOn(tangentLine).Normalize()
-	} else {
-		// If we are on the end line, we need to use start position
-		// and then reverse.
-		tangent = ac.ca.I.ProjectOn(tangentLine).Multiply(-1).Normalize()
-	}
+	// Project from point further along on the arc onto the tangent line
+	// to get the correct facing for the tangent.
+	tangent = position.Rotate(ac.center, ac.direction).ProjectOn(tangentLine).Normalize()
 
 	// curvature points toward the center of the circle
 	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature * (-1.0))
@@ -147,7 +141,7 @@ func newArc(pi, tiu, pe HexFractional) arcCurve {
 	}
 }
 
-// combinationCurve is a CurveSegmenter.
+// combinationCurve is a Curver.
 type combinationCurve struct {
 	segments []Curver
 	length   float64
@@ -180,18 +174,18 @@ func (cs combinationCurve) Length() float64 {
 }
 
 // JoinCurves creates a multipart curve.
-func JoinCurves(arcs ...Curver) Curver {
+func JoinCurves(curves ...Curver) Curver {
 	// Don't wrap a single element.
-	if len(arcs) == 1 {
-		return arcs[0]
+	if len(curves) == 1 {
+		return curves[0]
 	}
 
 	cs := combinationCurve{
-		segments: arcs,
+		segments: curves,
 		length:   float64(0.0),
 	}
 
-	for _, a := range arcs {
+	for _, a := range curves {
 		cs.length += a.Length()
 	}
 
