@@ -75,7 +75,7 @@ func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 
 	// Project from point further along on the arc onto the tangent line
 	// to get the correct facing for the tangent.
-	tangent = position.Rotate(ac.center, ac.direction).ProjectOn(tangentLine).Normalize()
+	tangent = position.Rotate(ac.center, ac.direction).Subtract(ac.center).ProjectOn(tangentLine.Subtract(ac.center)).Add(ac.center).Normalize()
 
 	// curvature points toward the center of the circle
 	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature * (-1.0))

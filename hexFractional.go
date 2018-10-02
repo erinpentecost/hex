@@ -125,7 +125,15 @@ func (h HexFractional) DotProduct(x HexFractional) float64 {
 // ProjectOn projects h onto x.
 // It returns a vector parallel to x.
 func (h HexFractional) ProjectOn(x HexFractional) HexFractional {
-	return h.Multiply(h.DotProduct(x) / x.DotProduct(x))
+	hx, hy := h.ToCartesian()
+	xx, xy := x.ToCartesian()
+	//a,b dot c,d == ac + bd
+	dot := func(a, b, c, d float64) float64 {
+		return a*c + b*d
+	}
+
+	scalar := dot(hx, hy, xx, xy) / dot(xx, xy, xx, xy)
+	return HexFractionalFromCartesian(scalar*xx, scalar*xy)
 }
 
 // Rotate should move a hex about a center point counterclockwise
