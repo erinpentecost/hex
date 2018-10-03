@@ -9,8 +9,8 @@ import (
 )
 
 func TestHexHashIdentity(t *testing.T) {
-	o1 := hexcoord.HexOrigin()
-	o2 := hexcoord.HexOrigin()
+	o1 := hexcoord.Origin()
+	o2 := hexcoord.Origin()
 	assert.Equal(t, o1, o2, "Origin copy is not equal.")
 
 	p1 := hexcoord.Hex{
@@ -45,12 +45,12 @@ func TestHexAdd(t *testing.T) {
 func TestHexDistance(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	closeHexes := hexcoord.HexOrigin().HexArea(done, 1)
+	closeHexes := hexcoord.Origin().HexArea(done, 1)
 	for h := range closeHexes {
-		if h == hexcoord.HexOrigin() {
-			assert.Equal(t, 0, h.DistanceTo(hexcoord.HexOrigin()))
+		if h == hexcoord.Origin() {
+			assert.Equal(t, 0, h.DistanceTo(hexcoord.Origin()))
 		} else {
-			assert.Equal(t, 1, h.DistanceTo(hexcoord.HexOrigin()), fmt.Sprintf("Hex distance to %v is wrong.", h))
+			assert.Equal(t, 1, h.DistanceTo(hexcoord.Origin()), fmt.Sprintf("Hex distance to %v is wrong.", h))
 		}
 	}
 }
@@ -61,13 +61,13 @@ func testDirectionEquality(t *testing.T, testOrigin hexcoord.Hex) {
 			continue
 		}
 		for d := -9; d < 9; d++ {
-			dh := hexcoord.HexDirection(d).Multiply(a).Add(testOrigin)
+			dh := hexcoord.Direction(d).Multiply(a).Add(testOrigin)
 
-			rh := hexcoord.HexDirection(3 + d).Multiply(-1 * a).Add(testOrigin)
+			rh := hexcoord.Direction(3 + d).Multiply(-1 * a).Add(testOrigin)
 
 			assert.Equal(t, dh, rh, "Reversed distance hexes are not equal.")
 
-			oh := hexcoord.HexDirection(3 + d).Multiply(a).Add(testOrigin)
+			oh := hexcoord.Direction(3 + d).Multiply(a).Add(testOrigin)
 
 			assert.NotEqual(t, dh, oh, fmt.Sprintf("Opposite hexes are equal with d=%v.", d))
 
@@ -79,7 +79,7 @@ func testDirectionEquality(t *testing.T, testOrigin hexcoord.Hex) {
 func TestDirectionEquality(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	testHexes := hexcoord.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		testDirectionEquality(t, h)
 	}
@@ -88,7 +88,7 @@ func TestDirectionEquality(t *testing.T) {
 func TestFractionalConversion(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	testHexes := hexcoord.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		frac := h.ToHexFractional()
 		recast := frac.ToHex()

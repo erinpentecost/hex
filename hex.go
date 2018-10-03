@@ -20,19 +20,19 @@ func (h Hex) ToHexFractional() HexFractional {
 	}
 }
 
-// HexOrigin returns a new hex with origin (0,0) coordinates.
-func HexOrigin() Hex {
+// Origin returns a new hex with origin (0,0) coordinates.
+func Origin() Hex {
 	return Hex{
 		Q: 0,
 		R: 0,
 	}
 }
 
-// HexDirection returns a new hex coord offset from the origin
+// Direction returns a new hex coord offset from the origin
 // in the given direction, which is a number from 0 to 5, inclusive.
 // Positive Q axis is in the 0 direction.
 // Positive R axis is in the 5 direction.
-func HexDirection(direction int) Hex {
+func Direction(direction int) Hex {
 	d := BoundFacing(direction)
 
 	switch d {
@@ -151,7 +151,7 @@ func (h Hex) DistanceTo(x Hex) int {
 
 // Neighbor returns the neighbor in the given directon.
 func (h Hex) Neighbor(direction int) Hex {
-	d := HexDirection(direction)
+	d := Direction(direction)
 	return h.Add(d)
 }
 

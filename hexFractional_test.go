@@ -53,7 +53,7 @@ func TestHexFractionalLength(t *testing.T) {
 func TestHexFractionalNormalize(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	testHexes := hexcoord.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		len := h.ToHexFractional().Normalize().Length()
 		assert.InEpsilonf(t, 1.0, len, 0.0000001, fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
@@ -65,14 +65,14 @@ func TestCartesian(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	testHexes := hexcoord.HexOrigin().HexArea(done, 10)
+	testHexes := hexcoord.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		hf := h.ToHexFractional()
 		converted := hexcoord.HexFractionalFromCartesian(hf.ToCartesian())
 		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("Expected %v, got %v.", hf, converted))
 	}
 
-	ox, oy := hexcoord.HexOrigin().ToHexFractional().ToCartesian()
+	ox, oy := hexcoord.Origin().ToHexFractional().ToCartesian()
 	assert.Equal(t, 0.0, ox, "Origin x is wrong.")
 	assert.Equal(t, 0.0, oy, "Origin y is wrong.")
 }
@@ -83,7 +83,7 @@ func TestRotate(t *testing.T) {
 
 	radianStep := float64(math.Pi / 3.0)
 
-	testHexes := hexcoord.HexOrigin().SpiralArea(done, 10)
+	testHexes := hexcoord.Origin().SpiralArea(done, 10)
 	for h := range testHexes {
 		hf := h.ToHexFractional()
 		for i, n := range h.Neighbors() {
@@ -97,7 +97,7 @@ func TestRotate(t *testing.T) {
 
 func TestAngleTo(t *testing.T) {
 
-	o := hexcoord.HexOrigin()
+	o := hexcoord.Origin()
 
 	pid3 := math.Pi / 3.0
 	toRad := func(a, b int) float64 {

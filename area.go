@@ -83,7 +83,7 @@ func (h Hex) RingArea(done <-chan interface{}, radius int) <-chan Hex {
 		if radius == 0 {
 			hgen <- h
 		} else {
-			ringH := h.Add(HexDirection(4).Multiply(radius))
+			ringH := h.Add(Direction(4).Multiply(radius))
 			for i := 0; i < 6; i++ {
 				for j := 0; j < radius; j++ {
 					select {

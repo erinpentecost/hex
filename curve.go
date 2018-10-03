@@ -67,7 +67,7 @@ func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 	// sweep by some ratio of the maximal central angle to get position.
 	position = ac.ca.I.Rotate(ac.center, ac.direction*t*ac.centralAngle)
 
-	origin := HexOrigin().ToHexFractional()
+	origin := Origin().ToHexFractional()
 	tangent = position.Subtract(ac.center).Rotate(origin, ac.direction*math.Pi/2).Normalize()
 
 	// curvature points toward the center of the circle

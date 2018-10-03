@@ -11,8 +11,8 @@ func TestAreaSpiralVsHexEqual(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 	for i := 0; i <= 5; i++ {
-		area1 := hexcoord.HexOrigin().SpiralArea(done, i)
-		area2 := hexcoord.HexOrigin().HexArea(done, i)
+		area1 := hexcoord.Origin().SpiralArea(done, i)
+		area2 := hexcoord.Origin().HexArea(done, i)
 
 		assert.True(t, hexcoord.AreaEqual(area1, area2), "Areas are not equal.")
 	}
@@ -21,10 +21,10 @@ func TestAreaSpiralVsHexEqual(t *testing.T) {
 func TestAreaSpiralVsRingEqual(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	area1 := hexcoord.HexOrigin().SpiralArea(done, 5)
-	area2 := hexcoord.HexOrigin().RingArea(done, 0)
+	area1 := hexcoord.Origin().SpiralArea(done, 5)
+	area2 := hexcoord.Origin().RingArea(done, 0)
 	for i := 0; i <= 5; i++ {
-		area2 = hexcoord.AreaUnion(done, area2, hexcoord.HexOrigin().RingArea(done, i))
+		area2 = hexcoord.AreaUnion(done, area2, hexcoord.Origin().RingArea(done, i))
 	}
 
 	assert.True(t, hexcoord.AreaEqual(area1, area2), "Areas are not equal.")
@@ -34,7 +34,7 @@ func TestAreaSum(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	area1 := hexcoord.HexOrigin().SpiralArea(done, 5)
+	area1 := hexcoord.Origin().SpiralArea(done, 5)
 
 	area2 := make(chan (<-chan hexcoord.Hex))
 
@@ -42,7 +42,7 @@ func TestAreaSum(t *testing.T) {
 		defer close(area2)
 
 		for i := 0; i <= 5; i++ {
-			area2 <- hexcoord.HexOrigin().RingArea(done, i)
+			area2 <- hexcoord.Origin().RingArea(done, i)
 		}
 	}()
 
@@ -53,7 +53,7 @@ func TestAreaFlatMap(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	line := hexcoord.AreaToSlice(hexcoord.HexOrigin().LineArea(done, hexcoord.Hex{
+	line := hexcoord.AreaToSlice(hexcoord.Origin().LineArea(done, hexcoord.Hex{
 		Q: 14,
 		R: 14,
 	}))
@@ -83,10 +83,10 @@ func TestAreaFlatMap(t *testing.T) {
 func TestAreaEqual(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	area1 := hexcoord.HexOrigin().RingArea(done, 1)
-	area2 := hexcoord.HexOrigin().RingArea(done, 1)
-	area3 := hexcoord.HexOrigin().RingArea(done, 1)
-	area4 := hexcoord.HexOrigin().RingArea(done, 2)
+	area1 := hexcoord.Origin().RingArea(done, 1)
+	area2 := hexcoord.Origin().RingArea(done, 1)
+	area3 := hexcoord.Origin().RingArea(done, 1)
+	area4 := hexcoord.Origin().RingArea(done, 2)
 
 	assert.True(t, hexcoord.AreaEqual(area1, area2), "Areas are not equal.")
 	assert.False(t, hexcoord.AreaEqual(area4, area3), "Areas are equal.")
@@ -97,22 +97,22 @@ func TestAreaIntersection(t *testing.T) {
 	defer close(done)
 
 	assert.True(t,
-		hexcoord.AreaEqual(hexcoord.HexOrigin().HexArea(done, 10), hexcoord.HexOrigin().HexArea(done, 10)),
+		hexcoord.AreaEqual(hexcoord.Origin().HexArea(done, 10), hexcoord.Origin().HexArea(done, 10)),
 		"Areas are not equal.")
 
 	identity := hexcoord.AreaIntersection(done,
-		hexcoord.HexOrigin().HexArea(done, 10),
-		hexcoord.HexOrigin().HexArea(done, 10))
+		hexcoord.Origin().HexArea(done, 10),
+		hexcoord.Origin().HexArea(done, 10))
 
 	assert.True(t,
-		hexcoord.AreaEqual(hexcoord.HexOrigin().HexArea(done, 10), identity),
+		hexcoord.AreaEqual(hexcoord.Origin().HexArea(done, 10), identity),
 		"Intersection failed on matched input.")
 
 	ringCheck := hexcoord.AreaIntersection(done,
-		hexcoord.HexOrigin().RingArea(done, 4),
-		hexcoord.HexOrigin().HexArea(done, 10))
+		hexcoord.Origin().RingArea(done, 4),
+		hexcoord.Origin().HexArea(done, 10))
 
 	assert.True(t,
-		hexcoord.AreaEqual(ringCheck, hexcoord.HexOrigin().RingArea(done, 4)),
+		hexcoord.AreaEqual(ringCheck, hexcoord.Origin().RingArea(done, 4)),
 		"Intersection failed with unmatched input.")
 }

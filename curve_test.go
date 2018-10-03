@@ -26,8 +26,8 @@ func TestLineCurve(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	testHexes := hexcoord.AreaToSlice(hexcoord.HexOrigin().SpiralArea(done, 4))
-	origin := hexcoord.HexOrigin().ToHexFractional()
+	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().SpiralArea(done, 4))
+	origin := hexcoord.Origin().ToHexFractional()
 
 	for _, i := range testHexes {
 		for _, e := range testHexes {
@@ -61,7 +61,7 @@ func lerpFloat(a, b, t float64) float64 {
 
 func TestUnitCircle(t *testing.T) {
 
-	origin := hexcoord.HexOrigin().ToHexFractional()
+	origin := hexcoord.Origin().ToHexFractional()
 	firstPoint := hexcoord.HexFractional{Q: 0, R: -1}.Normalize()
 
 	getTan := func(a hexcoord.HexFractional) hexcoord.HexFractional {
@@ -91,34 +91,42 @@ func TestUnitCircle(t *testing.T) {
 }
 
 func TestArcCurve(t *testing.T) {
-	//arcCurve(t, 0.0, hexcoord.HexOrigin().ToHexFractional())
-	/*done := make(chan interface{})
+	done := make(chan interface{})
 	defer close(done)
 
-	testHexes := hexcoord.AreaToSlice(hexcoord.HexOrigin().SpiralArea(done, 4))
+	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().SpiralArea(done, 4))
 	for _, i := range testHexes {
-		for r := float64(1.0); r < 3.0; r = r + 0.5 {
+		for r := float64(1.0); r < 333.0; r = r + 100 {
 			arcCurve(t, r, i.ToHexFractional())
 		}
-	}*/
+	}
 }
 
 func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 
 	sampleStep := math.Pi / 5.0
 	radV := hexcoord.HexFractional{Q: 1.0, R: 1.0}.Multiply(radius)
+	origin := hexcoord.Origin().ToHexFractional()
+
+	getTan := func(a, center hexcoord.HexFractional, clockwise bool) hexcoord.HexFractional {
+		dir := 1.0
+		if clockwise {
+			dir = -1.0
+		}
+		return a.Subtract(center).Rotate(origin, dir*math.Pi/2).Normalize()
+	}
 
 	for ex := float64(0.0); ex < math.Pi*2; ex = ex + sampleStep {
 		for ix := float64(0.0); ix < math.Pi*2; ix = ix + sampleStep {
+			if ex == ix {
+				continue
+			}
+
 			clockwise := ix < ex
 			end := radV.Add(center).Rotate(center, ex)
 			init := radV.Add(center).Rotate(center, ix)
 
-			tangentLine := hexcoord.HexFractional{
-				Q: -1 * init.R,
-				R: init.Q,
-			}
-			initTangent := init.ProjectOn(tangentLine).Normalize()
+			initTangent := getTan(init, center, clockwise)
 
 			scalarCurvature := float64(1.0) / radius
 
@@ -133,15 +141,8 @@ func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 			// Test points.
 			for s := float64(0.0); s <= 1.0; s = s + 0.25 {
 				sPoint := radV.Add(center).Rotate(center, lerpFloat(ix, ex, s))
-				tangentLine := hexcoord.HexFractional{
-					Q: -1 * sPoint.R,
-					R: sPoint.Q,
-				}
-				dir := float64(1.0)
-				if clockwise {
-					dir = -1.0
-				}
-				sTan := sPoint.Rotate(center, dir).ProjectOn(tangentLine).Normalize()
+
+				sTan := getTan(sPoint, center, clockwise)
 				sCurve := center.Subtract(sPoint).Normalize().Multiply(scalarCurvature)
 				assertSample(t, arc, s, curve, sPoint, sTan, sCurve)
 			}

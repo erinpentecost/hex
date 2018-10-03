@@ -50,7 +50,7 @@ func concentricMaze(maxSize int) <-chan hexcoord.Hex {
 		for i := 2; i < maxSize; i = i + 2 {
 			opening := i
 			cur := 0
-			for h := range hexcoord.HexOrigin().RingArea(done, i) {
+			for h := range hexcoord.Origin().RingArea(done, i) {
 				cur++
 				if opening != cur {
 					mazeGen <- h
@@ -65,15 +65,15 @@ func concentricMaze(maxSize int) <-chan hexcoord.Hex {
 // directPath sets up a test in a map with uniform hex costs.
 func directPath(t *testing.T, target hexcoord.Hex) {
 	emptyMap := newPatherImp(0)
-	path, cost, found := hexcoord.HexOrigin().PathTo(target, emptyMap)
+	path, cost, found := hexcoord.Origin().PathTo(target, emptyMap)
 
 	if found {
-		assert.Equal(t, hexcoord.HexOrigin().DistanceTo(target)+1, len(path), fmt.Sprintf("Path to %v (%v away, %v cost) has unexpected length.", target, target.Length(), cost))
+		assert.Equal(t, hexcoord.Origin().DistanceTo(target)+1, len(path), fmt.Sprintf("Path to %v (%v away, %v cost) has unexpected length.", target, target.Length(), cost))
 
-		assert.Equal(t, hexcoord.HexOrigin().DistanceTo(target), cost, fmt.Sprintf("Path to %v (%v away) has unexpected cost.", target, target.Length()))
+		assert.Equal(t, hexcoord.Origin().DistanceTo(target), cost, fmt.Sprintf("Path to %v (%v away) has unexpected cost.", target, target.Length()))
 
 		if len(path) > 0 {
-			assert.Equal(t, hexcoord.HexOrigin(), path[0], "First element in path is not the start point.")
+			assert.Equal(t, hexcoord.Origin(), path[0], "First element in path is not the start point.")
 			assert.Equal(t, target, path[len(path)-1], "Last element in path is not target point.")
 		}
 	} else {
@@ -86,7 +86,7 @@ func TestDirectPaths(t *testing.T) {
 	defer close(done)
 
 	for i := 1; i < 11; i = i + 2 {
-		for h := range hexcoord.HexOrigin().RingArea(done, i) {
+		for h := range hexcoord.Origin().RingArea(done, i) {
 			directPath(t, h)
 		}
 	}
@@ -95,11 +95,11 @@ func TestDirectPaths(t *testing.T) {
 // indirectPath sets up a test in a map with different hex costs.
 func indirectPath(t *testing.T, target hexcoord.Hex) {
 	mazeMap := newPatherImp(target.Length() + 4)
-	path, _, found := hexcoord.HexOrigin().PathTo(target, mazeMap)
+	path, _, found := hexcoord.Origin().PathTo(target, mazeMap)
 
 	if found {
 		if len(path) > 0 {
-			assert.Equal(t, hexcoord.HexOrigin(), path[0], "First element in path is not the start point.")
+			assert.Equal(t, hexcoord.Origin(), path[0], "First element in path is not the start point.")
 			assert.Equal(t, target, path[len(path)-1], "Last element in path is not target point.")
 		}
 	} else {
@@ -112,7 +112,7 @@ func TestIndirectPaths(t *testing.T) {
 	defer close(done)
 
 	for i := 1; i < 11; i = i + 2 {
-		for h := range hexcoord.HexOrigin().RingArea(done, i) {
+		for h := range hexcoord.Origin().RingArea(done, i) {
 			indirectPath(t, h)
 		}
 	}
