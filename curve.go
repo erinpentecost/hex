@@ -9,6 +9,7 @@ import (
 type Curver interface {
 	// Sample returns a point on the curve.
 	// t is valid for 0 to 1, inclusive.
+	// curvature points toward the "center" of the curve.
 	Sample(t float64) (position, tangent, curvature HexFractional)
 
 	// Length returns the length of the curve.
@@ -71,7 +72,7 @@ func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 	tangent = position.Subtract(ac.center).Rotate(origin, ac.direction*math.Pi/2).Normalize()
 
 	// curvature points toward the center of the circle
-	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature)
+	curvature = ac.center.Subtract(position).Normalize().Multiply(ac.scalarCurvature)
 	return
 }
 

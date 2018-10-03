@@ -69,7 +69,7 @@ func TestUnitCircle(t *testing.T) {
 	}
 
 	getCur := func(a hexcoord.HexFractional) hexcoord.HexFractional {
-		return a
+		return a.Rotate(origin, math.Pi).Normalize()
 	}
 
 	arc := hexcoord.CircularArc{
@@ -99,7 +99,7 @@ func TestReverseUnitCircle(t *testing.T) {
 	}
 
 	getCur := func(a hexcoord.HexFractional) hexcoord.HexFractional {
-		return a
+		return a.Rotate(origin, math.Pi).Normalize()
 	}
 
 	arc := hexcoord.CircularArc{
@@ -123,12 +123,13 @@ func TestArcCurve(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	/*testHexes := hexcoord.AreaToSlice(hexcoord.Origin().SpiralArea(done, 4))
+	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 2))
+	radii := [...]float64{1.0, 800.0}
 	for _, i := range testHexes {
-		for r := float64(1.0); r < 333.0; r = r + 100 {
+		for _, r := range radii {
 			arcCurve(t, r, i.ToHexFractional())
 		}
-	}*/
+	}
 }
 
 func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
