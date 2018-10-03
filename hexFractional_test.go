@@ -71,6 +71,10 @@ func TestCartesian(t *testing.T) {
 		converted := hexcoord.HexFractionalFromCartesian(hf.ToCartesian())
 		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("Expected %v, got %v.", hf, converted))
 	}
+
+	ox, oy := hexcoord.HexOrigin().ToHexFractional().ToCartesian()
+	assert.Equal(t, 0.0, ox, "Origin x is wrong.")
+	assert.Equal(t, 0.0, oy, "Origin y is wrong.")
 }
 
 func TestRotate(t *testing.T) {

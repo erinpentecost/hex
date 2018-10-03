@@ -62,11 +62,12 @@ func lerpFloat(a, b, t float64) float64 {
 func TestUnitCircle(t *testing.T) {
 
 	origin := hexcoord.HexOrigin().ToHexFractional()
+	firstPoint := hexcoord.HexFractional{Q: 0, R: -1}.Normalize()
 
 	arc := hexcoord.CircularArc{
-		I: hexcoord.HexFractional{Q: 0, R: -1},
-		T: hexcoord.HexFractional{Q: 2, R: -1}.Normalize(),
-		E: hexcoord.HexFractional{Q: 1, R: 0},
+		I: firstPoint,
+		T: firstPoint.Rotate(origin, -1.0*math.Pi/2).Normalize(),
+		E: firstPoint.Rotate(origin, -1.0*math.Pi/3).Normalize(),
 	}
 
 	curve := arc.Curve()

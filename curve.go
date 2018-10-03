@@ -95,15 +95,46 @@ func area(a, b, c HexFractional) float64 {
 	return a.Q*(b.R-c.R) + b.Q*(c.R-a.R) + c.Q*(a.R-b.R)
 }
 
+// intersection gets the intersecting point described by two
+// lines. This is all in cartersian coordinates.
+func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
+	if math.IsNaN(am) || math.IsInf(am, 0) {
+		ix = ax
+		iy = bm*(ix-bx) + by
+		return
+	} else if math.IsNaN(bm) || math.IsInf(bm, 0) {
+		ix = bx
+		iy = am*(ix-ax) + ay
+		return
+	}
+
+	ix = (am*ax - bm*bx - ay + by) / (am - bm)
+	iy = am*ix - am*bx + by
+	return
+}
+
 // newArc creates a circular arc segment curve.
 func newArc(pi, tiu, pe HexFractional) arcCurve {
+	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
+	piX, piY := pi.ToCartesian()
+
+	midX, midY := LerpHexFractional(pi, pe, 0.5).ToCartesian()
+
+	tiuX, tiuY := tiu.ToCartesian()
+	tiuOrthogonalSlope := -1.0 * tiuX / tiuY
+
+	chordX, chordY := pe.Subtract(pi).ToCartesian()
+	chordOrthogonalSlope := -1.0 * chordX / chordY
+
+	// Find the intersection of two lines:
+	// pi with slope tanOrth
+	// mid with slope chordOrth
+	// This gets the circle center point.
+	centerX, centerY := intersection(piX, piY, tiuOrthogonalSlope, midX, midY, chordOrthogonalSlope)
 
 	// Find the center by projecting the midpoint on
 	// the chord to a vector orthogonal to the tangent.
-	center := LerpHexFractional(pi, pe, 0.5).ProjectOn(HexFractional{
-		Q: -1 * tiu.R,
-		R: tiu.Q,
-	}.Add(pi))
+	center := HexFractionalFromCartesian(centerX, centerY)
 
 	radius := pi.Subtract(center)
 

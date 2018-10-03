@@ -155,9 +155,14 @@ func (h HexFractional) AngleTo(x HexFractional) float64 {
 	hi := complex(h.ToCartesian())
 	xi := complex(x.ToCartesian())
 
+	// There are a lot of intermediate variables here
+	// because I encountered a compiler error otherwise.
 	r := xi / hi
+	rr := real(r)
 
-	return math.Acos(real(r))
+	rr = math.Min(math.Max(rr, -1.0), 1.0)
+
+	return math.Acos(rr)
 }
 
 var sqrt3 float64
