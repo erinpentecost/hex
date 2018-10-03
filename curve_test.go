@@ -64,21 +64,29 @@ func TestUnitCircle(t *testing.T) {
 	origin := hexcoord.HexOrigin().ToHexFractional()
 	firstPoint := hexcoord.HexFractional{Q: 0, R: -1}.Normalize()
 
+	getTan := func(a hexcoord.HexFractional) hexcoord.HexFractional {
+		return a.Rotate(origin, -1.0*math.Pi/2).Normalize()
+	}
+
+	getCur := func(a hexcoord.HexFractional) hexcoord.HexFractional {
+		return a
+	}
+
 	arc := hexcoord.CircularArc{
 		I: firstPoint,
-		T: firstPoint.Rotate(origin, -1.0*math.Pi/2).Normalize(),
+		T: getTan(firstPoint),
 		E: firstPoint.Rotate(origin, -1.0*math.Pi/3).Normalize(),
 	}
 
 	curve := arc.Curve()
 
 	// Test first point.
-	assertSample(t, arc, 0.0, curve, arc.I, arc.T, arc.I.Rotate(origin, math.Pi))
+	assertSample(t, arc, 0.0, curve, arc.I, arc.T, getCur(arc.I))
 	// Test last point.
-	assertSample(t, arc, 1.0, curve, arc.I, hexcoord.HexFractional{Q: -1, R: 2}.Normalize(), arc.E.Rotate(origin, math.Pi))
+	assertSample(t, arc, 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
 	// Test mid point.
 	mPos := hexcoord.LerpHexFractional(arc.I, arc.E, 0.5).Normalize()
-	assertSample(t, arc, 0.5, curve, mPos, hexcoord.HexFractional{Q: 1, R: 1}.Normalize(), mPos.Rotate(origin, math.Pi))
+	assertSample(t, arc, 0.5, curve, mPos, getTan(mPos), getCur(mPos))
 
 }
 

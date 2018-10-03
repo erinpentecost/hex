@@ -63,22 +63,15 @@ type arcCurve struct {
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
 func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+
 	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.ca.I.Rotate(ac.center, t*ac.centralAngle).Multiply(ac.direction)
+	position = ac.ca.I.Rotate(ac.center, ac.direction*t*ac.centralAngle)
 
-	// This should be perpendicular to the radius,
-	// but the direction may be wrong.
-	tangentLine := HexFractional{
-		Q: -1 * position.R,
-		R: position.Q,
-	}
-
-	// Project from point further along on the arc onto the tangent line
-	// to get the correct facing for the tangent.
-	tangent = position.Rotate(ac.center, ac.direction).Subtract(ac.center).ProjectOn(tangentLine.Subtract(ac.center)).Add(ac.center).Normalize()
+	origin := HexOrigin().ToHexFractional()
+	tangent = position.Subtract(ac.center).Rotate(origin, ac.direction*math.Pi/2).Normalize()
 
 	// curvature points toward the center of the circle
-	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature * (-1.0))
+	curvature = position.Subtract(ac.center).Normalize().Multiply(ac.scalarCurvature)
 	return
 }
 
