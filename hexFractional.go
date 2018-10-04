@@ -1,6 +1,7 @@
 package hexcoord
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -39,6 +40,11 @@ func (h HexFractional) ToHex() Hex {
 		Q: q,
 		R: r,
 	}
+}
+
+// ToString converts the hex to a string.
+func (h HexFractional) ToString() string {
+	return fmt.Sprintf("{%.3f, %.3f, %.3f}", h.Q, h.R, h.S())
 }
 
 func round(f float64) int {
