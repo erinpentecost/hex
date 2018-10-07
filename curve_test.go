@@ -81,12 +81,12 @@ func TestUnitCircle(t *testing.T) {
 	curve := arc.Curve()
 
 	// Test first point.
-	assertSample(t, arc, 0.0, curve, arc.I, arc.T, getCur(arc.I))
+	assertSample(t, arc.ToString(), 0.0, curve, arc.I, arc.T, getCur(arc.I))
 	// Test last point.
-	assertSample(t, arc, 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
+	assertSample(t, arc.ToString(), 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
 	// Test mid point.
 	mPos := hexcoord.LerpHexFractional(arc.I, arc.E, 0.5).Normalize()
-	assertSample(t, arc, 0.5, curve, mPos, getTan(mPos), getCur(mPos))
+	assertSample(t, arc.ToString(), 0.5, curve, mPos, getTan(mPos), getCur(mPos))
 }
 
 func TestReverseUnitCircle(t *testing.T) {
@@ -111,12 +111,12 @@ func TestReverseUnitCircle(t *testing.T) {
 	curve := arc.Curve()
 
 	// Test first point.
-	assertSample(t, arc, 0.0, curve, arc.I, arc.T, getCur(arc.I))
+	assertSample(t, arc.ToString(), 0.0, curve, arc.I, arc.T, getCur(arc.I))
 	// Test last point.
-	assertSample(t, arc, 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
+	assertSample(t, arc.ToString(), 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
 	// Test mid point.
 	mPos := hexcoord.LerpHexFractional(arc.I, arc.E, 0.5).Normalize().Rotate(origin, math.Pi)
-	assertSample(t, arc, 0.5, curve, mPos, getTan(mPos), getCur(mPos))
+	assertSample(t, arc.ToString(), 0.5, curve, mPos, getTan(mPos), getCur(mPos))
 }
 
 func TestArcCurve(t *testing.T) {
@@ -149,6 +149,8 @@ func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 		return a.Subtract(center).Rotate(origin, dir*math.Pi/2).Normalize()
 	}
 
+	testCount := 0
+
 	for ex := float64(0.0); ex < math.Pi*2; ex = ex + sampleStep {
 		for ix := float64(0.0); ix < math.Pi*2; ix = ix + sampleStep {
 			if ex == ix {
@@ -173,11 +175,12 @@ func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
 
 			// Test points.
 			for s := float64(0.0); s <= 1.0; s = s + 0.25 {
+				testCount++
 				sPoint := radV.Add(center).Rotate(center, lerpFloat(ix, ex, s))
 
 				sTan := getTan(sPoint, center, clockwise)
 				sCurve := center.Subtract(sPoint).Normalize().Multiply(scalarCurvature).Rotate(origin, math.Pi)
-				assertSample(t, arc, s, curve, sPoint, sTan, sCurve)
+				assertSample(t, fmt.Sprintf("%v/%v", arc.ToString(), testCount), s, curve, sPoint, sTan, sCurve)
 			}
 
 		}

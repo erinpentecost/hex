@@ -92,6 +92,12 @@ func area(a, b, c HexFractional) float64 {
 // intersection gets the intersecting point described by two
 // lines. This is all in cartersian coordinates.
 func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
+	// y = am (x − ax) + ay
+	// x = (ax*am - ay + y)/am and m!=0
+	// x,y are the coordinates of any point on the line
+	// am is the slope of the line
+	// ax, ay are the x and y coordinates of the given point P that defines the line
+
 	if math.IsNaN(am) || math.IsInf(am, 0) {
 		ix = ax
 		iy = bm*(ix-bx) + by
@@ -102,21 +108,29 @@ func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
 		return
 	}
 
-	ix = (am*ax - bm*bx - ay + by) / (am - bm)
-	iy = am*ix - am*bx + by
+	// am (x − ax) + ay = bm (x − bx) + by
+	// a (x − b) + c = m (x − n) + o
+	// x = (a b - c - m n + o)/(a - m) and a!=m
+	// x = (am*ax - ay - bm*bx + by)/(am - bm) and a!=m
+	// y = am (x − ax) + ay
+	// y = a (x − b) + c
+
+	ix = (am*ax - ay - bm*bx + by) / (am - bm)
+	iy = am*ix - am*ax + ay
 	return
 }
 
 // newArc creates a circular arc segment curve.
 func newArc(pi, tiu, pe HexFractional) arcCurve {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
+
+	// First line segment (looks good)
 	piX, piY := pi.ToCartesian()
-
-	midX, midY := LerpHexFractional(pi, pe, 0.5).ToCartesian()
-
 	tiuX, tiuY := tiu.ToCartesian()
 	tiuOrthogonalSlope := -1.0 * tiuX / tiuY
 
+	// Second line segment (booo)
+	midX, midY := LerpHexFractional(pi, pe, 0.5).ToCartesian()
 	chordX, chordY := pe.Subtract(pi).ToCartesian()
 	chordOrthogonalSlope := -1.0 * chordX / chordY
 
@@ -124,6 +138,9 @@ func newArc(pi, tiu, pe HexFractional) arcCurve {
 	// pi with slope tanOrth
 	// mid with slope chordOrth
 	// This gets the circle center point.
+	//   -2.414 = (x-1.478) / (y+0.612)
+	//   -1 = (x-1.224) / (y+1.224)
+	//    intersection should be 0,0
 	centerX, centerY := intersection(piX, piY, tiuOrthogonalSlope, midX, midY, chordOrthogonalSlope)
 
 	// Find the center by projecting the midpoint on

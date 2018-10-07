@@ -1,6 +1,7 @@
 package hexcoord
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -12,6 +13,11 @@ type CircularArc struct {
 	T HexFractional
 	// E is the end point.
 	E HexFractional
+}
+
+// ToString converts the arc to a string.
+func (ca CircularArc) ToString() string {
+	return fmt.Sprintf("{I: %v, T: %v, E: %v}", ca.I.ToString(), ca.T.ToString(), ca.E.ToString())
 }
 
 // SmoothPath takes as input a slice of connected Hexes.
