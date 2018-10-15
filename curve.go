@@ -16,8 +16,8 @@ type Curver interface {
 	Length() float64
 }
 
-// lineCurve is a Curver.
-type lineCurve struct {
+// LineCurve is a Curver.
+type LineCurve struct {
 	i      HexFractional
 	e      HexFractional
 	length float64
@@ -26,7 +26,7 @@ type lineCurve struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ls lineCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ls LineCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 	position = LerpHexFractional(ls.i, ls.e, t)
 	tangent = ls.slope
 	curvature = HexFractional{0.0, 0.0}
@@ -34,15 +34,15 @@ func (ls lineCurve) Sample(t float64) (position, tangent, curvature HexFractiona
 }
 
 // Length returns the length of the curve.
-func (ls lineCurve) Length() float64 {
+func (ls LineCurve) Length() float64 {
 	return ls.i.DistanceTo(ls.e)
 }
 
 // newLine creates a line segment curve.
 // Inputs are start and end points.
-func newLine(i, e HexFractional) lineCurve {
+func newLine(i, e HexFractional) LineCurve {
 
-	return lineCurve{
+	return LineCurve{
 		i:      i,
 		e:      e,
 		length: i.DistanceTo(e),
@@ -50,34 +50,34 @@ func newLine(i, e HexFractional) lineCurve {
 	}
 }
 
-// arcCurve is a Curver.
-type arcCurve struct {
+// ArcCurve is a Curver.
+type ArcCurve struct {
 	ca              CircularArc
-	center          HexFractional
+	Center          HexFractional
 	scalarCurvature float64
-	centralAngle    float64
+	CentralAngle    float64
 	length          float64
-	longWay         bool
-	direction       float64
+	LongWay         bool
+	Direction       float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ac arcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 
 	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.ca.I.Rotate(ac.center, ac.direction*t*ac.centralAngle)
+	position = ac.ca.I.Rotate(ac.Center, ac.Direction*t*ac.CentralAngle)
 
 	origin := Origin().ToHexFractional()
-	tangent = position.Subtract(ac.center).Rotate(origin, ac.direction*math.Pi/2).Normalize()
+	tangent = position.Subtract(ac.Center).Rotate(origin, ac.Direction*math.Pi/2).Normalize()
 
 	// curvature points toward the center of the circle
-	curvature = ac.center.Subtract(position).Normalize().Multiply(ac.scalarCurvature)
+	curvature = ac.Center.Subtract(position).Normalize().Multiply(ac.scalarCurvature)
 	return
 }
 
 // Length returns the length of the curve.
-func (ac arcCurve) Length() float64 {
+func (ac ArcCurve) Length() float64 {
 	return ac.length
 }
 
@@ -121,17 +121,17 @@ func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
 }
 
 // newArc creates a circular arc segment curve.
-func newArc(pi, tiu, pe HexFractional) arcCurve {
+func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
 
-	// First line segment (looks good)
+	// First line segment
 	piX, piY := pi.ToCartesian()
 	tiuX, tiuY := tiu.ToCartesian()
 	tiuOrthogonalSlope := -1.0 * tiuX / tiuY
 
-	// Second line segment (booo)
+	// Second line segment
 	midX, midY := LerpHexFractional(pi, pe, 0.5).ToCartesian()
-	chordX, chordY := pe.Subtract(pi).ToCartesian()
+	chordX, chordY := pi.Subtract(pe).ToCartesian()
 	chordOrthogonalSlope := -1.0 * chordX / chordY
 
 	// Find the intersection of two lines:
@@ -142,9 +142,6 @@ func newArc(pi, tiu, pe HexFractional) arcCurve {
 	//   -1 = (x-1.224) / (y+1.224)
 	//    intersection should be 0,0
 	centerX, centerY := intersection(piX, piY, tiuOrthogonalSlope, midX, midY, chordOrthogonalSlope)
-
-	// Find the center by projecting the midpoint on
-	// the chord to a vector orthogonal to the tangent.
 	center := HexFractionalFromCartesian(centerX, centerY)
 
 	radius := pi.Subtract(center)
@@ -153,7 +150,7 @@ func newArc(pi, tiu, pe HexFractional) arcCurve {
 	centralAngle := radius.AngleTo(pe.Subtract(center))
 	longWay := false
 	// But I may need the complimentary angle instead.
-	if pi.Add(tiu).Subtract(center).AngleTo(pe.Subtract(center)) > centralAngle {
+	if radius.Add(tiu).AngleTo(pe.Subtract(center)) > centralAngle {
 		centralAngle = 2*math.Pi - centralAngle
 		longWay = true
 	}
@@ -162,24 +159,24 @@ func newArc(pi, tiu, pe HexFractional) arcCurve {
 	// For a small central angle, the sign of the area for the tiangle works.
 	// I think this is the "scalar triple product"
 	var direction float64
-	clockwise := math.Signbit(area(pi, center, pe))
+	clockwise := math.Signbit(area(pi, pe, center))
 	if longWay {
 		clockwise = !clockwise
 	}
-	if clockwise {
+	if !clockwise {
 		direction = -1.0
 	} else {
 		direction = 1.0
 	}
 
-	return arcCurve{
+	return ArcCurve{
 		ca:              CircularArc{pi, tiu, pe},
-		center:          center,
+		Center:          center,
 		scalarCurvature: float64(1.0) / radius.Length(),
-		centralAngle:    centralAngle,
+		CentralAngle:    centralAngle,
 		length:          radius.Length() * centralAngle,
-		longWay:         longWay,
-		direction:       direction,
+		LongWay:         longWay,
+		Direction:       direction,
 	}
 }
 

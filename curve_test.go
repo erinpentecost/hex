@@ -65,7 +65,7 @@ func TestUnitCircle(t *testing.T) {
 
 	sampleStep := math.Pi / 6
 
-	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 2))
+	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 1))
 	for _, i := range testHexes {
 		init := i.ToHexFractional().Normalize()
 		for sweep := sampleStep; sweep < math.Pi*2; sweep = sweep + sampleStep {
@@ -80,7 +80,7 @@ func TestUnitCircleReversed(t *testing.T) {
 
 	sampleStep := math.Pi / 6
 
-	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 2))
+	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 1))
 	for _, i := range testHexes {
 		init := i.ToHexFractional().Normalize()
 		for sweep := sampleStep; sweep < math.Pi*2; sweep = sweep + sampleStep {
@@ -115,13 +115,31 @@ func unitCircle(t *testing.T, fp hexcoord.HexFractional, sweepRadians float64, r
 
 	curve := arc.Curve()
 
+	rev := float64(1.0)
+	if reverse {
+		rev = -1.0
+	}
+	note := rev * sweepRadians
+
+	// Make sure center and sweep are ok
+	arcCurve := curve.(hexcoord.ArcCurve)
+	assert.True(t, origin.AlmostEquals(arcCurve.Center), fmt.Sprintf("%v (%.3f): Center is not origin.", arc.ToString(), note))
+	assertCloseEnough(t, sweepRadians, arcCurve.CentralAngle, fmt.Sprintf("%v (%.3f): Angle size is wrong.", arc.ToString(), note))
+	assertCloseEnough(t, rev, arcCurve.Direction, fmt.Sprintf("%v (%.3f): Direction is wrong.", arc.ToString(), note))
+
 	// Test first point.
-	assertSample(t, arc.ToString(), 0.0, curve, arc.I, arc.T, getCur(arc.I))
+	assertSample(t, fmt.Sprintf("%v (%.3f)", arc.ToString(), note), 0.0, curve, arc.I, arc.T, getCur(arc.I))
 	// Test last point.
-	assertSample(t, arc.ToString(), 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
+	assertSample(t, fmt.Sprintf("%v (%.3f)", arc.ToString(), note), 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
 	// Test mid point.
 	mPos := hexcoord.LerpHexFractional(arc.I, arc.E, 0.5).Normalize()
-	assertSample(t, arc.ToString(), 0.5, curve, mPos, getTan(mPos), getCur(mPos))
+	assertSample(t, fmt.Sprintf("%v (%.3f)", arc.ToString(), note), 0.5, curve, mPos, getTan(mPos), getCur(mPos))
+}
+
+func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) {
+	if math.Abs(a-b) > 1e-10 {
+		assert.Equal(t, a, b, msg...)
+	}
 }
 
 func TestArcCurve(t *testing.T) {
@@ -136,7 +154,7 @@ func TestArcCurve(t *testing.T) {
 		}
 	}*/
 
-	arcCurve(t, 1.0, hexcoord.Origin().ToHexFractional())
+	//arcCurve(t, 1.0, hexcoord.Origin().ToHexFractional())
 }
 
 func arcCurve(t *testing.T, radius float64, center hexcoord.HexFractional) {
