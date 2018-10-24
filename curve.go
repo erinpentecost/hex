@@ -68,11 +68,19 @@ type ArcCurve struct {
 	peA             float64
 }
 
+func lerpAngle(a, b, t float64) float64 {
+	return a + t*normalizeAngle(b-a)
+}
+
+func normalizeAngle(a float64) float64 {
+	return a - 2*math.Pi*math.Floor((a+math.Pi)/(2*math.Pi))
+}
+
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
 func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 
-	angle := lerpFloat(ac.piA, ac.peA, t)
+	angle := lerpAngle(ac.piA, ac.peA, t)
 
 	// sweep by some ratio of the maximal central angle to get position.
 	// ptX := ac.cX + ac.radius*math.Cos(angle)
@@ -155,6 +163,7 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	// pi with slope tanOrth
 	// mid with slope chordOrth
 	// This gets the circle center point.
+	// Example:
 	//   -2.414 = (x-1.478) / (y+0.612)
 	//   -1 = (x-1.224) / (y+1.224)
 	//    intersection should be 0,0
