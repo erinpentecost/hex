@@ -57,19 +57,36 @@ type ArcCurve struct {
 	scalarCurvature float64
 	CentralAngle    float64
 	length          float64
-	LongWay         bool
-	Direction       float64
+	radius          float64
+	cX              float64
+	cY              float64
+	piX             float64
+	piY             float64
+	piA             float64
+	peX             float64
+	peY             float64
+	peA             float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
 func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 
-	// sweep by some ratio of the maximal central angle to get position.
-	position = ac.ca.I.Rotate(ac.Center, ac.Direction*t*ac.CentralAngle)
+	angle := lerpFloat(ac.piA, ac.peA, t)
 
-	origin := Origin().ToHexFractional()
-	tangent = position.Subtract(ac.Center).Rotate(origin, ac.Direction*math.Pi/2).Normalize()
+	// sweep by some ratio of the maximal central angle to get position.
+	// ptX := ac.cX + ac.radius*math.Cos(angle)
+	// ptY := ac.cY + ac.radius*math.Sin(angle)
+	position = HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize().Multiply(ac.radius).Add(ac.Center)
+
+	// and tangent...
+	tAngle := angle + (math.Pi / 2.0)
+	if ac.piA > ac.peA {
+		tAngle = angle - (math.Pi / 2.0)
+	}
+	ttX := math.Cos(tAngle)
+	ttY := math.Sin(tAngle)
+	tangent = HexFractionalFromCartesian(ttX, ttY).Normalize()
 
 	// curvature points toward the center of the circle
 	curvature = ac.Center.Subtract(position).Normalize().Multiply(ac.scalarCurvature)
@@ -145,50 +162,47 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	center := HexFractionalFromCartesian(centerX, centerY)
 
 	radius := pi.Subtract(center)
+	r := radius.Length()
 
-	// This gets the internal angle 100% of the time.
-	centralAngle := radius.AngleTo(pe.Subtract(center))
-	longWay := false
-	// But I may need the complimentary angle instead.
-	if radius.Add(tiu).AngleTo(pe.Subtract(center)) > centralAngle {
-		centralAngle = 2*math.Pi - centralAngle
-		longWay = true
+	// Get start and stop angles
+	getAngle := func(x, y float64) float64 {
+		denom := math.Sqrt(math.Pow(x-centerX, 2.0) + math.Pow(y-centerY, 2.0))
+		return math.Acos((x - centerX) / denom)
 	}
+	// https://math.stackexchange.com/questions/1144159/parametric-equation-of-an-arc-with-given-radius-and-two-points
+	piA := getAngle(piX, piY)
+	peX, peY := pe.ToCartesian()
+	peA := getAngle(peX, peY)
 
-	// Determine clockwise vs counterclockwise
-	// For a small central angle, the sign of the area for the tiangle works.
-	// I think this is the "scalar triple product"
-	var direction float64
-	clockwise := math.Signbit(area(pi, pe, center))
-	if longWay {
-		clockwise = !clockwise
-	}
-	if !clockwise {
-		direction = -1.0
-	} else {
-		direction = 1.0
-	}
+	centralAngle := math.Abs(peA - piA)
 
 	return ArcCurve{
 		ca:              CircularArc{pi, tiu, pe},
 		Center:          center,
-		scalarCurvature: float64(1.0) / radius.Length(),
+		scalarCurvature: float64(1.0) / r,
 		CentralAngle:    centralAngle,
-		length:          radius.Length() * centralAngle,
-		LongWay:         longWay,
-		Direction:       direction,
+		length:          r * centralAngle,
+		radius:          r,
+		cX:              centerX,
+		cY:              centerY,
+		piX:             piX,
+		piY:             piY,
+		piA:             piA,
+		peX:             peX,
+		peY:             peY,
+		peA:             peA,
 	}
 }
 
-// combinationCurve is a Curver.
-type combinationCurve struct {
+// PiecewiseCurve is a Curver.
+type PiecewiseCurve struct {
 	segments []Curver
 	length   float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (cs combinationCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (cs PiecewiseCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
 	lenT := t * cs.length
 	// determine which sub-segment t lands us in.
 	prevLength := float64(0.0)
@@ -208,22 +222,22 @@ func (cs combinationCurve) Sample(t float64) (position, tangent, curvature HexFr
 }
 
 // Length returns the length of the curve.
-func (cs combinationCurve) Length() float64 {
+func (cs PiecewiseCurve) Length() float64 {
 	return cs.length
 }
 
 // JoinCurves creates a multipart curve.
-func JoinCurves(curves ...Curver) Curver {
-	// Don't wrap a single element.
-	if len(curves) == 1 {
-		return curves[0]
-	}
+// No assertion is made that the input curves are
+// connected.
+func JoinCurves(curves ...Curver) PiecewiseCurve {
 
-	cs := combinationCurve{
+	// Store all segments.
+	cs := PiecewiseCurve{
 		segments: curves,
 		length:   float64(0.0),
 	}
 
+	// Determine full length.
 	for _, a := range curves {
 		cs.length += a.Length()
 	}
