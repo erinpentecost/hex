@@ -72,6 +72,7 @@ func lerpAngle(a, b, t float64) float64 {
 	return a + t*normalizeAngle(b-a)
 }
 
+// normalizeAngle places the angle in the range of pi to -pi.
 func normalizeAngle(a float64) float64 {
 	return a - 2*math.Pi*math.Floor((a+math.Pi)/(2*math.Pi))
 }
@@ -145,6 +146,27 @@ func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
 	return
 }
 
+// getAngle returns the angle to the x axis for a cartesian vector.
+func getAngle(x, y float64) float64 {
+	xPos := !math.Signbit(x)
+	yPos := !math.Signbit(y)
+	if xPos && yPos {
+		// First quad
+		// This is the cah rule, and is only valid for acute angles.
+		denom := math.Sqrt(math.Pow(x, 2.0) + math.Pow(y, 2.0))
+		return math.Acos((x) / denom)
+	} else if yPos {
+		// Second quad
+		return math.Pi - getAngle(-1.0*x, y)
+	} else if xPos {
+		// Third quad
+		return math.Pi + getAngle(-1.0*x, -1.0*y)
+	} else {
+		// Fourth quad
+		return 2*math.Pi - getAngle(x, -1.0*y)
+	}
+}
+
 // newArc creates a circular arc segment curve.
 func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
@@ -173,15 +195,11 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	radius := pi.Subtract(center)
 	r := radius.Length()
 
-	// Get start and stop angles
-	getAngle := func(x, y float64) float64 {
-		denom := math.Sqrt(math.Pow(x-centerX, 2.0) + math.Pow(y-centerY, 2.0))
-		return math.Acos((x - centerX) / denom)
-	}
+	// Get start and stop angles.
 	// https://math.stackexchange.com/questions/1144159/parametric-equation-of-an-arc-with-given-radius-and-two-points
-	piA := getAngle(piX, -1.0*piY)
+	piA := getAngle(piX-centerX, piY-centerY)
 	peX, peY := pe.ToCartesian()
-	peA := getAngle(peX, -1.0*peY)
+	peA := getAngle(peX-centerX, peY-centerY)
 
 	centralAngle := math.Abs(peA - piA)
 

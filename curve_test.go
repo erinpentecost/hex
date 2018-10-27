@@ -65,15 +65,6 @@ func TestUnitArc(t *testing.T) {
 	start := hexcoord.HexFractional{Q: 1.0, R: 0.0}
 	tan := hexcoord.HexFractional{Q: 1.0, R: -2.0}.Normalize()
 	for i, endDiscrete := range neighbors {
-		swp := i
-		switch i {
-		case 4:
-			swp = 2
-		case 5:
-			swp = 1
-		case 6:
-			swp = 0
-		}
 
 		end := endDiscrete.ToHexFractional()
 		if end.AlmostEquals(start) {
@@ -86,7 +77,7 @@ func TestUnitArc(t *testing.T) {
 		}
 		curve := arc.Curve()
 
-		assertCloseEnough(t, float64(swp)*math.Pi/3.0, curve.Length(), "Curve length is wrong.")
+		assertCloseEnough(t, float64(i)*math.Pi/3.0, curve.Length(), "Curve length is wrong.")
 		assertSample(t, i, 0.0, curve, start, tan, hexcoord.Origin().ToHexFractional().Subtract(start))
 		assertSample(t, i, 1.0, curve, end, tan, hexcoord.Origin().ToHexFractional().Subtract(end))
 	}
