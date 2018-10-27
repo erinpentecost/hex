@@ -61,6 +61,7 @@ func lerpFloat(a, b, t float64) float64 {
 }
 
 func TestUnitArc(t *testing.T) {
+	originf := hexcoord.Origin().ToHexFractional()
 	neighbors := hexcoord.Origin().Neighbors()
 	start := hexcoord.HexFractional{Q: 1.0, R: 0.0}
 	tan := hexcoord.HexFractional{Q: 1.0, R: -2.0}.Normalize()
@@ -77,9 +78,13 @@ func TestUnitArc(t *testing.T) {
 		}
 		curve := arc.Curve()
 
-		assertCloseEnough(t, float64(i)*math.Pi/3.0, curve.Length(), "Curve length is wrong.")
-		assertSample(t, i, 0.0, curve, start, tan, hexcoord.Origin().ToHexFractional().Subtract(start))
-		assertSample(t, i, 1.0, curve, end, tan, hexcoord.Origin().ToHexFractional().Subtract(end))
+		radSwp := float64(i) * math.Pi / 3.0
+
+		endTan := tan.Rotate(originf, radSwp)
+
+		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
+		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
+		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
 	}
 }
 

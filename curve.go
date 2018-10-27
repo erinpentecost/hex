@@ -201,7 +201,11 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	peX, peY := pe.ToCartesian()
 	peA := getAngle(peX-centerX, peY-centerY)
 
-	centralAngle := math.Abs(peA - piA)
+	centralAngle := piA - peA
+
+	for centralAngle < 0.0 {
+		centralAngle = centralAngle + 2*math.Pi
+	}
 
 	return ArcCurve{
 		ca:              CircularArc{pi, tiu, pe},
