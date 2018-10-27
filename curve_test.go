@@ -60,82 +60,36 @@ func lerpFloat(a, b, t float64) float64 {
 	return a*(1.0-t) + b*t
 }
 
-func TestUnitCircle(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-
-	sampleStep := math.Pi / 6
-
-	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 1))
-	num := 0
-	for _, h := range testHexes {
-		init := h.ToHexFractional().Normalize()
-		for sweep := sampleStep; sweep < math.Pi*2; sweep = sweep + sampleStep {
-			num = num + 1
-			prefix := fmt.Sprintf("%v", num)
-			unitCircle(t, prefix, init, sweep, false)
+func TestUnitArc(t *testing.T) {
+	neighbors := hexcoord.Origin().Neighbors()
+	start := hexcoord.HexFractional{Q: 1.0, R: 0.0}
+	tan := hexcoord.HexFractional{Q: 1.0, R: -2.0}.Normalize()
+	for i, endDiscrete := range neighbors {
+		swp := i
+		switch i {
+		case 4:
+			swp = 2
+		case 5:
+			swp = 1
+		case 6:
+			swp = 0
 		}
-	}
-}
 
-func TestUnitCircleReversed(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-
-	sampleStep := math.Pi / 3
-
-	testHexes := hexcoord.AreaToSlice(hexcoord.Origin().RingArea(done, 1))
-	num := 0
-	for _, h := range testHexes {
-		init := h.ToHexFractional().Normalize()
-		for sweep := sampleStep; sweep < math.Pi*2; sweep = sweep + sampleStep {
-			num = num + 1
-			prefix := fmt.Sprintf("%v", num)
-			unitCircle(t, prefix, init, sweep, true)
+		end := endDiscrete.ToHexFractional()
+		if end.AlmostEquals(start) {
+			continue
 		}
-	}
-}
-
-func unitCircle(t *testing.T, prefix string, fp hexcoord.HexFractional, sweepRadians float64, reverse bool) {
-	origin := hexcoord.Origin().ToHexFractional()
-	firstPoint := fp.Normalize()
-
-	getTan := func(a hexcoord.HexFractional) hexcoord.HexFractional {
-		return a.Rotate(origin, -1.0*math.Pi/2).Normalize()
-	}
-	if reverse {
-		getTan = func(a hexcoord.HexFractional) hexcoord.HexFractional {
-			return a.Rotate(origin, math.Pi/2).Normalize()
+		arc := hexcoord.CircularArc{
+			E: end,
+			I: start,
+			T: tan,
 		}
+		curve := arc.Curve()
+
+		assertCloseEnough(t, float64(swp)*math.Pi/3.0, curve.Length(), "Curve length is wrong.")
+		assertSample(t, i, 0.0, curve, start, tan, hexcoord.Origin().ToHexFractional().Subtract(start))
+		assertSample(t, i, 1.0, curve, end, tan, hexcoord.Origin().ToHexFractional().Subtract(end))
 	}
-
-	getCur := func(a hexcoord.HexFractional) hexcoord.HexFractional {
-		return a.Rotate(origin, math.Pi).Normalize()
-	}
-
-	// Test forward direction
-	arc := hexcoord.CircularArc{
-		I: firstPoint,
-		T: getTan(firstPoint),
-		E: firstPoint.Rotate(origin, -1.0*sweepRadians).Normalize(),
-	}
-
-	curve := arc.Curve()
-
-	rev := float64(1.0)
-	if reverse {
-		rev = -1.0
-	}
-	note := rev * sweepRadians
-
-	// Make sure center and sweep are ok
-	arcCurve := curve.(hexcoord.ArcCurve)
-	assert.True(t, origin.AlmostEquals(arcCurve.Center), fmt.Sprintf("[%v] %v (%.3f): Center is not origin.", prefix, arc.ToString(), note))
-
-	// Test first point.
-	assertSample(t, fmt.Sprintf("[%v] %v (%.3f)", prefix, arc.ToString(), note), 0.0, curve, arc.I, arc.T, getCur(arc.I))
-	// Test last point.
-	assertSample(t, fmt.Sprintf("[%v] %v (%.3f)", prefix, arc.ToString(), note), 1.0, curve, arc.E, getTan(arc.E), getCur(arc.E))
 }
 
 func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {

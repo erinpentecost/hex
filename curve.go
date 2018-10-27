@@ -88,10 +88,10 @@ func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 	position = HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize().Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
-	tAngle := angle + (math.Pi / 2.0)
-	if ac.piA > ac.peA {
-		tAngle = angle - (math.Pi / 2.0)
-	}
+	// todo: add or subtract 90 degrees?
+	// todo: failures here
+	tAngle := normalizeAngle(angle - (math.Pi / 2.0))
+
 	ttX := math.Cos(tAngle)
 	ttY := math.Sin(tAngle)
 	tangent = HexFractionalFromCartesian(ttX, ttY).Normalize()
@@ -179,9 +179,9 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 		return math.Acos((x - centerX) / denom)
 	}
 	// https://math.stackexchange.com/questions/1144159/parametric-equation-of-an-arc-with-given-radius-and-two-points
-	piA := getAngle(piX, piY)
+	piA := getAngle(piX, -1.0*piY)
 	peX, peY := pe.ToCartesian()
-	peA := getAngle(peX, peY)
+	peA := getAngle(peX, -1.0*peY)
 
 	centralAngle := math.Abs(peA - piA)
 
