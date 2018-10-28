@@ -108,7 +108,7 @@ func TestUnitArcClockwise(t *testing.T) {
 
 		radSwp := float64(6-i) * math.Pi / 3.0
 
-		endTan := tan.Rotate(originf, radSwp+math.Pi)
+		endTan := end.Rotate(originf, math.Pi/(-2.0))
 
 		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
 		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))

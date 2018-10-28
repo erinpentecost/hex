@@ -87,21 +87,16 @@ func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 	// sweep by some ratio of the maximal central angle to get position.
 	// ptX := ac.cX + ac.radius*math.Cos(angle)
 	// ptY := ac.cY + ac.radius*math.Sin(angle)
-	position = HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize().Multiply(ac.radius).Add(ac.Center)
+	unitPosition := HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize()
+	position = unitPosition.Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
 	// todo: add or subtract 90 degrees?
-	// todo: failures here
-	var tAngle float64
 	if ac.Spin {
-		tAngle = angle + (math.Pi / 2.0)
+		tangent = unitPosition.Rotate(OriginFractional(), math.Pi/(-2.0))
 	} else {
-		tAngle = angle - (math.Pi / 2.0)
+		tangent = unitPosition.Rotate(OriginFractional(), math.Pi/2.0)
 	}
-
-	ttX := math.Cos(tAngle)
-	ttY := math.Sin(tAngle)
-	tangent = HexFractionalFromCartesian(ttX, ttY).Normalize()
 
 	// curvature points toward the center of the circle
 	curvature = ac.Center.Subtract(position).Normalize().Multiply(ac.scalarCurvature)

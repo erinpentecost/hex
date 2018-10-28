@@ -17,6 +17,14 @@ func (h HexFractional) S() float64 {
 	return -1 * (h.Q + h.R)
 }
 
+// OriginFractional returns a new hex with origin (0,0) coordinates.
+func OriginFractional() HexFractional {
+	return HexFractional{
+		Q: 0.0,
+		R: 0.0,
+	}
+}
+
 // ToHex takes in fractional hex coordinates in
 // cubic coordinates and rounds them to the nearest
 // actual hex coordinate. This is all in normal coordinate
