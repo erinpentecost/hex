@@ -60,7 +60,7 @@ func lerpFloat(a, b, t float64) float64 {
 	return a*(1.0-t) + b*t
 }
 
-func TestUnitArc(t *testing.T) {
+func TestUnitArcCounterClockwise(t *testing.T) {
 	originf := hexcoord.Origin().ToHexFractional()
 	neighbors := hexcoord.Origin().Neighbors()
 	start := hexcoord.HexFractional{Q: 1.0, R: 0.0}
@@ -81,6 +81,34 @@ func TestUnitArc(t *testing.T) {
 		radSwp := float64(i) * math.Pi / 3.0
 
 		endTan := tan.Rotate(originf, radSwp)
+
+		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
+		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
+		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
+	}
+}
+
+func TestUnitArcClockwise(t *testing.T) {
+	originf := hexcoord.Origin().ToHexFractional()
+	neighbors := hexcoord.Origin().Neighbors()
+	start := hexcoord.HexFractional{Q: 1.0, R: 0.0}
+	tan := hexcoord.HexFractional{Q: -1.0, R: 2.0}.Normalize()
+	for i, endDiscrete := range neighbors {
+
+		end := endDiscrete.ToHexFractional()
+		if end.AlmostEquals(start) {
+			continue
+		}
+		arc := hexcoord.CircularArc{
+			E: end,
+			I: start,
+			T: tan,
+		}
+		curve := arc.Curve()
+
+		radSwp := float64(6-i) * math.Pi / 3.0
+
+		endTan := tan.Rotate(originf, radSwp+math.Pi)
 
 		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
 		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))

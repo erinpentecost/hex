@@ -58,6 +58,7 @@ type ArcCurve struct {
 	CentralAngle    float64
 	length          float64
 	radius          float64
+	Spin            bool
 	cX              float64
 	cY              float64
 	piX             float64
@@ -91,7 +92,12 @@ func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional
 	// and tangent...
 	// todo: add or subtract 90 degrees?
 	// todo: failures here
-	tAngle := normalizeAngle(angle - (math.Pi / 2.0))
+	var tAngle float64
+	if ac.Spin {
+		tAngle = angle + (math.Pi / 2.0)
+	} else {
+		tAngle = angle - (math.Pi / 2.0)
+	}
 
 	ttX := math.Cos(tAngle)
 	ttY := math.Sin(tAngle)
@@ -148,23 +154,56 @@ func intersection(ax, ay, am, bx, by, bm float64) (ix, iy float64) {
 
 // getAngle returns the angle to the x axis for a cartesian vector.
 func getAngle(x, y float64) float64 {
+	switch getQuadrant(x, y) {
+	case 1: // This is the cah rule, and is only valid for acute angles.
+		denom := math.Sqrt(math.Pow(x, 2.0) + math.Pow(y, 2.0))
+		return math.Acos((x) / denom)
+	case 2:
+		return math.Pi - getAngle(-1.0*x, y)
+	case 3:
+		return math.Pi + getAngle(-1.0*x, -1.0*y)
+	case 4:
+		return 2*math.Pi - getAngle(x, -1.0*y)
+	default:
+		panic("There are only 4 quadrants")
+	}
+}
+
+// getQuadrant returns the quadrant that the cartesian vector represented by
+// x and y is in. Returns a value between 1 and 4, inclusive.
+//   4 | 1
+//   3 | 2
+func getQuadrant(x, y float64) int {
 	xPos := !math.Signbit(x)
 	yPos := !math.Signbit(y)
 	if xPos && yPos {
-		// First quad
-		// This is the cah rule, and is only valid for acute angles.
-		denom := math.Sqrt(math.Pow(x, 2.0) + math.Pow(y, 2.0))
-		return math.Acos((x) / denom)
+		return 1
 	} else if yPos {
-		// Second quad
-		return math.Pi - getAngle(-1.0*x, y)
+		return 2
 	} else if xPos {
-		// Third quad
-		return math.Pi + getAngle(-1.0*x, -1.0*y)
+		return 3
 	} else {
-		// Fourth quad
-		return 2*math.Pi - getAngle(x, -1.0*y)
+		return 4
 	}
+}
+
+// getSpin determines if an arc defined by some point (px, py) and the
+// tangent (tx, ty) is going in the clockwise (false) or counterclockwise (true)
+// direction. Keep in mind that the bottom of your monitor is in the positive y
+// direction.
+func getSpin(py, px, ty, tx float64) bool {
+	if tx != 0 {
+		if py >= 0 {
+			return tx < 0
+		}
+		return tx > 0
+	} else if ty != 0 {
+		if px >= 0 {
+			return ty > 0
+		}
+		return ty < 0
+	}
+	panic("Can't determine direction")
 }
 
 // newArc creates a circular arc segment curve.
@@ -201,9 +240,19 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	peX, peY := pe.ToCartesian()
 	peA := getAngle(peX-centerX, peY-centerY)
 
-	centralAngle := piA - peA
+	// Determine spin direction.
+	// clockwise (false) or counterclockwise (true)
+	spin := getSpin(piY, piX, tiuY, tiuX)
 
-	for centralAngle < 0.0 {
+	// piA and peA are in the range 0 to 2pi
+	var centralAngle float64
+	if spin {
+		centralAngle = peA - piA
+	} else {
+		centralAngle = piA - peA
+	}
+
+	if centralAngle < 0.0 {
 		centralAngle = centralAngle + 2*math.Pi
 	}
 
@@ -214,6 +263,7 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 		CentralAngle:    centralAngle,
 		length:          r * centralAngle,
 		radius:          r,
+		Spin:            spin,
 		cX:              centerX,
 		cY:              centerY,
 		piX:             piX,
