@@ -1,5 +1,4 @@
-// Package hexcoord provides hexagonal grid math and utility functions.
-package hexcoord
+package pos
 
 // Hex is a coordinate defined axially.
 type Hex struct {

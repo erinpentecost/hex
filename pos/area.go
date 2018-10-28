@@ -1,4 +1,4 @@
-package hexcoord
+package pos
 
 import (
 	"math"

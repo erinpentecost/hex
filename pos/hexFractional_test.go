@@ -1,20 +1,20 @@
-package hexcoord_test
+package pos_test
 
 import (
 	"fmt"
 	"math"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord"
+	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHexFractionalHashIdentity(t *testing.T) {
-	p1 := hexcoord.HexFractional{
+	p1 := pos.HexFractional{
 		Q: 10.0,
 		R: -888.8888,
 	}
-	p2 := hexcoord.HexFractional{
+	p2 := pos.HexFractional{
 		Q: 10.0,
 		R: -888.8888,
 	}
@@ -24,25 +24,25 @@ func TestHexFractionalHashIdentity(t *testing.T) {
 func TestHexFractionalLength(t *testing.T) {
 
 	tests := []struct {
-		H hexcoord.HexFractional
+		H pos.HexFractional
 		E float64
 	}{
-		{H: hexcoord.HexFractional{Q: 0, R: -1}, E: 1},
-		{H: hexcoord.HexFractional{Q: 1, R: -1}, E: 1},
-		{H: hexcoord.HexFractional{Q: 1, R: 0}, E: 1},
-		{H: hexcoord.HexFractional{Q: 0, R: 1}, E: 1},
-		{H: hexcoord.HexFractional{Q: -1, R: 1}, E: 1},
-		{H: hexcoord.HexFractional{Q: -1, R: 0}, E: 1},
+		{H: pos.HexFractional{Q: 0, R: -1}, E: 1},
+		{H: pos.HexFractional{Q: 1, R: -1}, E: 1},
+		{H: pos.HexFractional{Q: 1, R: 0}, E: 1},
+		{H: pos.HexFractional{Q: 0, R: 1}, E: 1},
+		{H: pos.HexFractional{Q: -1, R: 1}, E: 1},
+		{H: pos.HexFractional{Q: -1, R: 0}, E: 1},
 
-		{H: hexcoord.HexFractional{Q: 1, R: -2}, E: math.Sqrt(3)},
-		{H: hexcoord.HexFractional{Q: 2, R: -1}, E: math.Sqrt(3)},
-		{H: hexcoord.HexFractional{Q: 1, R: 1}, E: math.Sqrt(3)},
-		{H: hexcoord.HexFractional{Q: -1, R: 2}, E: math.Sqrt(3)},
-		{H: hexcoord.HexFractional{Q: -2, R: 1}, E: math.Sqrt(3)},
-		{H: hexcoord.HexFractional{Q: -1, R: -1}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: 1, R: -2}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: 2, R: -1}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: 1, R: 1}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: -1, R: 2}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: -2, R: 1}, E: math.Sqrt(3)},
+		{H: pos.HexFractional{Q: -1, R: -1}, E: math.Sqrt(3)},
 
-		{H: hexcoord.HexFractional{Q: 0, R: -2}, E: 2},
-		{H: hexcoord.HexFractional{Q: -2, R: 2}, E: 2},
+		{H: pos.HexFractional{Q: 0, R: -2}, E: 2},
+		{H: pos.HexFractional{Q: -2, R: 2}, E: 2},
 	}
 
 	for _, he := range tests {
@@ -53,7 +53,7 @@ func TestHexFractionalLength(t *testing.T) {
 func TestHexFractionalNormalize(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	testHexes := hexcoord.Origin().HexArea(done, 10)
+	testHexes := pos.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		len := h.ToHexFractional().Normalize().Length()
 		assert.InEpsilonf(t, 1.0, len, 0.0000001, fmt.Sprintf("HexFractional normalization for %v is wrong.", h))
@@ -65,14 +65,14 @@ func TestCartesian(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
 
-	testHexes := hexcoord.Origin().HexArea(done, 10)
+	testHexes := pos.Origin().HexArea(done, 10)
 	for h := range testHexes {
 		hf := h.ToHexFractional()
-		converted := hexcoord.HexFractionalFromCartesian(hf.ToCartesian())
+		converted := pos.HexFractionalFromCartesian(hf.ToCartesian())
 		assert.True(t, hf.AlmostEquals(converted), fmt.Sprintf("Expected %v, got %v.", hf, converted))
 	}
 
-	ox, oy := hexcoord.Origin().ToHexFractional().ToCartesian()
+	ox, oy := pos.Origin().ToHexFractional().ToCartesian()
 	assert.Equal(t, 0.0, ox, "Origin x is wrong.")
 	assert.Equal(t, 0.0, oy, "Origin y is wrong.")
 }
@@ -83,7 +83,7 @@ func TestRotate(t *testing.T) {
 
 	radianStep := float64(math.Pi / 3.0)
 
-	testHexes := hexcoord.Origin().SpiralArea(done, 10)
+	testHexes := pos.Origin().SpiralArea(done, 10)
 	for h := range testHexes {
 		hf := h.ToHexFractional()
 		for i, n := range h.Neighbors() {
@@ -97,7 +97,7 @@ func TestRotate(t *testing.T) {
 
 func TestAngleTo(t *testing.T) {
 
-	o := hexcoord.Origin()
+	o := pos.Origin()
 
 	pid3 := math.Pi / 3.0
 	toRad := func(a, b int) float64 {

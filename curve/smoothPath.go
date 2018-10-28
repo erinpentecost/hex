@@ -1,18 +1,20 @@
-package hexcoord
+package curve
 
 import (
 	"fmt"
 	"math"
+
+	"github.com/erinpentecost/hexcoord/pos"
 )
 
 // CircularArc defines a circular arc in three vectors.
 type CircularArc struct {
 	// I is the initial point.
-	I HexFractional
+	I pos.HexFractional
 	// T is the tangent unit vector at the initial point.
-	T HexFractional
+	T pos.HexFractional
 	// E is the end point.
-	E HexFractional
+	E pos.HexFractional
 }
 
 // ToString converts the arc to a string.
@@ -31,7 +33,7 @@ func (ca CircularArc) ToString() string {
 // Unlike other functions in this package, it assumes hexes
 // are regular.
 // This function can be used to generate smooth movement.
-func SmoothPath(done <-chan interface{}, ti, te, path []HexFractional) <-chan Curver {
+func SmoothPath(done <-chan interface{}, ti, te, path []pos.HexFractional) <-chan Curver {
 	panic("not implemented yet")
 	// http://kaj.uniwersytetradom.pl/prace/Biarcs.pdf
 	// https://en.wikipedia.org/wiki/Arc_length
@@ -53,7 +55,7 @@ func SmoothPath(done <-chan interface{}, ti, te, path []HexFractional) <-chan Cu
 // with ti being the tangent at pi and te being the tangent at pe.
 // This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
 // Modeling" by Ulugbek Khudayarov.
-func biarc(pi, ti, pe, te HexFractional) (arcs []CircularArc) {
+func biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 	// Tangents should be unit vectors.
 	ti = ti.Normalize()
 	te = te.Normalize()
@@ -63,9 +65,9 @@ func biarc(pi, ti, pe, te HexFractional) (arcs []CircularArc) {
 	v := pe.Subtract(pi)
 
 	// j is the joint point between the two arcs.
-	var j HexFractional
+	var j pos.HexFractional
 	// tj is the tangent at point j
-	var tj HexFractional
+	var tj pos.HexFractional
 	// d is an intermediate discriminant value.
 	var d float64
 	// a is some intermediate constant.

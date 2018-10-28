@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # A Gazelle executable for auto-generating Go BUILD definitions
@@ -14,27 +14,12 @@ gazelle(
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "area.go",
-        "curve.go",
-        "hex.go",
-        "hexFractional.go",
-        "path.go",
-        "smoothPath.go",
-    ],
+    srcs = ["doc.go"],
     importpath = "github.com/erinpentecost/hexcoord",
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "area_test.go",
-        "curve_test.go",
-        "hexFractional_test.go",
-        "hex_test.go",
-        "path_test.go",
+    deps = [
+        "//curve:go_default_library",
+        "//path:go_default_library",
+        "//pos:go_default_library",
     ],
-    embed = [":go_default_library"],
-    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
 )

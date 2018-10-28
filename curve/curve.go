@@ -1,7 +1,9 @@
-package hexcoord
+package curve
 
 import (
 	"math"
+
+	"github.com/erinpentecost/hexcoord/pos"
 )
 
 // Curver is a continuous curve segment.
@@ -10,7 +12,7 @@ type Curver interface {
 	// Sample returns a point on the curve.
 	// t is valid for 0 to 1, inclusive.
 	// curvature points toward the "center" of the curve.
-	Sample(t float64) (position, tangent, curvature HexFractional)
+	Sample(t float64) (position, tangent, curvature pos.HexFractional)
 
 	// Length returns the length of the curve.
 	Length() float64
@@ -18,18 +20,18 @@ type Curver interface {
 
 // LineCurve is a Curver.
 type LineCurve struct {
-	i      HexFractional
-	e      HexFractional
+	i      pos.HexFractional
+	e      pos.HexFractional
 	length float64
-	slope  HexFractional
+	slope  pos.HexFractional
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ls LineCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
-	position = LerpHexFractional(ls.i, ls.e, t)
+func (ls LineCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
+	position = pos.LerpHexFractional(ls.i, ls.e, t)
 	tangent = ls.slope
-	curvature = HexFractional{0.0, 0.0}
+	curvature = pos.OriginFractional()
 	return
 }
 
@@ -40,7 +42,7 @@ func (ls LineCurve) Length() float64 {
 
 // newLine creates a line segment curve.
 // Inputs are start and end points.
-func newLine(i, e HexFractional) LineCurve {
+func newLine(i, e pos.HexFractional) LineCurve {
 
 	return LineCurve{
 		i:      i,
@@ -53,7 +55,7 @@ func newLine(i, e HexFractional) LineCurve {
 // ArcCurve is a Curver.
 type ArcCurve struct {
 	ca              CircularArc
-	Center          HexFractional
+	Center          pos.HexFractional
 	scalarCurvature float64
 	CentralAngle    float64
 	length          float64
@@ -80,22 +82,22 @@ func normalizeAngle(a float64) float64 {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ac ArcCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (ac ArcCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 
 	angle := lerpAngle(ac.piA, ac.peA, t)
 
 	// sweep by some ratio of the maximal central angle to get position.
 	// ptX := ac.cX + ac.radius*math.Cos(angle)
 	// ptY := ac.cY + ac.radius*math.Sin(angle)
-	unitPosition := HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize()
+	unitPosition := pos.HexFractionalFromCartesian(math.Cos(angle), math.Sin(angle)).Normalize()
 	position = unitPosition.Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
 	// todo: add or subtract 90 degrees?
 	if ac.Spin {
-		tangent = unitPosition.Rotate(OriginFractional(), math.Pi/(-2.0))
+		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(-2.0))
 	} else {
-		tangent = unitPosition.Rotate(OriginFractional(), math.Pi/2.0)
+		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/2.0)
 	}
 
 	// curvature points toward the center of the circle
@@ -112,7 +114,7 @@ func (ac ArcCurve) Length() float64 {
 // It's not what you'd expect (euclidean). This is just here
 // to aid in testing for collinearity and clockwise/cc detection.
 // http://mathworld.wolfram.com/Collinear.html
-func area(a, b, c HexFractional) float64 {
+func area(a, b, c pos.HexFractional) float64 {
 	return a.Q*(b.R-c.R) + b.Q*(c.R-a.R) + c.Q*(a.R-b.R)
 }
 
@@ -202,7 +204,7 @@ func getSpin(py, px, ty, tx float64) bool {
 }
 
 // newArc creates a circular arc segment curve.
-func newArc(pi, tiu, pe HexFractional) ArcCurve {
+func newArc(pi, tiu, pe pos.HexFractional) ArcCurve {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
 
 	// First line segment
@@ -211,7 +213,7 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	tiuOrthogonalSlope := -1.0 * tiuX / tiuY
 
 	// Second line segment
-	midX, midY := LerpHexFractional(pi, pe, 0.5).ToCartesian()
+	midX, midY := pos.LerpHexFractional(pi, pe, 0.5).ToCartesian()
 	chordX, chordY := pi.Subtract(pe).ToCartesian()
 	chordOrthogonalSlope := -1.0 * chordX / chordY
 
@@ -224,7 +226,7 @@ func newArc(pi, tiu, pe HexFractional) ArcCurve {
 	//   -1 = (x-1.224) / (y+1.224)
 	//    intersection should be 0,0
 	centerX, centerY := intersection(piX, piY, tiuOrthogonalSlope, midX, midY, chordOrthogonalSlope)
-	center := HexFractionalFromCartesian(centerX, centerY)
+	center := pos.HexFractionalFromCartesian(centerX, centerY)
 
 	radius := pi.Subtract(center)
 	r := radius.Length()
@@ -278,7 +280,7 @@ type PiecewiseCurve struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (cs PiecewiseCurve) Sample(t float64) (position, tangent, curvature HexFractional) {
+func (cs PiecewiseCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 	lenT := t * cs.length
 	// determine which sub-segment t lands us in.
 	prevLength := float64(0.0)
@@ -329,4 +331,11 @@ func (ca CircularArc) Curve() Curver {
 	}
 	// This is the circular arc case.
 	return newArc(ca.I, ca.T, ca.E)
+}
+
+func closeEnough(a, b float64) bool {
+	if a == b {
+		return true
+	}
+	return math.Abs(a-b) < 1e-10
 }

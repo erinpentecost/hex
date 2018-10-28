@@ -1,11 +1,13 @@
-package hexcoord
+package path
 
 import (
 	"container/heap"
+
+	"github.com/erinpentecost/hexcoord/pos"
 )
 
 type pqItem struct {
-	value    Hex
+	value    pos.Hex
 	priority int
 	index    int
 }
@@ -41,7 +43,7 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 type aStarInfo struct {
-	parent Hex
+	parent pos.Hex
 	cost   int
 }
 
@@ -50,39 +52,39 @@ type Pather interface {
 	// Cost indicates the move cost between a hex and one
 	// of its neighbors. Higher values are less desirable.
 	// Negative costs are treated as impassable.
-	Cost(a Hex, direction int) int
+	Cost(a pos.Hex, direction int) int
 
 	// EstimatedCost returns the estimated cost between
 	// two hexes that are not necessarily neighbors.
 	// Negative costs are treated as impassable.
-	EstimatedCost(a, b Hex) int
+	EstimatedCost(a, b pos.Hex) int
 }
 
-// PathTo finds a near-optimal path to the target hex.
+// To finds a near-optimal path to the target hex.
 // The first element in the path will be the starting hex,
 // and the last will be the target hex.
-func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool) {
+func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex, cost int, found bool) {
 	// Init output variables
-	path = make([]Hex, 0)
+	path = make([]pos.Hex, 0)
 	cost = 0
 	found = false
 
-	if h == target {
+	if from == target {
 		found = true
 		return
 	}
 
 	// Init supporting data structures.
 	pq := &priorityQueue{&pqItem{
-		value:    h,
+		value:    from,
 		priority: 0,
 		index:    0,
 	}}
 	heap.Init(pq)
 
-	extras := make(map[Hex]aStarInfo)
-	extras[h] = aStarInfo{
-		parent: h,
+	extras := make(map[pos.Hex]aStarInfo)
+	extras[from] = aStarInfo{
+		parent: from,
 		cost:   0,
 	}
 
@@ -131,9 +133,9 @@ func (h Hex) PathTo(target Hex, pather Pather) (path []Hex, cost int, found bool
 
 	// Begin unwind
 	for {
-		path = append([]Hex{cur}, path...)
+		path = append([]pos.Hex{cur}, path...)
 
-		if cur == h {
+		if cur == from {
 			return
 		}
 
