@@ -18,8 +18,8 @@ type Curver interface {
 	Length() float64
 }
 
-// LineCurve is a Curver.
-type LineCurve struct {
+// Line is a Curver.
+type Line struct {
 	i      pos.HexFractional
 	e      pos.HexFractional
 	length float64
@@ -28,7 +28,7 @@ type LineCurve struct {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ls LineCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
+func (ls Line) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 	position = pos.LerpHexFractional(ls.i, ls.e, t)
 	tangent = ls.slope
 	curvature = pos.OriginFractional()
@@ -36,15 +36,15 @@ func (ls LineCurve) Sample(t float64) (position, tangent, curvature pos.HexFract
 }
 
 // Length returns the length of the curve.
-func (ls LineCurve) Length() float64 {
+func (ls Line) Length() float64 {
 	return ls.i.DistanceTo(ls.e)
 }
 
 // newLine creates a line segment curve.
 // Inputs are start and end points.
-func newLine(i, e pos.HexFractional) LineCurve {
+func newLine(i, e pos.HexFractional) Line {
 
-	return LineCurve{
+	return Line{
 		i:      i,
 		e:      e,
 		length: i.DistanceTo(e),
@@ -52,8 +52,8 @@ func newLine(i, e pos.HexFractional) LineCurve {
 	}
 }
 
-// ArcCurve is a Curver.
-type ArcCurve struct {
+// Arc is a Curver.
+type Arc struct {
 	ca              CircularArc
 	Center          pos.HexFractional
 	scalarCurvature float64
@@ -82,7 +82,7 @@ func normalizeAngle(a float64) float64 {
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (ac ArcCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
+func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 
 	angle := lerpAngle(ac.piA, ac.peA, t)
 
@@ -106,7 +106,7 @@ func (ac ArcCurve) Sample(t float64) (position, tangent, curvature pos.HexFracti
 }
 
 // Length returns the length of the curve.
-func (ac ArcCurve) Length() float64 {
+func (ac Arc) Length() float64 {
 	return ac.length
 }
 
@@ -204,7 +204,7 @@ func getSpin(py, px, ty, tx float64) bool {
 }
 
 // newArc creates a circular arc segment curve.
-func newArc(pi, tiu, pe pos.HexFractional) ArcCurve {
+func newArc(pi, tiu, pe pos.HexFractional) Arc {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
 
 	// First line segment
@@ -253,7 +253,7 @@ func newArc(pi, tiu, pe pos.HexFractional) ArcCurve {
 		centralAngle = centralAngle + 2*math.Pi
 	}
 
-	return ArcCurve{
+	return Arc{
 		ca:              CircularArc{pi, tiu, pe},
 		Center:          center,
 		scalarCurvature: float64(1.0) / r,
@@ -272,15 +272,15 @@ func newArc(pi, tiu, pe pos.HexFractional) ArcCurve {
 	}
 }
 
-// PiecewiseCurve is a Curver.
-type PiecewiseCurve struct {
+// Piecewise is a Curver.
+type Piecewise struct {
 	segments []Curver
 	length   float64
 }
 
 // Sample returns a point on the curve.
 // t is valid for 0 to 1, inclusive.
-func (cs PiecewiseCurve) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
+func (cs Piecewise) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 	lenT := t * cs.length
 	// determine which sub-segment t lands us in.
 	prevLength := float64(0.0)
@@ -300,17 +300,17 @@ func (cs PiecewiseCurve) Sample(t float64) (position, tangent, curvature pos.Hex
 }
 
 // Length returns the length of the curve.
-func (cs PiecewiseCurve) Length() float64 {
+func (cs Piecewise) Length() float64 {
 	return cs.length
 }
 
-// JoinCurves creates a multipart curve.
+// Join creates a multipart curve.
 // No assertion is made that the input curves are
 // connected.
-func JoinCurves(curves ...Curver) PiecewiseCurve {
+func Join(curves ...Curver) Piecewise {
 
 	// Store all segments.
-	cs := PiecewiseCurve{
+	cs := Piecewise{
 		segments: curves,
 		length:   float64(0.0),
 	}
