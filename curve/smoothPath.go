@@ -23,18 +23,12 @@ func (ca CircularArc) ToString() string {
 }
 
 // SmoothPath takes as input a slice of connected Hexes.
-// As output, it will return a function that describes a
-// series of connected circular arcs that pass through all
-// original hexes and no additional hexes.
-// Arcs with infinite radius (straight lines) are allowed
-// so long as it remains G1 continuous.
-// It will also return a vector tangent to the movement arc.
-// 0.0f is the start position, and 1.0f is the end position.
-// Unlike other functions in this package, it assumes hexes
-// are regular.
-// This function can be used to generate smooth movement.
-func SmoothPath(done <-chan interface{}, ti, te, path []pos.HexFractional) <-chan Curver {
-	panic("not implemented yet")
+// As output, it will return a piecewise collection of circular
+// arcs that connect those hexes with G1 continuity.
+// These arcs can be converted to parameterized curves with
+// the Curve() function.
+func SmoothPath(ti pos.HexFractional, te pos.HexFractional, path []pos.HexFractional) []CircularArc {
+
 	// http://kaj.uniwersytetradom.pl/prace/Biarcs.pdf
 	// https://en.wikipedia.org/wiki/Arc_length
 	// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
@@ -43,19 +37,50 @@ func SmoothPath(done <-chan interface{}, ti, te, path []pos.HexFractional) <-cha
 	// https://stag-ws.zcu.cz/ws/services/rest/kvalifikacniprace/downloadPraceContent?adipIdno=17817
 	// https://www.ajdesigner.com/phpcircle/circle_arc_length_s.php
 
-	// Ok, so a few things to note:
-	// The distance between center points on two adjacent hexes is 1.
-	// Their shared edge has length 0.57735, or 1/(sqrt(3)).
-	// A radius of 0.5 would make the arc blow out the top of the two
-	// allowed hexes.
+	// If there are 1 or fewer points, we are already
+	// at the target path.
+	if len(path) < 2 {
+		return make([]CircularArc, 0, 0)
+	}
 
+	curves := make([]CircularArc, len(path)-1, len(path)*2)
+
+	// Find tangents for each position.
+	tangents := make([]pos.HexFractional, len(path), len(path))
+	tangents[0] = ti
+	tangents[len(tangents)-1] = te
+	for p := 1; p < len(path)-1; p++ {
+		tangents[p] = approximateTangent(path[p-1], path[p], path[p+1])
+	}
+
+	// Generate biarcs for each pair of points.
+	ci := 0
+	for i := 0; i < len(path)-1; i++ {
+		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1]) {
+			curves[ci] = b
+			ci++
+		}
+	}
+
+	return curves
 }
 
-// biarc returns a list of circular arcs that connect pi to pe,
+// This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
+// Modeling" by Ulugbek Khudayarov.
+func approximateTangent(p0, p1, p2 pos.HexFractional) pos.HexFractional {
+	a := p1.Subtract(p0)
+	b := p2.Subtract(p1)
+	aLen := a.Length()
+	bLen := b.Length()
+
+	return a.Multiply(bLen / aLen).Add(b.Multiply(aLen / bLen))
+}
+
+// Biarc returns a list of circular arcs that connect pi to pe,
 // with ti being the tangent at pi and te being the tangent at pe.
 // This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
 // Modeling" by Ulugbek Khudayarov.
-func biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
+func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 	// Tangents should be unit vectors.
 	ti = ti.Normalize()
 	te = te.Normalize()

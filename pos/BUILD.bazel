@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "area.go",
+        "doc.go",
         "hex.go",
         "hexFractional.go",
     ],
