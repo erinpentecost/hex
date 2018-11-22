@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["plan9font.go"],
+    importmap = "hexcoord/vendor/golang.org/x/image/font/plan9font",
+    importpath = "golang.org/x/image/font/plan9font",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/golang.org/x/image/font:go_default_library",
+        "//vendor/golang.org/x/image/math/fixed:go_default_library",
+    ],
+)

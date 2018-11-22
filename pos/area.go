@@ -73,6 +73,35 @@ func (h Hex) HexArea(done <-chan interface{}, radius int) <-chan Hex {
 	return hgen
 }
 
+// RectangleArea returns the set of hexes that form a rectangular
+// area from the given hex to another hex representing an opposite corner.
+func (h Hex) RectangleArea(done <-chan interface{}, opposite Hex) <-chan Hex {
+	hgen := make(chan Hex)
+	go func() {
+		defer close(hgen)
+		minR := minInt(h.R, opposite.R)
+		maxR := maxInt(h.R, opposite.R)
+
+		minQ := minInt(h.Q, opposite.Q)
+		maxQ := maxInt(h.Q, opposite.Q)
+
+		for r := minR; r <= maxR; r++ {
+			rOffset := r / 2
+			for q := minQ - rOffset; q <= maxQ-rOffset; q++ {
+				select {
+				case <-done:
+					return
+				case hgen <- Hex{
+					Q: q,
+					R: r,
+				}:
+				}
+			}
+		}
+	}()
+	return hgen
+}
+
 // RingArea returns a set of hexes that form a ring at the given
 // radius centered on the given hex.
 // A radius of 0 will return the center hex.

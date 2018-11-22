@@ -51,3 +51,9 @@ go_repository(
     commit = "f35b8ab0b5a2cef36673838d662e249dd9c94686",
     importpath = "github.com/stretchr/testify",
 )
+
+go_repository(
+    name = "org_golang_x_image",
+    commit = "69cc3646b96e61de0b417f4815b86c36e65783ee",
+    importpath = "golang.org/x/image",
+)
