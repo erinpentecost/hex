@@ -25,16 +25,16 @@ type DefaultDecorator struct{}
 
 // AreaColor picks a background color for the hex.
 func (d DefaultDecorator) AreaColor(h pos.Hex) color.RGBA {
-	m := (h.Q % 2) + 2*(h.R)
+	m := (h.Q % 2) + 2*(h.R%2)
 	switch m {
 	case 0:
-		return color.RGBA{255, 0, 0, 255}
+		return color.RGBA{100, 0, 0, 255}
 	case 1:
-		return color.RGBA{0, 255, 0, 255}
+		return color.RGBA{0, 100, 0, 255}
 	case 2:
-		return color.RGBA{0, 0, 255, 255}
+		return color.RGBA{0, 0, 100, 255}
 	default:
-		return color.RGBA{0, 255, 255, 255}
+		return color.RGBA{0, 100, 100, 255}
 	}
 }
 
@@ -59,6 +59,7 @@ func addLabel(img *image.RGBA, x, y int, label string) {
 		Dot:  point,
 	}
 	d.DrawString(label)
+	img.SetRGBA(x, y, col)
 }
 
 // RenderGrid draws a hex grid.
