@@ -1,5 +1,7 @@
 package pos
 
+import "fmt"
+
 // Hex is a coordinate defined axially.
 type Hex struct {
 	Q int
@@ -191,4 +193,9 @@ func BoundFacing(facing int) int {
 		d = d + 6
 	}
 	return d
+}
+
+// ToString converts the hex to a string.
+func (h Hex) ToString() string {
+	return fmt.Sprintf("{%v, %v, %v}", h.Q, h.R, h.S())
 }
