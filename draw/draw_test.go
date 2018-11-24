@@ -12,7 +12,7 @@ import (
 
 func TestDraw(t *testing.T) {
 	dd := draw.DefaultDecorator{}
-	cc := draw.NewCamera(600, 500, 0.2, pos.Hex{Q: -1, R: -1})
+	cc := draw.NewCamera(600, 500, 0.2, pos.Origin())
 
 	img := cc.Render(dd)
 

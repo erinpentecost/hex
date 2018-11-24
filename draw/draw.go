@@ -89,8 +89,8 @@ func NewCamera(imageLenX int, imageLenY int, zoom float64, center pos.Hex) Camer
 
 // ScreenToHex converts camera coordinates to hex coordinates
 func (c Camera) ScreenToHex(x, y int) pos.HexFractional {
-	xM := (float64(x) / c.hWidth) + c.centerX
-	xY := (float64(y) / c.hWidth) + c.centerY
+	xM := (float64(x-c.imageLenX/2) / c.hWidth) + c.centerX
+	xY := (float64(y-c.imageLenY/2) / c.hWidth) + c.centerY
 	return pos.HexFractionalFromCartesian(xM, xY)
 }
 
@@ -98,7 +98,7 @@ func (c Camera) ScreenToHex(x, y int) pos.HexFractional {
 // returned value may be out of bounds.
 func (c Camera) HexToScreen(p pos.HexFractional) (x, y int) {
 	hx, hy := p.ToCartesian()
-	return int((hx - c.centerX) * c.hWidth), int((hy - c.centerY) * c.hWidth)
+	return int((hx-c.centerX)*c.hWidth) + c.imageLenX/2, int((hy-c.centerY)*c.hWidth) + c.imageLenY/2
 }
 
 // Render draws a hex grid.
