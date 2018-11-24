@@ -25,16 +25,27 @@ type DefaultDecorator struct{}
 
 // AreaColor picks a background color for the hex.
 func (d DefaultDecorator) AreaColor(h pos.Hex) color.RGBA {
-	m := (h.Q % 2) + 2*(h.R%2)
+	if h == pos.Origin() {
+		return color.RGBA{255, 100, 100, 255}
+	}
+
+	mod := func(a int) int {
+		if a < 0 {
+			return (a * (-1)) % 2
+		}
+		return a % 2
+	}
+
+	m := mod(h.Q) + 2*mod(h.R)
 	switch m {
 	case 0:
-		return color.RGBA{100, 0, 0, 255}
+		return color.RGBA{255, 200, 200, 255}
 	case 1:
-		return color.RGBA{0, 100, 0, 255}
+		return color.RGBA{200, 255, 200, 255}
 	case 2:
-		return color.RGBA{0, 0, 100, 255}
+		return color.RGBA{200, 200, 255, 255}
 	default:
-		return color.RGBA{0, 100, 100, 255}
+		return color.RGBA{255, 255, 200, 255}
 	}
 }
 
@@ -48,55 +59,59 @@ func (d DefaultDecorator) AreaLabel(h pos.Hex) string {
 	return h.ToString()
 }
 
-func addLabel(img *image.RGBA, x, y int, label string) {
-	col := color.RGBA{200, 100, 0, 255}
-	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
-
-	d := &font.Drawer{
-		Dst:  img,
-		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
-		Dot:  point,
-	}
-	d.DrawString(label)
-	img.SetRGBA(x, y, col)
+// Camera defines the viewing pane
+type Camera struct {
+	imageLenX int
+	imageLenY int
+	zoom      float64
+	center    pos.Hex
+	centerX   float64
+	centerY   float64
+	hWidth    float64
 }
 
-// RenderGrid draws a hex grid.
-// imageLen is the width and height of the image.
-// zoom is some number between 0 and 1. The closer to 1,
-// one hex will fill the viewing pane. The closer to 0, the more
-// hexes will fill the pane.
-// center is the hex coord that is at the center of the image.
-// d is a Decorator that describes the colors and labels for each hex.
-func RenderGrid(imageLen int, zoom float64, center pos.Hex, d Decorator) *image.RGBA {
+// NewCamera creates a new camera object
+func NewCamera(imageLenX int, imageLenY int, zoom float64, center pos.Hex) Camera {
 	if zoom > 1.0 || zoom <= 0.0 {
 		panic("zoom range is from 0 to 1")
 	}
-
-	m := image.NewRGBA(image.Rect(0, 0, imageLen, imageLen))
 	centerX, centerY := center.ToHexFractional().ToCartesian()
+	return Camera{
+		imageLenX: imageLenX,
+		imageLenY: imageLenY,
+		zoom:      zoom,
+		center:    center,
+		centerX:   centerX,
+		centerY:   centerY,
+		hWidth:    float64(imageLenX) * zoom,
+	}
+}
 
-	screenToHex := func(x, y int) pos.HexFractional {
-		hWidth := float64(imageLen) * zoom
-		xM := (float64(x) / hWidth) + centerX
-		xY := (float64(y) / hWidth) + centerY
-		return pos.HexFractionalFromCartesian(xM, xY)
-	}
-	// hexToScreen converts hex coord to screen coord.
-	// returned value may be out of bounds.
-	hexToScreen := func(p pos.HexFractional) (x, y int) {
-		hWidth := float64(imageLen) * zoom
-		hx, hy := p.ToCartesian()
-		return int((hx - centerX) * hWidth), int((hy - centerY) * hWidth)
-	}
+// ScreenToHex converts camera coordinates to hex coordinates
+func (c Camera) ScreenToHex(x, y int) pos.HexFractional {
+	xM := (float64(x) / c.hWidth) + c.centerX
+	xY := (float64(y) / c.hWidth) + c.centerY
+	return pos.HexFractionalFromCartesian(xM, xY)
+}
+
+// HexToScreen converts hex coord to screen coord.
+// returned value may be out of bounds.
+func (c Camera) HexToScreen(p pos.HexFractional) (x, y int) {
+	hx, hy := p.ToCartesian()
+	return int((hx - c.centerX) * c.hWidth), int((hy - c.centerY) * c.hWidth)
+}
+
+// Render draws a hex grid.
+func (c Camera) Render(d Decorator) *image.RGBA {
+
+	m := image.NewRGBA(image.Rect(0, 0, c.imageLenX, c.imageLenY))
 
 	foundHexes := make(map[pos.Hex]interface{})
 
 	// look at each pixel and color in the hex background
-	for x := 0; x < imageLen; x++ {
-		for y := 0; y < imageLen; y++ {
-			hf := screenToHex(x, y)
+	for x := 0; x < c.imageLenX; x++ {
+		for y := 0; y < c.imageLenY; y++ {
+			hf := c.ScreenToHex(x, y)
 			hd := hf.ToHex()
 			if _, ok := foundHexes[hd]; !ok {
 				foundHexes[hd] = nil
@@ -108,14 +123,31 @@ func RenderGrid(imageLen int, zoom float64, center pos.Hex, d Decorator) *image.
 	// label the hexes
 	for h := range foundHexes {
 		label := d.AreaLabel(h)
-		hy, hx := hexToScreen(h.ToHexFractional())
-		addLabel(m, hx, hy, label)
+		if label == "" {
+			continue
+		}
+		hx, hy := c.HexToScreen(h.ToHexFractional())
+		areaCol := d.AreaColor(h)
+		invertCol := color.RGBA{areaCol.R ^ 0xFF, areaCol.G ^ 0xFF, areaCol.B ^ 0xFF, 255}
+		addLabel(m, hx, hy, invertCol, label)
 	}
 
-	// draw the edges
-	// todo
+	// todo: draw edges
 
 	return m
+}
+
+func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
+	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
+	img.SetRGBA(x, y, col)
 }
 
 // Save saves an image to a file
