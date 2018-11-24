@@ -47,6 +47,9 @@ func TestLineCurve(t *testing.T) {
 
 			curve := line.Curve()
 
+			_, spinErr := curve.Spin()
+			assert.Error(t, spinErr, "Spin should not be valid for a line.")
+
 			assertSample(t, line, 0.0, curve, line.I, line.T, origin)
 			assertSample(t, line, 0.1, curve, pos.LerpHexFractional(line.I, line.E, 0.1), line.T, origin)
 			assertSample(t, line, 0.5, curve, pos.LerpHexFractional(line.I, line.E, 0.5), line.T, origin)
@@ -83,6 +86,10 @@ func TestUnitArcCounterClockwise(t *testing.T) {
 
 		endTan := tan.Rotate(originf, radSwp)
 
+		spinVal, spinErr := curve.Spin()
+		assert.NoError(t, spinErr, "Circular arc should have a spin.")
+		assert.Equal(t, true, spinVal, "Spin direction is wrong.")
+
 		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
 		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
 		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
@@ -111,6 +118,10 @@ func TestUnitArcClockwise(t *testing.T) {
 
 		endTan := end.Rotate(originf, math.Pi/(-2.0))
 
+		spinVal, spinErr := curve.Spin()
+		assert.NoError(t, spinErr, "Circular arc should have a spin.")
+		assert.Equal(t, false, spinVal, "Spin direction is wrong.")
+
 		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
 		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
 		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
@@ -122,4 +133,32 @@ func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {
 		return assert.Equal(t, a, b, msg...)
 	}
 	return true
+}
+
+func TestSmoothPathContinuity(t *testing.T) {
+	ti := pos.HexFractional{Q: 1, R: -1}.Normalize()
+	te := pos.HexFractional{Q: -1, R: 1}.Normalize()
+	path := []pos.HexFractional{
+		pos.OriginFractional(),
+		pos.HexFractional{Q: 1, R: -1},
+		pos.HexFractional{Q: 1, R: 0},
+		pos.HexFractional{Q: 0, R: 1},
+		pos.HexFractional{Q: 1, R: 1},
+		pos.HexFractional{Q: 2, R: 0},
+		pos.HexFractional{Q: 2, R: -1},
+	}
+
+	smoothArcs := curve.SmoothPath(ti, te, path)
+
+	prevArc := smoothArcs[0]
+	for _, arc := range smoothArcs[1:] {
+		prevCurve := prevArc.Curve()
+		curve := arc.Curve()
+		p0, p1, _ := prevCurve.Sample(1.0)
+		c0, c1, _ := curve.Sample(0.0)
+		assert.True(t, p0.AlmostEquals(c0),
+			fmt.Sprintf("Sample failed position continuity. Expected %s, got %s.", p0.ToString(), c0.ToString()))
+		assert.True(t, p1.AlmostEquals(c1),
+			fmt.Sprintf("Sample failed tangent continuity. Expected %s, got %s.", p1.ToString(), c1.ToString()))
+	}
 }

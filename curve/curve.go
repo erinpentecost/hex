@@ -3,6 +3,8 @@ package curve
 import (
 	"math"
 
+	"errors"
+
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -16,6 +18,11 @@ type Curver interface {
 
 	// Length returns the length of the curve.
 	Length() float64
+
+	// Spin whether the curve is  in the clockwise (false)
+	// or counterclockwise (true) direction. For lines, this will
+	// return an error.
+	Spin() (bool, error)
 }
 
 // Line is a Curver.
@@ -40,6 +47,11 @@ func (ls Line) Length() float64 {
 	return ls.i.DistanceTo(ls.e)
 }
 
+// Spin returns an error.
+func (ls Line) Spin() (bool, error) {
+	return false, errors.New("A line has no spin")
+}
+
 // newLine creates a line segment curve.
 // Inputs are start and end points.
 func newLine(i, e pos.HexFractional) Line {
@@ -60,7 +72,7 @@ type Arc struct {
 	CentralAngle    float64
 	length          float64
 	radius          float64
-	Spin            bool
+	spin            bool
 	cX              float64
 	cY              float64
 	piX             float64
@@ -93,11 +105,11 @@ func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional)
 	position = unitPosition.Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
-	// todo: add or subtract 90 degrees?
-	if ac.Spin {
-		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(-2.0))
+	// todo: this is broken
+	if ac.spin {
+		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(2.0))
 	} else {
-		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/2.0)
+		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(-2.0))
 	}
 
 	// curvature points toward the center of the circle
@@ -108,6 +120,13 @@ func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional)
 // Length returns the length of the curve.
 func (ac Arc) Length() float64 {
 	return ac.length
+}
+
+// Spin whether the curve is  in the clockwise (false)
+// or counterclockwise (true) direction. For lines, this will
+// return an error.
+func (ac Arc) Spin() (bool, error) {
+	return ac.spin, nil
 }
 
 // area determines the triangular area between three points.
@@ -184,23 +203,17 @@ func getQuadrant(x, y float64) int {
 	}
 }
 
-// getSpin determines if an arc defined by some point (px, py) and the
-// tangent (tx, ty) is going in the clockwise (false) or counterclockwise (true)
-// direction. Keep in mind that the bottom of your monitor is in the positive y
-// direction.
-func getSpin(py, px, ty, tx float64) bool {
-	if tx != 0 {
-		if py >= 0 {
-			return tx < 0
-		}
-		return tx > 0
-	} else if ty != 0 {
-		if px >= 0 {
-			return ty > 0
-		}
-		return ty < 0
+// angleDistance determines the difference between two angles in radians.
+// spin is clockwise (false) or counterclockwise (true)
+func angleDistance(start, end float64, spin bool) float64 {
+	if spin {
+		return angleDistance(end, start, false)
 	}
-	panic("Can't determine direction")
+	// at this point, only consider counterclockwise spin
+	if start < end {
+		return end - start
+	}
+	return end + (2*math.Pi - start)
 }
 
 // newArc creates a circular arc segment curve.
@@ -239,18 +252,13 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 
 	// Determine spin direction.
 	// clockwise (false) or counterclockwise (true)
-	spin := getSpin(piY, piX, tiuY, tiuX)
+	spin := area(pi, pi.Add(tiu), pe) < 0
 
 	// piA and peA are in the range 0 to 2pi
-	var centralAngle float64
-	if spin {
-		centralAngle = peA - piA
-	} else {
-		centralAngle = piA - peA
-	}
+	centralAngle := angleDistance(piA, peA, spin)
 
 	if centralAngle < 0.0 {
-		centralAngle = centralAngle + 2*math.Pi
+		panic("oh no")
 	}
 
 	return Arc{
@@ -260,7 +268,7 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 		CentralAngle:    centralAngle,
 		length:          r * centralAngle,
 		radius:          r,
-		Spin:            spin,
+		spin:            spin,
 		cX:              centerX,
 		cY:              centerY,
 		piX:             piX,
@@ -270,6 +278,26 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 		peY:             peY,
 		peA:             peA,
 	}
+}
+
+// getSpin determines if an arc defined by some point (px, py) and the
+// tangent (tx, ty) is going in the clockwise (false) or counterclockwise (true)
+// direction. Keep in mind that the bottom of your monitor is in the positive y
+// direction.
+// TODO: I think this is broken.
+func getSpin(px, py, tx, ty float64) bool {
+	if tx != 0 {
+		if py >= 0 {
+			return tx < 0
+		}
+		return tx > 0
+	} else if ty != 0 {
+		if px >= 0 {
+			return ty > 0
+		}
+		return ty < 0
+	}
+	panic("Can't determine direction")
 }
 
 // Piecewise is a Curver.

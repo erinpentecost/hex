@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 
 	"github.com/erinpentecost/hexcoord/pos"
@@ -25,10 +26,6 @@ type DefaultDecorator struct{}
 
 // AreaColor picks a background color for the hex.
 func (d DefaultDecorator) AreaColor(h pos.Hex) color.RGBA {
-	if h == pos.Origin() {
-		return color.RGBA{255, 100, 100, 255}
-	}
-
 	mod := func(a int) int {
 		if a < 0 {
 			return (a * (-1)) % 2
@@ -76,6 +73,7 @@ func NewCamera(imageLenX int, imageLenY int, zoom float64, center pos.Hex) Camer
 		panic("zoom range is from 0 to 1")
 	}
 	centerX, centerY := center.ToHexFractional().ToCartesian()
+	diag := math.Sqrt(float64(imageLenX*imageLenX + imageLenY*imageLenY))
 	return Camera{
 		imageLenX: imageLenX,
 		imageLenY: imageLenY,
@@ -83,8 +81,13 @@ func NewCamera(imageLenX int, imageLenY int, zoom float64, center pos.Hex) Camer
 		center:    center,
 		centerX:   centerX,
 		centerY:   centerY,
-		hWidth:    float64(imageLenX) * zoom,
+		hWidth:    diag * zoom,
 	}
+}
+
+// Scale returns the relation between screen coordinates and hex coordinates
+func (c Camera) Scale() float64 {
+	return c.hWidth
 }
 
 // ScreenToHex converts camera coordinates to hex coordinates
@@ -148,6 +151,38 @@ func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
 	}
 	d.DrawString(label)
 	img.SetRGBA(x, y, col)
+}
+
+// Point draws a fat point.
+func (c Camera) Point(img *image.RGBA, col color.RGBA, p pos.HexFractional) {
+	xImg, yImg := c.HexToScreen(p)
+
+	img.SetRGBA(xImg, yImg, col)
+
+	img.SetRGBA(xImg+1, yImg, col)
+	img.SetRGBA(xImg-1, yImg, col)
+	img.SetRGBA(xImg, yImg+1, col)
+	img.SetRGBA(xImg, yImg-1, col)
+
+	img.SetRGBA(xImg+1, yImg+1, col)
+	img.SetRGBA(xImg-1, yImg-1, col)
+	img.SetRGBA(xImg-1, yImg+1, col)
+	img.SetRGBA(xImg+1, yImg-1, col)
+}
+
+// Line draws a line on the image.
+func (c Camera) Line(img *image.RGBA, col color.RGBA, bold bool, start, end pos.HexFractional) {
+	len := start.DistanceTo(end)
+	sampleStep := float64(0.99) / (len * c.Scale())
+	for s := 0.0; s < 1.0; s = s + sampleStep {
+		posHex := pos.LerpHexFractional(start, end, s)
+		if bold {
+			c.Point(img, col, posHex)
+		} else {
+			xImg, yImg := c.HexToScreen(posHex)
+			img.SetRGBA(xImg, yImg, col)
+		}
+	}
 }
 
 // Save saves an image to a file

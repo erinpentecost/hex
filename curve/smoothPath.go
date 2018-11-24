@@ -43,22 +43,20 @@ func SmoothPath(ti pos.HexFractional, te pos.HexFractional, path []pos.HexFracti
 		return make([]CircularArc, 0, 0)
 	}
 
-	curves := make([]CircularArc, len(path)-1, len(path)*2)
+	curves := make([]CircularArc, 0, 2*len(path))
 
 	// Find tangents for each position.
 	tangents := make([]pos.HexFractional, len(path), len(path))
 	tangents[0] = ti
-	tangents[len(tangents)-1] = te
+	tangents[len(path)-1] = te
 	for p := 1; p < len(path)-1; p++ {
 		tangents[p] = approximateTangent(path[p-1], path[p], path[p+1])
 	}
 
 	// Generate biarcs for each pair of points.
-	ci := 0
 	for i := 0; i < len(path)-1; i++ {
 		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1]) {
-			curves[ci] = b
-			ci++
+			curves = append(curves, b)
 		}
 	}
 
@@ -136,6 +134,8 @@ func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 
 	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
 	tj = v.Subtract(t.Multiply(a)).Multiply(-2 * a)
+	// dumb version
+	//j, tj, _ = CircularArc{pi, ti, j}.Curve().Sample(1.0)
 
 	return []CircularArc{
 		CircularArc{pi, ti, j},
