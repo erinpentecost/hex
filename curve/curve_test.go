@@ -130,7 +130,7 @@ func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {
 	return true
 }
 
-func TestBiarc(t *testing.T) {
+func TestBiarcOrthogonal(t *testing.T) {
 	up := pos.HexFractional{Q: 1, R: -2}.Normalize()
 	down := pos.HexFractional{Q: -1, R: 2}.Normalize()
 	biarc := curve.Biarc(
@@ -169,6 +169,42 @@ func TestBiarc(t *testing.T) {
 	// Spin check
 	assert.Equal(t, curve.Clockwise, c1.Spin())
 	assert.Equal(t, curve.CounterClockwise, c2.Spin())
+}
+
+func TestBiarcDiagonal(t *testing.T) {
+	biarc := curve.Biarc(
+		pos.HexFractional{Q: 0, R: 0},
+		pos.HexFractional{Q: 1, R: -1}.Normalize(),
+		pos.HexFractional{Q: 1, R: -1},
+		pos.HexFractional{Q: 1, R: 0}.Normalize(),
+	)
+
+	a1 := biarc[0]
+	a2 := biarc[1]
+	c1 := a1.Curve()
+	c2 := a2.Curve()
+
+	// Test arc values to make sure they are correct
+	assert.True(t, a1.I.AlmostEquals(pos.HexFractional{Q: 0, R: 0}))
+	assert.True(t, a1.T.AlmostEquals(pos.HexFractional{Q: 1, R: -1}.Normalize()))
+	assert.True(t, a2.E.AlmostEquals(pos.HexFractional{Q: 1, R: -1}))
+
+	// Actually sample the arcs at key points now
+	end1Point, end1Tangent, _ := c1.Sample(1.0)
+	start1Point, start1Tangent, _ := c2.Sample(0.0)
+	end2Point, end2Tangent, _ := c2.Sample(1.0)
+
+	// Continuity in the arc
+	assert.True(t, end1Tangent.AlmostEquals(start1Tangent))
+	assert.True(t, end1Point.AlmostEquals(start1Point))
+
+	// Ending values
+	assert.True(t, end2Tangent.AlmostEquals(pos.HexFractional{Q: 1, R: 0}.Normalize()))
+	assert.True(t, end2Point.AlmostEquals(pos.HexFractional{Q: 1, R: -1}))
+
+	// Spin check
+	assert.Equal(t, curve.CounterClockwise, c1.Spin())
+	assert.Equal(t, curve.Clockwise, c2.Spin())
 }
 
 func TestSmoothPathContinuity(t *testing.T) {
