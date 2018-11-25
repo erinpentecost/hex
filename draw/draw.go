@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 
+	"github.com/erinpentecost/hexcoord/curve"
 	"github.com/erinpentecost/hexcoord/pos"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
@@ -168,6 +169,25 @@ func (c Camera) Point(img *image.RGBA, col color.RGBA, p pos.HexFractional) {
 	img.SetRGBA(xImg-1, yImg-1, col)
 	img.SetRGBA(xImg-1, yImg+1, col)
 	img.SetRGBA(xImg+1, yImg-1, col)
+}
+
+// Curve draws curve on the image.
+func (c Camera) Curve(img *image.RGBA, col color.RGBA, curver curve.Curver) {
+	// Draw tangent lines
+	supportLen := 0.5
+	initPoint, initTan, _ := curver.Sample(0.0)
+	endPoint, endTan, _ := curver.Sample(1.0)
+	midPoint, midTan, _ := curver.Sample(0.5)
+	c.Line(img, color.RGBA{255, 0, 0, 255}, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
+	c.Line(img, color.RGBA{0, 0, 255, 255}, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
+	c.Line(img, color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
+
+	// Trace curve
+	sampleStep := float64(0.99) / (curver.Length() * c.Scale())
+	for s := 0.0; s < 1.0; s = s + sampleStep {
+		posHex, _, _ := curver.Sample(s)
+		c.Point(img, col, posHex)
+	}
 }
 
 // Line draws a line on the image.

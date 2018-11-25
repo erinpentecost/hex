@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/erinpentecost/hexcoord/draw",
     visibility = ["//visibility:public"],
     deps = [
+        "//curve:go_default_library",
         "//pos:go_default_library",
         "//vendor/golang.org/x/image/font:go_default_library",
         "//vendor/golang.org/x/image/font/basicfont:go_default_library",

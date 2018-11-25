@@ -83,8 +83,30 @@ type Arc struct {
 	peA             float64
 }
 
-func lerpAngle(a, b, t float64) float64 {
-	return a + t*normalizeAngle(b-a)
+// lerpAngle traces an arc.
+// spin is clockwise (false) or counterclockwise (true)
+func lerpAngleohno(spin bool, a, b, t float64) float64 {
+	if spin {
+		return lerpAngle(false, b, a, t)
+	}
+	aN := normalizeAngle(a) + math.Pi
+	bN := normalizeAngle(b) + math.Pi
+
+	if aN < bN {
+		return aN + t*normalizeAngle(bN-aN)
+	}
+	return bN + (1.0-t)*normalizeAngle(aN-bN)
+
+	//return a + t*normalizeAngle(b-a)
+}
+
+// lerpAngle traces an arc.
+// spin is clockwise (false) or counterclockwise (true)
+func lerpAngle(spin bool, a, b, t float64) float64 {
+	if spin {
+		return a + t*normalizeAngle(b-a)
+	}
+	return b + (1.0-t)*normalizeAngle(a-b)
 }
 
 // normalizeAngle places the angle in the range of pi to -pi.
@@ -96,7 +118,7 @@ func normalizeAngle(a float64) float64 {
 // t is valid for 0 to 1, inclusive.
 func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional) {
 
-	angle := lerpAngle(ac.piA, ac.peA, t)
+	angle := lerpAngle(ac.spin, ac.piA, ac.peA, t)
 
 	// sweep by some ratio of the maximal central angle to get position.
 	// ptX := ac.cX + ac.radius*math.Cos(angle)
@@ -105,7 +127,6 @@ func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional)
 	position = unitPosition.Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
-	// todo: this is broken
 	if ac.spin {
 		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(2.0))
 	} else {
@@ -280,26 +301,6 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 	}
 }
 
-// getSpin determines if an arc defined by some point (px, py) and the
-// tangent (tx, ty) is going in the clockwise (false) or counterclockwise (true)
-// direction. Keep in mind that the bottom of your monitor is in the positive y
-// direction.
-// TODO: I think this is broken.
-func getSpin(px, py, tx, ty float64) bool {
-	if tx != 0 {
-		if py >= 0 {
-			return tx < 0
-		}
-		return tx > 0
-	} else if ty != 0 {
-		if px >= 0 {
-			return ty > 0
-		}
-		return ty < 0
-	}
-	panic("Can't determine direction")
-}
-
 // Piecewise is a Curver.
 type Piecewise struct {
 	segments []Curver
@@ -330,6 +331,28 @@ func (cs Piecewise) Sample(t float64) (position, tangent, curvature pos.HexFract
 // Length returns the length of the curve.
 func (cs Piecewise) Length() float64 {
 	return cs.length
+}
+
+// Spin returns the spin of the curve.
+func (cs Piecewise) Spin() (bool, error) {
+	if len(cs.segments) == 0 {
+		return false, errors.New("No segments, so spin is indeterminate")
+	}
+	prev, err := cs.segments[0].Spin()
+	if err != nil {
+		return false, err
+	}
+
+	for _, s := range cs.segments {
+		cSpin, cErr := s.Spin()
+		if cErr != nil {
+			return false, cErr
+		}
+		if cSpin != prev {
+			return false, errors.New("Segments have mixed spins")
+		}
+	}
+	return prev, nil
 }
 
 // Join creates a multipart curve.
