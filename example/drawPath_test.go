@@ -43,7 +43,7 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	// Draw supporting vectors.
 	for i, arc := range smoothArcs {
 		curve := arc.Curve()
-		s, _ := curve.Spin()
+		s := curve.Spin() == 1
 		_, supportColor := getColor(i, s)
 
 		supportLen := 0.5
@@ -56,7 +56,7 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	// Draw arcs.
 	for i, arc := range smoothArcs {
 		curve := arc.Curve()
-		s, _ := curve.Spin()
+		s := curve.Spin() == 1
 		sampleStep := float64(0.99) / (curve.Length() * cc.Scale())
 		arcColor, _ := getColor(i, s)
 		for s := 0.0; s < 1.0; s = s + sampleStep {

@@ -3,9 +3,19 @@ package curve
 import (
 	"math"
 
-	"errors"
-
 	"github.com/erinpentecost/hexcoord/pos"
+)
+
+// SpinDirection of curve spin
+type SpinDirection int
+
+const (
+	// CounterClockwise direction
+	CounterClockwise SpinDirection = 1
+	// Clockwise direction
+	Clockwise SpinDirection = -1
+	// NoSpin direction
+	NoSpin SpinDirection = 0
 )
 
 // Curver is a continuous curve segment.
@@ -21,8 +31,8 @@ type Curver interface {
 
 	// Spin whether the curve is  in the clockwise (false)
 	// or counterclockwise (true) direction. For lines, this will
-	// return an error.
-	Spin() (bool, error)
+	// return no spin
+	Spin() SpinDirection
 }
 
 // Line is a Curver.
@@ -48,8 +58,8 @@ func (ls Line) Length() float64 {
 }
 
 // Spin returns an error.
-func (ls Line) Spin() (bool, error) {
-	return false, errors.New("A line has no spin")
+func (ls Line) Spin() SpinDirection {
+	return NoSpin
 }
 
 // newLine creates a line segment curve.
@@ -129,8 +139,11 @@ func (ac Arc) Length() float64 {
 // Spin whether the curve is  in the clockwise (false)
 // or counterclockwise (true) direction. For lines, this will
 // return an error.
-func (ac Arc) Spin() (bool, error) {
-	return ac.spin, nil
+func (ac Arc) Spin() SpinDirection {
+	if ac.spin {
+		return CounterClockwise
+	}
+	return Clockwise
 }
 
 // area determines the triangular area between three points.
@@ -317,25 +330,25 @@ func (cs Piecewise) Length() float64 {
 }
 
 // Spin returns the spin of the curve.
-func (cs Piecewise) Spin() (bool, error) {
+func (cs Piecewise) Spin() SpinDirection {
 	if len(cs.segments) == 0 {
-		return false, errors.New("No segments, so spin is indeterminate")
+		return NoSpin
 	}
-	prev, err := cs.segments[0].Spin()
-	if err != nil {
-		return false, err
+	prev := cs.segments[0].Spin()
+	if prev == NoSpin {
+		return NoSpin
 	}
 
 	for _, s := range cs.segments {
-		cSpin, cErr := s.Spin()
-		if cErr != nil {
-			return false, cErr
+		cSpin := s.Spin()
+		if cSpin == NoSpin {
+			return NoSpin
 		}
 		if cSpin != prev {
-			return false, errors.New("Segments have mixed spins")
+			return NoSpin
 		}
 	}
-	return prev, nil
+	return prev
 }
 
 // Join creates a multipart curve.

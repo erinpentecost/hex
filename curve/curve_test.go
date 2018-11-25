@@ -45,16 +45,15 @@ func TestLineCurve(t *testing.T) {
 				E: e.ToHexFractional(),
 			}
 
-			curve := line.Curve()
+			lcurve := line.Curve()
 
-			_, spinErr := curve.Spin()
-			assert.Error(t, spinErr, "Spin should not be valid for a line.")
+			assert.Equal(t, curve.NoSpin, lcurve.Spin(), "Spin should not be valid for a line.")
 
-			assertSample(t, line, 0.0, curve, line.I, line.T, origin)
-			assertSample(t, line, 0.1, curve, pos.LerpHexFractional(line.I, line.E, 0.1), line.T, origin)
-			assertSample(t, line, 0.5, curve, pos.LerpHexFractional(line.I, line.E, 0.5), line.T, origin)
-			assertSample(t, line, 0.75, curve, pos.LerpHexFractional(line.I, line.E, 0.75), line.T, origin)
-			assertSample(t, line, 1.0, curve, line.E, line.T, origin)
+			assertSample(t, line, 0.0, lcurve, line.I, line.T, origin)
+			assertSample(t, line, 0.1, lcurve, pos.LerpHexFractional(line.I, line.E, 0.1), line.T, origin)
+			assertSample(t, line, 0.5, lcurve, pos.LerpHexFractional(line.I, line.E, 0.5), line.T, origin)
+			assertSample(t, line, 0.75, lcurve, pos.LerpHexFractional(line.I, line.E, 0.75), line.T, origin)
+			assertSample(t, line, 1.0, lcurve, line.E, line.T, origin)
 		}
 	}
 
@@ -80,19 +79,17 @@ func TestUnitArcCounterClockwise(t *testing.T) {
 			I: start,
 			T: tan,
 		}
-		curve := arc.Curve()
+		acurve := arc.Curve()
 
 		radSwp := float64(i) * math.Pi / 3.0
 
 		endTan := tan.Rotate(originf, radSwp)
 
-		spinVal, spinErr := curve.Spin()
-		assert.NoError(t, spinErr, "Circular arc should have a spin.")
-		assert.Equal(t, true, spinVal, "Spin direction is wrong.")
+		assert.Equal(t, curve.CounterClockwise, acurve.Spin(), "Spin direction is wrong.")
 
-		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
-		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
-		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
+		assertCloseEnough(t, radSwp, acurve.Length(), "Curve length is wrong.")
+		assertSample(t, i, 0.0, acurve, start, tan, originf.Subtract(start))
+		assertSample(t, i, 1.0, acurve, end, endTan, originf.Subtract(end))
 	}
 }
 
@@ -112,19 +109,17 @@ func TestUnitArcClockwise(t *testing.T) {
 			I: start,
 			T: tan,
 		}
-		curve := arc.Curve()
+		acurve := arc.Curve()
 
 		radSwp := float64(6-i) * math.Pi / 3.0
 
 		endTan := end.Rotate(originf, math.Pi/(-2.0))
 
-		spinVal, spinErr := curve.Spin()
-		assert.NoError(t, spinErr, "Circular arc should have a spin.")
-		assert.Equal(t, false, spinVal, "Spin direction is wrong.")
+		assert.Equal(t, curve.Clockwise, acurve.Spin(), "Spin direction is wrong.")
 
-		assertCloseEnough(t, radSwp, curve.Length(), "Curve length is wrong.")
-		assertSample(t, i, 0.0, curve, start, tan, originf.Subtract(start))
-		assertSample(t, i, 1.0, curve, end, endTan, originf.Subtract(end))
+		assertCloseEnough(t, radSwp, acurve.Length(), "Curve length is wrong.")
+		assertSample(t, i, 0.0, acurve, start, tan, originf.Subtract(start))
+		assertSample(t, i, 1.0, acurve, end, endTan, originf.Subtract(end))
 	}
 }
 
@@ -164,12 +159,16 @@ func TestBiarc(t *testing.T) {
 	assert.True(t, end1Tangent.AlmostEquals(start1Tangent))
 	assert.True(t, end1Point.AlmostEquals(start1Point))
 
-	// Mid tangent is as expected
+	// Mid tangent
 	assert.True(t, end1Tangent.AlmostEquals(down))
 
-	// Ending tangent is as expected
+	// Ending values
 	assert.True(t, end2Tangent.AlmostEquals(up))
 	assert.True(t, end2Point.AlmostEquals(pos.HexFractional{Q: 1, R: 0}))
+
+	// Spin check
+	assert.Equal(t, curve.Clockwise, c1.Spin())
+	assert.Equal(t, curve.CounterClockwise, c2.Spin())
 }
 
 func TestSmoothPathContinuity(t *testing.T) {
