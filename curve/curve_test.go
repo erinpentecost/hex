@@ -130,7 +130,7 @@ func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {
 	return true
 }
 
-func TestBiarcOrthogonal(t *testing.T) {
+func TestBiarcSemiCircle(t *testing.T) {
 	up := pos.HexFractional{Q: 1, R: -2}.Normalize()
 	down := pos.HexFractional{Q: -1, R: 2}.Normalize()
 	biarc := curve.Biarc(
@@ -171,7 +171,7 @@ func TestBiarcOrthogonal(t *testing.T) {
 	assert.Equal(t, curve.CounterClockwise, c2.Spin())
 }
 
-func TestBiarcDiagonal(t *testing.T) {
+func TestBiarc(t *testing.T) {
 	biarc := curve.Biarc(
 		pos.HexFractional{Q: 0, R: 0},
 		pos.HexFractional{Q: 1, R: -1}.Normalize(),
