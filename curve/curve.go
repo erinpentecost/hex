@@ -85,23 +85,6 @@ type Arc struct {
 
 // lerpAngle traces an arc.
 // spin is clockwise (false) or counterclockwise (true)
-func lerpAngleohno(spin bool, a, b, t float64) float64 {
-	if spin {
-		return lerpAngle(false, b, a, t)
-	}
-	aN := normalizeAngle(a) + math.Pi
-	bN := normalizeAngle(b) + math.Pi
-
-	if aN < bN {
-		return aN + t*normalizeAngle(bN-aN)
-	}
-	return bN + (1.0-t)*normalizeAngle(aN-bN)
-
-	//return a + t*normalizeAngle(b-a)
-}
-
-// lerpAngle traces an arc.
-// spin is clockwise (false) or counterclockwise (true)
 func lerpAngle(spin bool, a, b, t float64) float64 {
 	if spin {
 		return a + t*normalizeAngle(b-a)
