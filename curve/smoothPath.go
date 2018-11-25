@@ -135,7 +135,7 @@ func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
 	tj = v.Subtract(t.Multiply(a)).Multiply(-2 * a)
 	// dumb version
-	//j, tj, _ = CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
 
 	return []CircularArc{
 		CircularArc{pi, ti, j},
