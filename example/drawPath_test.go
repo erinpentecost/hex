@@ -48,9 +48,9 @@ func TestSmoothCurveDrawing(t *testing.T) {
 
 		supportLen := 0.5
 		initPoint, initTan, _ := curve.Sample(0.0)
-		//endPoint, endTan, _ := curve.Sample(1.0)
+		endPoint, endTan, _ := curve.Sample(1.0)
 		cc.Line(img, supportColor, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
-		//cc.Line(img, supportColor, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
+		cc.Line(img, supportColor, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
 	}
 
 	// Draw arcs.

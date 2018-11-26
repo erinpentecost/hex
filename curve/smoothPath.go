@@ -106,6 +106,7 @@ func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 	// Start and end tangents are parallel. (N2)
 	if closeEnough(t.Length(), 2.0) {
 		// Semicircle case. (N3)
+		// changed from t to ti. mistake in the paper
 		if closeEnough(v.DotProduct(ti), 0.0) {
 			j = pi.Add(v.Multiply(0.5))
 			tj = ti.Multiply(-1.0)
@@ -120,22 +121,27 @@ func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 		vl := v.Length()
 		tl := t.Length()
 		d = vdt*vdt + vl*vl*(4-tl*tl)
-		// Calculate a from 2.7
-		a = (math.Sqrt(d) - vdt) / (4 - tl*tl)
+		// Calculate a from 2.8
+		a = (vl * vl) / (4 * v.DotProduct(ti))
+
 	} else { // N4
 		// Calculate d from 2.6
 		vdt := v.DotProduct(t)
 		vl := v.Length()
 		tl := t.Length()
 		d = vdt*vdt + vl*vl*(4-tl*tl)
-		// Calculate a from 2.8
-		a = (vl * vl) / (4 * v.DotProduct(ti))
+		// Calculate a from 2.7
+		a = (math.Sqrt(d) - vdt) / (4.0 - tl*tl)
 	}
 
 	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
-	tj = v.Subtract(t.Multiply(a)).Multiply(2 * a)
+	tj = v.Subtract(t.Multiply(a)).Multiply(1.0 / (2.0 * a))
+	// the second arc's tangent is not matching te!!
+
+	// broken version
+	//tj = v.Subtract(t.Multiply(a)).Multiply(1.0 / (2.0 * a))
 	// dumb version
-	//_, tjSampled, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	//_, tj, _ = CircularArc{pi, ti, j}.Curve().Sample(1.0)
 	//if !tj.AlmostEquals(tjSampled) {
 	//	panic(fmt.Sprintf("Expected %s, got %s", tj.ToString(), tjSampled.ToString()))
 	//}
