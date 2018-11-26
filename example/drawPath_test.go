@@ -83,27 +83,35 @@ func TestHappyFaceDrawing(t *testing.T) {
 		I: pos.HexFractional{Q: 2, R: 0},
 		T: pos.HexFractional{Q: -1, R: 2},
 		E: pos.HexFractional{Q: 0, R: 0},
-	}
+	}.Curve()
 
 	// left eye
 	counterclockwiseArc := curve.CircularArc{
 		I: pos.HexFractional{Q: 1, R: -1},
 		T: pos.HexFractional{Q: 1, R: -2},
 		E: pos.HexFractional{Q: 0, R: -1},
-	}
+	}.Curve()
 
 	// right eye, wink
 	lineArc := curve.CircularArc{
 		I: pos.HexFractional{Q: 2, R: -1},
 		T: pos.HexFractional{Q: 1, R: 0},
 		E: pos.HexFractional{Q: 3, R: -1},
+	}.Curve()
+
+	getColor := func(c curve.Curver) color.RGBA {
+		switch c.Spin() {
+		case curve.Clockwise:
+			return color.RGBA{0, 0, 222, 255}
+		case curve.CounterClockwise:
+			return color.RGBA{222, 0, 0, 255}
+		default:
+			return color.RGBA{0, 0, 0, 255}
+		}
 	}
-
-	black := color.RGBA{0, 0, 0, 255}
-
-	cc.Curve(img, black, clockwiseArc.Curve())
-	cc.Curve(img, black, counterclockwiseArc.Curve())
-	cc.Curve(img, black, lineArc.Curve())
+	cc.Curve(img, getColor(clockwiseArc), clockwiseArc)
+	cc.Curve(img, getColor(counterclockwiseArc), counterclockwiseArc)
+	cc.Curve(img, getColor(lineArc), lineArc)
 
 	fpath, err := draw.Save(img, "TestHappyFaceDrawing.png")
 	assert.NoError(t, err, fpath)
