@@ -2,6 +2,7 @@ package draw_test
 
 import (
 	"fmt"
+	"image"
 	"testing"
 
 	"github.com/erinpentecost/hexcoord/draw"
@@ -12,9 +13,10 @@ import (
 
 func TestDraw(t *testing.T) {
 	dd := draw.DefaultDecorator{}
-	cc := draw.NewCamera(600, 500, 0.2, pos.Origin())
+	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
+	cc := draw.NewCamera(img, 0.2, pos.Origin())
 
-	img := cc.Render(dd)
+	cc.Grid(dd)
 
 	path, err := draw.Save(img, "testdraw.png")
 	assert.NoError(t, err, path)

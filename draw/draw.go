@@ -10,6 +10,7 @@ import (
 
 	"github.com/erinpentecost/hexcoord/curve"
 	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
@@ -59,6 +60,7 @@ func (d DefaultDecorator) AreaLabel(h pos.Hex) string {
 
 // Camera defines the viewing pane
 type Camera struct {
+	img       *image.RGBA
 	imageLenX int
 	imageLenY int
 	zoom      float64
@@ -69,13 +71,16 @@ type Camera struct {
 }
 
 // NewCamera creates a new camera object
-func NewCamera(imageLenX int, imageLenY int, zoom float64, center pos.Hex) Camera {
+func NewCamera(img *image.RGBA, zoom float64, center pos.Hex) Camera {
 	if zoom > 1.0 || zoom <= 0.0 {
 		panic("zoom range is from 0 to 1")
 	}
 	centerX, centerY := center.ToHexFractional().ToCartesian()
+	imageLenX := img.Rect.Dx()
+	imageLenY := img.Rect.Dy()
 	diag := math.Sqrt(float64(imageLenX*imageLenX + imageLenY*imageLenY))
 	return Camera{
+		img:       img,
 		imageLenX: imageLenX,
 		imageLenY: imageLenY,
 		zoom:      zoom,
@@ -105,10 +110,8 @@ func (c Camera) HexToScreen(p pos.HexFractional) (x, y int) {
 	return int((hx-c.centerX)*c.hWidth) + c.imageLenX/2, int((hy-c.centerY)*c.hWidth) + c.imageLenY/2
 }
 
-// Render draws a hex grid.
-func (c Camera) Render(d Decorator) *image.RGBA {
-
-	m := image.NewRGBA(image.Rect(0, 0, c.imageLenX, c.imageLenY))
+// Grid draws a hex grid.
+func (c Camera) Grid(d Decorator) {
 
 	foundHexes := make(map[pos.Hex]interface{})
 
@@ -120,7 +123,7 @@ func (c Camera) Render(d Decorator) *image.RGBA {
 			if _, ok := foundHexes[hd]; !ok {
 				foundHexes[hd] = nil
 			}
-			m.SetRGBA(x, y, d.AreaColor(hd))
+			c.img.SetRGBA(x, y, d.AreaColor(hd))
 		}
 	}
 
@@ -133,12 +136,10 @@ func (c Camera) Render(d Decorator) *image.RGBA {
 		hx, hy := c.HexToScreen(h.ToHexFractional())
 		areaCol := d.AreaColor(h)
 		invertCol := color.RGBA{areaCol.R ^ 0xFF, areaCol.G ^ 0xFF, areaCol.B ^ 0xFF, 255}
-		addLabel(m, hx, hy, invertCol, label)
+		addLabel(c.img, hx, hy, invertCol, label)
 	}
 
 	// todo: draw edges
-
-	return m
 }
 
 func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
@@ -155,52 +156,67 @@ func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
 }
 
 // Point draws a fat point.
-func (c Camera) Point(img *image.RGBA, col color.RGBA, p pos.HexFractional) {
+func (c Camera) Point(to color.RGBA, p pos.HexFractional) {
 	xImg, yImg := c.HexToScreen(p)
 
-	img.SetRGBA(xImg, yImg, col)
+	col, _ := colorful.MakeColor(to)
 
-	img.SetRGBA(xImg+1, yImg, col)
-	img.SetRGBA(xImg-1, yImg, col)
-	img.SetRGBA(xImg, yImg+1, col)
-	img.SetRGBA(xImg, yImg-1, col)
+	// center point, full strength
+	c.img.SetRGBA(xImg, yImg, to)
 
-	img.SetRGBA(xImg+1, yImg+1, col)
-	img.SetRGBA(xImg-1, yImg-1, col)
-	img.SetRGBA(xImg-1, yImg+1, col)
-	img.SetRGBA(xImg+1, yImg-1, col)
+	orth := 0.8
+	blend(c.img, xImg+1, yImg, col, orth)
+	blend(c.img, xImg-1, yImg, col, orth)
+	blend(c.img, xImg, yImg+1, col, orth)
+	blend(c.img, xImg, yImg-1, col, orth)
+
+	diag := 0.2
+	blend(c.img, xImg+1, yImg+1, col, diag)
+	blend(c.img, xImg-1, yImg-1, col, diag)
+	blend(c.img, xImg-1, yImg+1, col, diag)
+	blend(c.img, xImg+1, yImg-1, col, diag)
+}
+
+func blend(img *image.RGBA, x, y int, col colorful.Color, strength float64) {
+	from, ok := colorful.MakeColor(img.RGBAAt(x, y))
+	if ok {
+		end := from.BlendLab(col, strength).Clamped()
+		img.Set(x, y, end)
+	} else {
+		img.Set(x, y, col.Clamped())
+	}
 }
 
 // Curve draws curve on the image.
-func (c Camera) Curve(img *image.RGBA, col color.RGBA, curver curve.Curver) {
+func (c Camera) Curve(col color.RGBA, curver curve.Curver) {
 	// Draw tangent lines
 	supportLen := 0.5
 	initPoint, initTan, _ := curver.Sample(0.0)
 	endPoint, endTan, _ := curver.Sample(1.0)
 	midPoint, midTan, _ := curver.Sample(0.5)
-	c.Line(img, color.RGBA{255, 0, 0, 255}, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
-	c.Line(img, color.RGBA{0, 0, 255, 255}, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
-	c.Line(img, color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
+	c.Line(color.RGBA{255, 0, 0, 255}, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
+	c.Line(color.RGBA{0, 0, 255, 255}, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
+	c.Line(color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
 
 	// Trace curve
-	sampleStep := float64(0.99) / (curver.Length() * c.Scale())
+	sampleStep := float64(0.96) / (curver.Length() * c.Scale())
 	for s := 0.0; s < 1.0; s = s + sampleStep {
 		posHex, _, _ := curver.Sample(s)
-		c.Point(img, col, posHex)
+		c.Point(col, posHex)
 	}
 }
 
 // Line draws a line on the image.
-func (c Camera) Line(img *image.RGBA, col color.RGBA, bold bool, start, end pos.HexFractional) {
+func (c Camera) Line(col color.RGBA, bold bool, start, end pos.HexFractional) {
 	len := start.DistanceTo(end)
 	sampleStep := float64(0.99) / (len * c.Scale())
 	for s := 0.0; s < 1.0; s = s + sampleStep {
 		posHex := pos.LerpHexFractional(start, end, s)
 		if bold {
-			c.Point(img, col, posHex)
+			c.Point(col, posHex)
 		} else {
 			xImg, yImg := c.HexToScreen(posHex)
-			img.SetRGBA(xImg, yImg, col)
+			c.img.SetRGBA(xImg, yImg, col)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package example_test
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"testing"
 
@@ -27,42 +28,26 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	smoothArcs := curve.SmoothPath(ti, te, path)
 
 	dd := draw.DefaultDecorator{}
-	cc := draw.NewCamera(600, 500, 0.15, pos.Hex{Q: 1, R: 0})
+	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
+	cc := draw.NewCamera(img, 0.15, pos.Hex{Q: 1, R: 0})
 
-	img := cc.Render(dd)
+	cc.Grid(dd)
 
-	getColor := func(i int, spin bool) (line, support color.RGBA) {
-		r := uint8((i%2)*10) + 50
-		b := uint8(255)
-		if spin {
-			b = 100
+	getColor := func(c curve.Curver) color.RGBA {
+		switch c.Spin() {
+		case curve.Clockwise:
+			return color.RGBA{0, 0, 222, 255}
+		case curve.CounterClockwise:
+			return color.RGBA{222, 0, 0, 255}
+		default:
+			return color.RGBA{0, 0, 0, 255}
 		}
-		return color.RGBA{r, 0, b, 255}, color.RGBA{r, 100, b, 255}
-	}
-
-	// Draw supporting vectors.
-	for i, arc := range smoothArcs {
-		curve := arc.Curve()
-		s := curve.Spin() == 1
-		_, supportColor := getColor(i, s)
-
-		supportLen := 0.5
-		initPoint, initTan, _ := curve.Sample(0.0)
-		endPoint, endTan, _ := curve.Sample(1.0)
-		cc.Line(img, supportColor, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
-		cc.Line(img, supportColor, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
 	}
 
 	// Draw arcs.
-	for i, arc := range smoothArcs {
+	for _, arc := range smoothArcs {
 		curve := arc.Curve()
-		s := curve.Spin() == 1
-		sampleStep := float64(0.99) / (curve.Length() * cc.Scale())
-		arcColor, _ := getColor(i, s)
-		for s := 0.0; s < 1.0; s = s + sampleStep {
-			posHex, _, _ := curve.Sample(s)
-			cc.Point(img, arcColor, posHex)
-		}
+		cc.Curve(getColor(curve), curve)
 	}
 
 	fpath, err := draw.Save(img, "TestSmoothCurveDrawing.png")
@@ -74,9 +59,10 @@ func TestSmoothCurveDrawing(t *testing.T) {
 func TestHappyFaceDrawing(t *testing.T) {
 
 	dd := draw.DefaultDecorator{}
-	cc := draw.NewCamera(600, 500, 0.1, pos.Hex{Q: 1, R: 0})
+	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
+	cc := draw.NewCamera(img, 0.1, pos.Hex{Q: 1, R: 0})
 
-	img := cc.Render(dd)
+	cc.Grid(dd)
 
 	// mouth
 	clockwiseArc := curve.CircularArc{
@@ -109,9 +95,9 @@ func TestHappyFaceDrawing(t *testing.T) {
 			return color.RGBA{0, 0, 0, 255}
 		}
 	}
-	cc.Curve(img, getColor(clockwiseArc), clockwiseArc)
-	cc.Curve(img, getColor(counterclockwiseArc), counterclockwiseArc)
-	cc.Curve(img, getColor(lineArc), lineArc)
+	cc.Curve(getColor(clockwiseArc), clockwiseArc)
+	cc.Curve(getColor(counterclockwiseArc), counterclockwiseArc)
+	cc.Curve(getColor(lineArc), lineArc)
 
 	fpath, err := draw.Save(img, "TestHappyFaceDrawing.png")
 	assert.NoError(t, err, fpath)
