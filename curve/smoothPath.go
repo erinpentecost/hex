@@ -2,7 +2,7 @@ package curve
 
 import (
 	"fmt"
-	"math"
+	"math/cmplx"
 
 	"github.com/erinpentecost/hexcoord/pos"
 )
@@ -55,7 +55,7 @@ func SmoothPath(ti pos.HexFractional, te pos.HexFractional, path []pos.HexFracti
 
 	// Generate biarcs for each pair of points.
 	for i := 0; i < len(path)-1; i++ {
-		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1]) {
+		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1], 0.5) {
 			curves = append(curves, b)
 		}
 	}
@@ -74,76 +74,91 @@ func approximateTangent(p0, p1, p2 pos.HexFractional) pos.HexFractional {
 	return a.Multiply(bLen / aLen).Add(b.Multiply(aLen / bLen))
 }
 
+func findRoots(a, b, c complex128) (r1 complex128, r2 complex128) {
+	component := cmplx.Sqrt(cmplx.Pow(b, 2) - 4*a*c)
+	r1 = (-b + component) / (2 * a)
+	r2 = (-b - component) / (2 * a)
+	return
+}
+
 // Biarc returns a list of circular arcs that connect pi to pe,
 // with ti being the tangent at pi and te being the tangent at pe.
 // This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
 // Modeling" by Ulugbek Khudayarov.
-func Biarc(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
+func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
+	if r <= 0.0 {
+		panic("r must be positive")
+	}
 	// Tangents should be unit vectors.
 	ti = ti.Normalize()
 	te = te.Normalize()
 
 	t := ti.Add(te)
 
-	v := pe.Subtract(pi)
-
-	// j is the joint point between the two arcs.
-	var j pos.HexFractional
-	// tj is the tangent at point j
-	var tj pos.HexFractional
-	// d is an intermediate discriminant value.
-	var d float64
-	// a is some intermediate constant.
-	var a float64
+	v := pi.Subtract(pe)
 
 	// This is the line segment case.
-	if closeEnough(v.Normalize().DotProduct(t), 1.0) {
+	// Start and end points are collinear with
+	// the tangents.
+	if closeEnough(v.Normalize().DotProduct(t), -1.0) {
 		return []CircularArc{
 			CircularArc{pi, ti, pe},
 		}
 	}
 
-	// Start and end tangents are parallel. (N2)
-	if closeEnough(t.Length(), 2.0) {
-		// Semicircle case. (N3)
-		// changed from t to ti. mistake in the paper
-		if closeEnough(v.DotProduct(ti), 0.0) {
-			j = pi.Add(v.Multiply(0.5))
-			tj = ti.Multiply(-1.0)
-
-			return []CircularArc{
-				CircularArc{pi, ti, j},
-				CircularArc{j, tj, pe},
-			}
+	// Special case where tangents are parallel.
+	if closeEnough(ti.DotProduct(te), 1.0) {
+		//todo
+		return []CircularArc{
+			CircularArc{pi, pe.Subtract(pi).Normalize(), pe},
 		}
-		// Calculate d from 2.6
-		vdt := v.DotProduct(t)
-		vl := v.Length()
-		tl := t.Length()
-		d = vdt*vdt + vl*vl*(4-tl*tl)
-		// Calculate a from 2.8
-		a = (vl * vl) / (4 * v.DotProduct(ti))
-
-	} else { // N4
-		// Calculate d from 2.6
-		vdt := v.DotProduct(t)
-		vl := v.Length()
-		tl := t.Length()
-		d = vdt*vdt + vl*vl*(4-tl*tl)
-		// Calculate a from 2.7
-		a = (math.Sqrt(d) - vdt) / (4.0 - tl*tl)
 	}
 
-	j = pi.Add(ti.Subtract(te).Multiply(a).Add(v).Multiply(0.5))
-	tj = v.Subtract(t.Multiply(a)).Multiply(1.0 / (2.0 * a))
-	// the second arc's tangent is not matching te!!
+	// Special case where tangents are perpendicular to start-end line
+	if closeEnough(v.DotProduct(ti.Multiply(r).Add(te)), 0.0) {
+		// todo
+		return []CircularArc{
+			CircularArc{pi, pe.Subtract(pi).Normalize(), pe},
+		}
+	}
 
-	// broken version
-	//tj = v.Subtract(t.Multiply(a)).Multiply(1.0 / (2.0 * a))
-	// dumb version
-	//_, tj, _ = CircularArc{pi, ti, j}.Curve().Sample(1.0)
-	//if !tj.AlmostEquals(tjSampled) {
-	//	panic(fmt.Sprintf("Expected %s, got %s", tj.ToString(), tjSampled.ToString()))
+	// Now find the positive root for
+	// v ⋅ v + 2 β v ⋅ ( r t s + t e ) + 2 r β 2 ( t s ⋅ t e − 1 ) = 0
+	a := v.DotProduct(v)
+	b := v.DotProduct(ti.Multiply(r).Add(te)) * 2.0
+	c := (ti.DotProduct(te) - 1.0) * 2.0 * r
+
+	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
+
+	// Pick a positive root for β
+	var beta float64
+	if closeEnough(imag(r1), 0.0) && real(r1) >= 0.0 {
+		beta = real(r1)
+	} else if closeEnough(imag(r2), 0.0) && real(r2) >= 0.0 {
+		beta = real(r2)
+	} else {
+		panic("something terrible happened")
+	}
+
+	alpha := r * beta
+
+	// Find the control points.
+	// wti is p1w
+	wti := pi.Add(ti.Multiply(alpha))
+	// wte is p4w
+	wte := pe.Add(te.Multiply(beta * (-1.0)))
+	// todo: wti and wte need to be further scaled by
+	// w 1 = cos( α 1 ) , w 3 = cos( α 2 ) ,
+	// where α 1 and α 2 denote the half sweep angles of the
+	// first and the second arc, respectively.
+
+	// j is the joint point between the two arcs.
+	j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+	// tj is the tangent at point j
+	tj := wte.Subtract(wti).Normalize()
+	//_, c1t, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	//if !c1t.AlmostEquals(tj) {
+	//	panic("not G0 connected")
 	//}
 
 	return []CircularArc{

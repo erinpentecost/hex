@@ -12,6 +12,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func getColor(c curve.Curver) color.RGBA {
+	switch c.Spin() {
+	case curve.Clockwise:
+		return color.RGBA{0, 0, 222, 255}
+	case curve.CounterClockwise:
+		return color.RGBA{222, 0, 0, 255}
+	default:
+		return color.RGBA{0, 0, 0, 255}
+	}
+}
+
 func TestSmoothCurveDrawing(t *testing.T) {
 	ti := pos.HexFractional{Q: 1, R: -1}.Normalize()
 	te := pos.HexFractional{Q: -1, R: 1}.Normalize()
@@ -28,21 +39,10 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	smoothArcs := curve.SmoothPath(ti, te, path)
 
 	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
-	cc := draw.NewCamera(img, 0.15, pos.Hex{Q: 1, R: 0})
+	img := image.NewRGBA(image.Rect(0, 0, 600, 600))
+	cc := draw.NewCamera(img, 0.06, pos.Hex{Q: 1, R: 0})
 
 	cc.Grid(dd)
-
-	getColor := func(c curve.Curver) color.RGBA {
-		switch c.Spin() {
-		case curve.Clockwise:
-			return color.RGBA{0, 0, 222, 255}
-		case curve.CounterClockwise:
-			return color.RGBA{222, 0, 0, 255}
-		default:
-			return color.RGBA{0, 0, 0, 255}
-		}
-	}
 
 	// Draw arcs.
 	for _, arc := range smoothArcs {
@@ -56,10 +56,33 @@ func TestSmoothCurveDrawing(t *testing.T) {
 
 }
 
+func TestBiarcDrawing(t *testing.T) {
+	dd := draw.DefaultDecorator{}
+	img := image.NewRGBA(image.Rect(0, 0, 500, 500))
+	cc := draw.NewCamera(img, 0.1, pos.Origin())
+
+	cc.Grid(dd)
+
+	b := curve.Biarc(
+		pos.HexFractional{Q: -1.0, R: 0.0},
+		pos.HexFractional{Q: 1.0, R: -2.0},
+		pos.HexFractional{Q: 1.0, R: 0.0},
+		pos.HexFractional{Q: 1.0, R: 0.0},
+		1.0)
+	for _, arc := range b {
+		c := arc.Curve()
+		cc.Curve(getColor(c), c)
+	}
+
+	fpath, err := draw.Save(img, "TestBiarcDrawing.png")
+	assert.NoError(t, err, fpath)
+	fmt.Println(fpath)
+}
+
 func TestHappyFaceDrawing(t *testing.T) {
 
 	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
+	img := image.NewRGBA(image.Rect(0, 0, 500, 500))
 	cc := draw.NewCamera(img, 0.1, pos.Hex{Q: 1, R: 0})
 
 	cc.Grid(dd)
@@ -85,16 +108,6 @@ func TestHappyFaceDrawing(t *testing.T) {
 		E: pos.HexFractional{Q: 3, R: -1},
 	}.Curve()
 
-	getColor := func(c curve.Curver) color.RGBA {
-		switch c.Spin() {
-		case curve.Clockwise:
-			return color.RGBA{0, 0, 222, 255}
-		case curve.CounterClockwise:
-			return color.RGBA{222, 0, 0, 255}
-		default:
-			return color.RGBA{0, 0, 0, 255}
-		}
-	}
 	cc.Curve(getColor(clockwiseArc), clockwiseArc)
 	cc.Curve(getColor(counterclockwiseArc), counterclockwiseArc)
 	cc.Curve(getColor(lineArc), lineArc)
