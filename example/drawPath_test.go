@@ -58,8 +58,8 @@ func TestSmoothCurveDrawing(t *testing.T) {
 
 func TestBiarcDrawing(t *testing.T) {
 	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 500))
-	cc := draw.NewCamera(img, 0.1, pos.Origin())
+	img := image.NewRGBA(image.Rect(0, 0, 500, 400))
+	cc := draw.NewCamera(img, 0.15, pos.Origin())
 
 	cc.Grid(dd)
 
