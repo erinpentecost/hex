@@ -63,15 +63,18 @@ func TestBiarcDrawing(t *testing.T) {
 
 	cc.Grid(dd)
 
-	b := curve.Biarc(
-		pos.HexFractional{Q: -1.0, R: 0.0},
-		pos.HexFractional{Q: 1.0, R: -2.0},
-		pos.HexFractional{Q: 1.0, R: 0.0},
-		pos.HexFractional{Q: 1.0, R: 0.0},
-		1.0)
-	for _, arc := range b {
-		c := arc.Curve()
-		cc.Curve(getColor(c), c)
+	rVals := []float64{0.5, 1.0, 1.5}
+	for _, r := range rVals {
+		b := curve.Biarc(
+			pos.HexFractional{Q: -1.0, R: 0.0},
+			pos.HexFractional{Q: 1.0, R: -2.1},
+			pos.HexFractional{Q: 1.0, R: 0.0},
+			pos.HexFractional{Q: 1.0, R: -0.1},
+			r)
+		for _, arc := range b {
+			c := arc.Curve()
+			cc.Curve(getColor(c), c)
+		}
 	}
 
 	fpath, err := draw.Save(img, "TestBiarcDrawing.png")

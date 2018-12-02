@@ -75,9 +75,9 @@ func approximateTangent(p0, p1, p2 pos.HexFractional) pos.HexFractional {
 }
 
 func findRoots(a, b, c complex128) (r1 complex128, r2 complex128) {
-	component := cmplx.Sqrt(cmplx.Pow(b, 2) - 4*a*c)
-	r1 = (-b + component) / (2 * a)
-	r2 = (-b - component) / (2 * a)
+	component := cmplx.Sqrt(cmplx.Pow(b, 2) - 4.0*a*c)
+	r1 = (-b + component) / (2.0 * a)
+	r2 = (-b - component) / (2.0 * a)
 	return
 }
 
@@ -106,27 +106,24 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 		}
 	}
 
-	// Special case where tangents are parallel.
-	if closeEnough(ti.DotProduct(te), 1.0) {
-		//todo
-		return []CircularArc{
-			CircularArc{pi, pe.Subtract(pi).Normalize(), pe},
-		}
-	}
-
-	// Special case where tangents are perpendicular to start-end line
-	if closeEnough(v.DotProduct(ti.Multiply(r).Add(te)), 0.0) {
-		// todo
-		return []CircularArc{
-			CircularArc{pi, pe.Subtract(pi).Normalize(), pe},
-		}
-	}
-
 	// Now find the positive root for
 	// v ⋅ v + 2 β v ⋅ ( r t s + t e ) + 2 r β 2 ( t s ⋅ t e − 1 ) = 0
-	a := v.DotProduct(v)
+	// β^2
+	a := (ti.DotProduct(te) - 1.0) * 2.0 * r
+	// β
 	b := v.DotProduct(ti.Multiply(r).Add(te)) * 2.0
-	c := (ti.DotProduct(te) - 1.0) * 2.0 * r
+	// constant
+	c := v.DotProduct(v)
+
+	// Semicircle case
+	if closeEnough(a, 0.0) {
+		j := pos.LerpHexFractional(pi, pe, 0.5)
+		tj := ti.Multiply(-1.0)
+		return []CircularArc{
+			CircularArc{pi, ti, j},
+			CircularArc{j, tj, pe},
+		}
+	}
 
 	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
 
@@ -137,7 +134,7 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	} else if closeEnough(imag(r2), 0.0) && real(r2) >= 0.0 {
 		beta = real(r2)
 	} else {
-		panic("something terrible happened")
+		panic(fmt.Sprintf("Can't find good roots for %v*β^2+%v*β+%v=0", a, b, c))
 	}
 
 	alpha := r * beta
@@ -147,16 +144,15 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	wti := pi.Add(ti.Multiply(alpha))
 	// wte is p4w
 	wte := pe.Add(te.Multiply(beta * (-1.0)))
-	// todo: wti and wte need to be further scaled by
-	// w 1 = cos( α 1 ) , w 3 = cos( α 2 ) ,
-	// where α 1 and α 2 denote the half sweep angles of the
-	// first and the second arc, respectively.
+
+	fmt.Printf("wti=%s, wte=%s", wti.ToString(), wte.ToString())
 
 	// j is the joint point between the two arcs.
-	j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+	//j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+	j := pos.LerpHexFractional(wti, wte, beta/(alpha+beta))
 	// tj is the tangent at point j
 	tj := wte.Subtract(wti).Normalize()
-	//_, c1t, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
 	//if !c1t.AlmostEquals(tj) {
 	//	panic("not G0 connected")
 	//}
