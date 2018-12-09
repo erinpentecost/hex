@@ -120,6 +120,12 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 		}
 	}
 
+	// Single arc case
+	_, pte, _ := CircularArc{pi, ti, pe}.Curve().Sample(1.0)
+	if pte.AlmostEquals(te) {
+		return []CircularArc{CircularArc{pi, ti, pe}}
+	}
+
 	// Now find the positive root for
 	// v ⋅ v + 2 β v ⋅ ( r t s + t e ) + 2 r β 2 ( t s ⋅ t e − 1 ) = 0
 	// β^2
