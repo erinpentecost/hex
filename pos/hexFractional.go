@@ -3,6 +3,8 @@ package pos
 import (
 	"fmt"
 	"math"
+
+	"github.com/erinpentecost/fltcmp"
 )
 
 // HexFractional is fractional hex coordinates in
@@ -63,10 +65,7 @@ func round(f float64) int {
 }
 
 func closeEnough(a, b float64) bool {
-	if a == b {
-		return true
-	}
-	return math.Abs(a-b) < 1e-10
+	return fltcmp.AlmostEqual(a, b, 5)
 }
 
 // AlmostEquals returns true when h and x are equal or close

@@ -106,6 +106,36 @@ func TestOpposite(t *testing.T) {
 	}
 }
 
+func TestScale(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := pos.AreaToSlice(pos.Hex{Q: 9999, R: 664}.SpiralArea(done, 4))
+	scalar := []float64{-1000.0, 1.0, 3.0}
+
+	for _, a := range testHexes {
+		af := a.ToHexFractional()
+		ax, ay := af.ToCartesian()
+		for _, b := range testHexes {
+			bf := b.ToHexFractional()
+			bx, by := bf.ToCartesian()
+			for _, s := range scalar {
+				// hex scaling
+				hScale := af.Multiply(s).Add(bf).Multiply(s)
+				// cartesian scaling
+				scale := func(a, b, s float64) float64 {
+					return (a*s + b) * s
+				}
+				cScaleX := scale(ax, bx, s)
+				cScaleY := scale(ay, by, s)
+				cScale := pos.HexFractionalFromCartesian(cScaleX, cScaleY)
+
+				assert.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.ToString(), cScale.ToString()))
+			}
+		}
+	}
+}
+
 func TestAngleTo(t *testing.T) {
 
 	o := pos.Origin()

@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//curve:go_default_library",
         "//pos:go_default_library",
+        "//vendor/github.com/lucasb-eyer/go-colorful:go_default_library",
         "//vendor/golang.org/x/image/font:go_default_library",
         "//vendor/golang.org/x/image/font/basicfont:go_default_library",
         "//vendor/golang.org/x/image/math/fixed:go_default_library",

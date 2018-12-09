@@ -8,6 +8,18 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/erinpentecost/fltcmp"
+  packages = ["."]
+  revision = "d4adf86de9b8b31db35c8874839dd5f8cb19c7ea"
+
+[[projects]]
+  name = "github.com/lucasb-eyer/go-colorful"
+  packages = ["."]
+  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -33,6 +45,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "332be38389f6f93fa0703ad1643b46997ea0064780ffe0f37a65d07c60a8f2dc"
+  inputs-digest = "6add16009b071dc9a7fcc76ac7ef395c8e80d9e511f932f454921b9cec64f1a6"
   solver-name = "gps-cdcl"
   solver-version = 1
