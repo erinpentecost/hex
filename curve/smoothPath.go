@@ -50,13 +50,13 @@ func SmoothPath(ti pos.HexFractional, te pos.HexFractional, path []pos.HexFracti
 	tangents := make([]pos.HexFractional, len(path), len(path))
 	tangents[0] = ti
 	tangents[len(path)-1] = te
-	for p := 1; p < len(path)-1; p++ {
+	for p := 1; p < len(tangents)-1; p++ {
 		tangents[p] = approximateTangent(path[p-1], path[p], path[p+1])
 	}
 
 	// Generate biarcs for each pair of points.
 	for i := 0; i < len(path)-1; i++ {
-		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1], 0.5) {
+		for _, b := range Biarc(path[i], tangents[i], path[i+1], tangents[i+1], 1.0) {
 			curves = append(curves, b)
 		}
 	}
@@ -141,6 +141,13 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 		}
 	}
 
+	if closeEnough(ti.DotProduct(te), 1.0) {
+		panic("unhandled special case #1")
+	}
+	if closeEnough(v.DotProduct(ti.Multiply(r).Add(te)), 0.0) {
+		panic("unhandled special case #2")
+	}
+
 	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
 
 	// Pick a positive root for β
@@ -154,18 +161,18 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// wte is p4w
 	wte := pe.Subtract(te.Multiply(beta))
 
-	fmt.Printf("wti=%s, wte=%s\r\n", wti.ToString(), wte.ToString())
+	//fmt.Printf("wti=%s, wte=%s\r\n", wti.ToString(), wte.ToString())
 
 	// j is the joint point between the two arcs.
-	j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
-	// todo: wte and wti are swapped
-	//j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
+	//j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+
+	j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
 	// tj is the tangent at point j
 	//tj := wte.Subtract(wti).Normalize()
-	_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
-	//if !c1t.AlmostEquals(tj) {
-	//	panic("not G0 connected")
-	//}
+	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	// Dumb way #3...
+	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
+	tj := tjp.Multiply(-1.0)
 
 	return []CircularArc{
 		CircularArc{pi, ti, j},

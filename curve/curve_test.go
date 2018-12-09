@@ -137,7 +137,8 @@ func TestBiarcSemiCircle(t *testing.T) {
 		pos.HexFractional{Q: 0, R: 0},
 		up,
 		pos.HexFractional{Q: 1, R: 0},
-		up)
+		up,
+		1.0)
 
 	a1 := biarc[0]
 	a2 := biarc[1]
