@@ -164,13 +164,13 @@ func (c Camera) Point(to color.RGBA, p pos.HexFractional) {
 	// center point, full strength
 	c.img.SetRGBA(xImg, yImg, to)
 
-	orth := 0.8
+	orth := 0.6
 	blend(c.img, xImg+1, yImg, col, orth)
 	blend(c.img, xImg-1, yImg, col, orth)
 	blend(c.img, xImg, yImg+1, col, orth)
 	blend(c.img, xImg, yImg-1, col, orth)
 
-	diag := 0.2
+	diag := 0.1
 	blend(c.img, xImg+1, yImg+1, col, diag)
 	blend(c.img, xImg-1, yImg-1, col, diag)
 	blend(c.img, xImg-1, yImg+1, col, diag)
@@ -199,7 +199,7 @@ func (c Camera) Curve(col color.RGBA, curver curve.Curver) {
 	c.Line(color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
 
 	// Trace curve
-	sampleStep := float64(0.96) / (curver.Length() * c.Scale())
+	sampleStep := float64(0.99) / (curver.Length() * c.Scale())
 	for s := 0.0; s < 1.0; s = s + sampleStep {
 		posHex, _, _ := curver.Sample(s)
 		c.Point(col, posHex)

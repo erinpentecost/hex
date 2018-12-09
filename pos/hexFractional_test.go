@@ -95,6 +95,17 @@ func TestRotate(t *testing.T) {
 	}
 }
 
+func TestOpposite(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := pos.Origin().Neighbors()
+	for _, h := range testHexes {
+		hf := h.ToHexFractional()
+		assert.True(t, hf.Rotate(pos.OriginFractional(), math.Pi).AlmostEquals(hf.Multiply(-1.0)))
+	}
+}
+
 func TestAngleTo(t *testing.T) {
 
 	o := pos.Origin()

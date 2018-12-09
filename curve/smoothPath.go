@@ -158,6 +158,10 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// Pick a positive root for β
 	beta := chooseRoot(r1, r2)
 
+	if beta < 0.0 {
+		panic("beta is negative")
+	}
+
 	alpha := r * beta
 
 	// Find the control points.
@@ -166,16 +170,11 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// wte is p4w
 	wte := pe.Subtract(te.Multiply(beta))
 
-	//fmt.Printf("wti=%s, wte=%s\r\n", wti.ToString(), wte.ToString())
-
 	// j is the joint point between the two arcs.
-	//j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+	j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
 
-	j := pos.LerpHexFractional(wti, wte, beta/(alpha+beta))
-	// tj is the tangent at point j
-	//tj := wte.Subtract(wti).Normalize()
-	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
-	// Dumb way #3...
+	// Reverse the second arc to get an end tangent that
+	// we expect. Yes, this is dumb.
 	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
 	tj := tjp.Multiply(-1.0)
 

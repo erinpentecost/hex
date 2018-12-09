@@ -220,8 +220,8 @@ func getQuadrant(x, y float64) int {
 // angleDistance determines the difference between two angles in radians.
 // spin is clockwise (false) or counterclockwise (true)
 func angleDistance(start, end float64, spin SpinDirection) float64 {
-	if spin == CounterClockwise {
-		return angleDistance(end, start, Clockwise)
+	if spin == Clockwise {
+		return angleDistance(end, start, CounterClockwise)
 	}
 	// at this point, only consider counterclockwise spin
 	if start < end {
