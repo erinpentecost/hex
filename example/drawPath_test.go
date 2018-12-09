@@ -41,7 +41,7 @@ func TestSmoothCurveDrawing(t *testing.T) {
 
 	dd := draw.DefaultDecorator{}
 	img := image.NewRGBA(image.Rect(0, 0, 600, 600))
-	cc := draw.NewCamera(img, 0.06, pos.Hex{Q: 1, R: 0})
+	cc := draw.NewCamera(img, 0.15, pos.Hex{Q: 1, R: 0})
 
 	cc.Grid(dd)
 
