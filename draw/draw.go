@@ -193,10 +193,13 @@ func (c Camera) Curve(col color.RGBA, curver curve.Curver) {
 	supportLen := 0.5
 	initPoint, initTan, _ := curver.Sample(0.0)
 	endPoint, endTan, _ := curver.Sample(1.0)
-	midPoint, midTan, _ := curver.Sample(0.5)
+	//midPoint, midTan, _ := curver.Sample(0.5)
 	c.Line(color.RGBA{255, 0, 0, 255}, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
 	c.Line(color.RGBA{0, 0, 255, 255}, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
-	c.Line(color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
+	//c.Line(color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
+
+	//c.Line(color.RGBA{0, 255, 255, 255}, false, initPoint, initCurva.Add(initPoint))
+	//c.Line(color.RGBA{0, 255, 255, 255}, false, endPoint, endCurva.Add(endPoint))
 
 	// Trace curve
 	sampleStep := float64(0.99) / (curver.Length() * c.Scale())

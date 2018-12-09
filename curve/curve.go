@@ -282,7 +282,7 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 	}
 
 	return Arc{
-		ca:              CircularArc{pi, tiu, pe},
+		ca:              CircularArc{pi, tiu, pe, pos.OriginFractional()},
 		Center:          center,
 		scalarCurvature: float64(1.0) / r,
 		CentralAngle:    centralAngle,

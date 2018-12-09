@@ -16,6 +16,8 @@ type CircularArc struct {
 	T pos.HexFractional
 	// E is the end point.
 	E pos.HexFractional
+	// C is an arbitrary control point.
+	C pos.HexFractional
 }
 
 // ToString converts the arc to a string.
@@ -105,9 +107,15 @@ func cartesianDotProduct(a, b pos.HexFractional) float64 {
 
 // Biarc returns a list of circular arcs that connect pi to pe,
 // with ti being the tangent at pi and te being the tangent at pe.
-// This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
-// Modeling" by Ulugbek Khudayarov.
 func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
+	return BiarcPark(pi, ti, pe, te, r)
+	//return BiarcJuckett(pi, ti, pe, te)
+}
+
+// BiarcPark returns a list of circular arcs that connect pi to pe,
+// with ti being the tangent at pi and te being the tangent at pe.
+// Adapted from "Optimal Single Biarc Fitting and its Applications" by Park.
+func BiarcPark(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	if r <= 0.0 {
 		panic("r must be positive")
 	}
@@ -115,14 +123,12 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	ti = ti.Normalize()
 	te = te.Normalize()
 
-	//t := ti.Add(te)
-
 	v := pi.Subtract(pe)
 
 	// Single arc case
-	_, pte, _ := CircularArc{pi, ti, pe}.Curve().Sample(1.0)
+	_, pte, _ := CircularArc{pi, ti, pe, pos.OriginFractional()}.Curve().Sample(1.0)
 	if pte.AlmostEquals(te) {
-		return []CircularArc{CircularArc{pi, ti, pe}}
+		return []CircularArc{CircularArc{pi, ti, pe, pos.OriginFractional()}}
 	}
 
 	// Now find the positive root for
@@ -141,8 +147,8 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 		j := pos.LerpHexFractional(pi, pe, 0.5)
 		tj := ti.Multiply(-1.0)
 		return []CircularArc{
-			CircularArc{pi, ti, j},
-			CircularArc{j, tj, pe},
+			CircularArc{pi, ti, j, pos.OriginFractional()},
+			CircularArc{j, tj, pe, pos.OriginFractional()},
 		}
 	}
 
@@ -172,14 +178,75 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 
 	// j is the joint point between the two arcs.
 	j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
+	//j := pi.Add(pe).Add(ti.Subtract(te).Multiply(beta)).Multiply(0.5)
 
 	// Reverse the second arc to get an end tangent that
 	// we expect. Yes, this is dumb.
-	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
+	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j, pos.OriginFractional()}.Curve().Sample(1.0)
 	tj := tjp.Multiply(-1.0)
 
 	return []CircularArc{
-		CircularArc{pi, ti, j},
-		CircularArc{j, tj, pe},
+		CircularArc{pi, ti, j, wti},
+		CircularArc{j, tj, pe, wte},
+	}
+}
+
+// BiarcJuckett returns a list of circular arcs that connect pi to pe,
+// with ti being the tangent at pi and te being the tangent at pe.
+// Adapted from "Biarc Interpolation" by Juckett.
+func BiarcJuckett(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
+	// Tangents should be unit vectors.
+	ti = ti.Normalize()
+	te = te.Normalize()
+
+	// Single arc case
+	_, pte, _ := CircularArc{pi, ti, pe, pos.OriginFractional()}.Curve().Sample(1.0)
+	if pte.AlmostEquals(te) {
+		return []CircularArc{CircularArc{pi, ti, pe, pos.OriginFractional()}}
+	}
+
+	// Now find the positive root for
+	v := pe.Subtract(pi)
+	t := ti.Add(te)
+	// β^2
+	a := 1.0 - cartesianDotProduct(ti, te)
+	// β
+	b := cartesianDotProduct(v, t)
+	// constant
+	c := cartesianDotProduct(v, v) * (-0.5)
+
+	// Semicircle case
+	if closeEnough(a, 0.0) {
+		// todo: needs to be fixed
+		fmt.Println("semicircle case")
+		j := pos.LerpHexFractional(pi, pe, 0.5)
+		tj := ti.Multiply(-1.0)
+		return []CircularArc{
+			CircularArc{pi, ti, j, pos.OriginFractional()},
+			CircularArc{j, tj, pe, pos.OriginFractional()},
+		}
+	}
+
+	// // Pick a positive root for d2
+	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
+
+	// Pick a positive root for d2
+	d := chooseRoot(r1, r2)
+
+	if d < 0.0 {
+		panic("d is negative")
+	}
+
+	// j is the joint point between the two arcs.
+	j := pi.Add(pe).Add(ti.Subtract(te).Multiply(d)).Multiply(0.5)
+
+	// Reverse the second arc to get an end tangent that
+	// we expect. Yes, this is dumb.
+	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j, pos.OriginFractional()}.Curve().Sample(1.0)
+	tj := tjp.Multiply(-1.0)
+
+	return []CircularArc{
+		CircularArc{pi, ti, j, pos.OriginFractional()},
+		CircularArc{j, tj, pe, pos.OriginFractional()},
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"testing"
 
 	"github.com/erinpentecost/hexcoord/curve"
@@ -40,7 +39,7 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	smoothArcs := curve.SmoothPath(ti, te, path)
 
 	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 600, 600))
+	img := image.NewRGBA(image.Rect(0, 0, 900, 900))
 	cc := draw.NewCamera(img, 0.15, pos.Hex{Q: 1, R: 0})
 
 	cc.Grid(dd)
@@ -48,7 +47,13 @@ func TestSmoothCurveDrawing(t *testing.T) {
 	// Draw arcs.
 	for _, arc := range smoothArcs {
 		curve := arc.Curve()
-		cc.Curve(getColor(curve), curve)
+		col := getColor(curve)
+		cc.Curve(col, curve)
+		if !pos.OriginFractional().AlmostEquals(arc.C) {
+			colc := color.RGBA{100, 100, 100, 255}
+			cc.Line(colc, false, arc.I, arc.C)
+			cc.Line(colc, false, arc.E, arc.C)
+		}
 	}
 
 	fpath, err := draw.Save(img, "TestSmoothCurveDrawing.png")
@@ -70,7 +75,7 @@ func TestBiarcDrawing(t *testing.T) {
 	upish := pos.HexFractional{Q: 1.0, R: -2.0}.Normalize()
 	rightish := pos.HexFractional{Q: 1.0, R: 0.0}.Normalize()
 
-	rVals := []float64{1.0}
+	rVals := []float64{10.1}
 	for _, r := range rVals {
 		top := curve.Biarc(
 			left,
@@ -80,10 +85,13 @@ func TestBiarcDrawing(t *testing.T) {
 			r)
 		for _, arc := range top {
 			c := arc.Curve()
-			cc.Curve(getColor(c), c)
+			col := getColor(c)
+			cc.Curve(col, c)
+			//cc.Line(col, false, arc.I, arc.C)
+			//cc.Line(col, false, arc.E, arc.C)
 		}
 
-		bottom := curve.Biarc(
+		/*bottom := curve.Biarc(
 			right,
 			rightish.Rotate(pos.OriginFractional(), math.Pi),
 			left,
@@ -91,8 +99,11 @@ func TestBiarcDrawing(t *testing.T) {
 			r)
 		for _, arc := range bottom {
 			c := arc.Curve()
-			cc.Curve(getColor(c), c)
-		}
+			col := getColor(c)
+			cc.Curve(col, c)
+			cc.Line(col, false, arc.I, arc.C)
+			cc.Line(col, false, arc.E, arc.C)
+		}*/
 	}
 
 	fpath, err := draw.Save(img, "TestBiarcDrawing.png")
