@@ -83,15 +83,26 @@ func findRoots(a, b, c complex128) (r1 complex128, r2 complex128) {
 }
 
 func chooseRoot(r1, r2 complex128) float64 {
-	if closeEnough(imag(r1), 0.0) && real(r1) >= 0.0 {
-		return real(r1)
-	} else if closeEnough(imag(r2), 0.0) && real(r2) >= 0.0 {
-		return real(r2)
+	r1IsReal := closeEnough(imag(r1), 0.0)
+	r2IsReal := closeEnough(imag(r2), 0.0)
+	r1IsPositive := real(r1) >= 0.0
+	r2IsPositive := real(r2) >= 0.0
+
+	if r1IsReal && r2IsReal {
+		if r1IsPositive && r2IsPositive {
+			return math.Min(real(r1), real(r2))
+		} else {
+			return math.Max(real(r1), real(r2))
+		}
 	} else {
-		//panic(fmt.Sprintf("Can't find good roots for %v*β^2+%v*β+%v=0 (%v and %v)", a, b, c, r1, r2))
-		// turns out this is annoying and sometimes "good enough" is best
 		return math.Max(real(r1), real(r2))
 	}
+}
+
+func cartesianDotProduct(a, b pos.HexFractional) float64 {
+	aX, aY := a.ToCartesian()
+	bX, bY := b.ToCartesian()
+	return aX*bX + aY*bY
 }
 
 // Biarc returns a list of circular arcs that connect pi to pe,
@@ -119,11 +130,11 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// Now find the positive root for
 	// v ⋅ v + 2 β v ⋅ ( r t s + t e ) + 2 r β 2 ( t s ⋅ t e − 1 ) = 0
 	// β^2
-	a := 2.0 * r * (ti.DotProduct(te) - 1.0)
+	a := 2.0 * r * (cartesianDotProduct(ti, te) - 1.0)
 	// β
-	b := v.Multiply(2.0).DotProduct(ti.Multiply(r).Add(te))
+	b := cartesianDotProduct(v.Multiply(2.0), ti.Multiply(r).Add(te))
 	// constant
-	c := v.DotProduct(v)
+	c := cartesianDotProduct(v, v)
 
 	// Semicircle case
 	if closeEnough(a, 0.0) {
@@ -137,10 +148,10 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 		}
 	}
 
-	if closeEnough(ti.DotProduct(te), 1.0) {
+	if closeEnough(cartesianDotProduct(ti, te), 1.0) {
 		panic("unhandled special case #1")
 	}
-	if closeEnough(v.DotProduct(ti.Multiply(r).Add(te)), 0.0) {
+	if closeEnough(cartesianDotProduct(v, ti.Multiply(r).Add(te)), 0.0) {
 		panic("unhandled special case #2")
 	}
 
@@ -164,11 +175,11 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 
 	j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
 	// tj is the tangent at point j
-	//tj := wte.Subtract(wti).Normalize()
+	tj := wte.Subtract(wti).Normalize()
 	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
 	// Dumb way #3...
-	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
-	tj := tjp.Multiply(-1.0)
+	//_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
+	//tj := tjp.Multiply(-1.0)
 
 	return []CircularArc{
 		CircularArc{pi, ti, j},

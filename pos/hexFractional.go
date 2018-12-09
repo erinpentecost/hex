@@ -132,9 +132,9 @@ func (h HexFractional) Normalize() HexFractional {
 
 // DotProduct returns the dot product.
 // See https://en.wikipedia.org/wiki/Dot_product
-func (h HexFractional) DotProduct(x HexFractional) float64 {
-	return h.Q*x.Q + h.R*x.R + h.S()*x.S()
-}
+//func (h HexFractional) DotProduct(x HexFractional) float64 {
+//	return h.Q*x.Q + h.R*x.R + h.S()*x.S()
+//}
 
 // ProjectOn projects h onto x.
 // It returns a vector parallel to x.
