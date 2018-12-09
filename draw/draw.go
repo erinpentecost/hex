@@ -19,7 +19,6 @@ import (
 // Decorator informs the renderer how to draw the hex.
 type Decorator interface {
 	AreaColor(h pos.Hex) color.RGBA
-	EdgeColor(h pos.Hex, dir int) color.RGBA
 	AreaLabel(h pos.Hex) string
 }
 
@@ -48,14 +47,39 @@ func (d DefaultDecorator) AreaColor(h pos.Hex) color.RGBA {
 	}
 }
 
-// EdgeColor picks an edge color.
-func (d DefaultDecorator) EdgeColor(h pos.Hex, dir int) color.RGBA {
-	return color.RGBA{255, 255, 255, 255}
-}
-
 // AreaLabel uses the hex's coordinates.
 func (d DefaultDecorator) AreaLabel(h pos.Hex) string {
 	return h.ToString()
+}
+
+// UnlabeledDecorator does minimal styling.
+type UnlabeledDecorator struct{}
+
+// AreaColor picks a background color for the hex.
+func (d UnlabeledDecorator) AreaColor(h pos.Hex) color.RGBA {
+	mod := func(a int) int {
+		if a < 0 {
+			return (a * (-1)) % 2
+		}
+		return a % 2
+	}
+
+	m := mod(h.Q) + 2*mod(h.R)
+	switch m {
+	case 0:
+		return color.RGBA{255, 222, 222, 255}
+	case 1:
+		return color.RGBA{222, 255, 222, 255}
+	case 2:
+		return color.RGBA{222, 222, 255, 255}
+	default:
+		return color.RGBA{255, 255, 222, 255}
+	}
+}
+
+// AreaLabel uses the hex's coordinates.
+func (d UnlabeledDecorator) AreaLabel(h pos.Hex) string {
+	return ""
 }
 
 // Camera defines the viewing pane

@@ -87,8 +87,6 @@ func TestBiarcDrawing(t *testing.T) {
 			c := arc.Curve()
 			col := getColor(c)
 			cc.Curve(col, c)
-			//cc.Line(col, false, arc.I, arc.C)
-			//cc.Line(col, false, arc.E, arc.C)
 		}
 
 		/*bottom := curve.Biarc(
@@ -101,12 +99,44 @@ func TestBiarcDrawing(t *testing.T) {
 			c := arc.Curve()
 			col := getColor(c)
 			cc.Curve(col, c)
-			cc.Line(col, false, arc.I, arc.C)
-			cc.Line(col, false, arc.E, arc.C)
 		}*/
 	}
 
 	fpath, err := draw.Save(img, "TestBiarcDrawing.png")
+	assert.NoError(t, err, fpath)
+	fmt.Println(fpath)
+}
+
+func TestBiarcHugeDrawing(t *testing.T) {
+	center := pos.HexFractional{Q: -100.0, R: 100.0}
+	scale := 10.0
+	dd := draw.UnlabeledDecorator{}
+	img := image.NewRGBA(image.Rect(0, 0, 500, 400))
+	cc := draw.NewCamera(img, 1.0/(scale*scale), center.ToHex())
+
+	cc.Grid(dd)
+
+	left := pos.HexFractional{Q: -1.0, R: 0.0}.Multiply(scale).Add(center)
+	right := pos.HexFractional{Q: 1.0, R: 0.0}.Multiply(scale).Add(center)
+	upish := pos.HexFractional{Q: 1.0, R: -2.0}.Normalize()
+	rightish := pos.HexFractional{Q: 1.0, R: 0.0}.Normalize()
+
+	rVals := []float64{10.1}
+	for _, r := range rVals {
+		top := curve.Biarc(
+			left,
+			upish,
+			right,
+			rightish,
+			r)
+		for _, arc := range top {
+			c := arc.Curve()
+			col := getColor(c)
+			cc.Curve(col, c)
+		}
+	}
+
+	fpath, err := draw.Save(img, "TestBiarcHugeDrawing.png")
 	assert.NoError(t, err, fpath)
 	fmt.Println(fpath)
 }
