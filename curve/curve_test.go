@@ -178,7 +178,7 @@ func TestBiarc(t *testing.T) {
 		pos.HexFractional{Q: 1, R: -1}.Normalize(),
 		pos.HexFractional{Q: 1, R: -1},
 		pos.HexFractional{Q: 1, R: 0}.Normalize(),
-	)
+		1.0)
 
 	a1 := biarc[0]
 	a2 := biarc[1]

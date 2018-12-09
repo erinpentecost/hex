@@ -110,16 +110,6 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 
 	v := pi.Subtract(pe)
 
-	// This is the line segment case.
-	// Start and end points are collinear with
-	// the tangents.
-	if closeEnough(area(pi, pi.Add(ti), pe), 0.0) && closeEnough(area(pi, pe.Add(te), pe), 0.0) {
-		fmt.Println("line case")
-		return []CircularArc{
-			CircularArc{pi, ti, pe},
-		}
-	}
-
 	// Single arc case
 	_, pte, _ := CircularArc{pi, ti, pe}.Curve().Sample(1.0)
 	if pte.AlmostEquals(te) {
