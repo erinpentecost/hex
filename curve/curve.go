@@ -82,7 +82,7 @@ type Arc struct {
 	CentralAngle    float64
 	length          float64
 	radius          float64
-	spin            bool
+	spin            SpinDirection
 	cX              float64
 	cY              float64
 	piX             float64
@@ -95,8 +95,8 @@ type Arc struct {
 
 // lerpAngle traces an arc.
 // spin is clockwise (false) or counterclockwise (true)
-func lerpAngle(spin bool, a, b, t float64) float64 {
-	if spin {
+func lerpAngle(spin SpinDirection, a, b, t float64) float64 {
+	if spin == CounterClockwise {
 		return a + t*normalizeAngle(b-a)
 	}
 	return b + (1.0-t)*normalizeAngle(a-b)
@@ -120,7 +120,7 @@ func (ac Arc) Sample(t float64) (position, tangent, curvature pos.HexFractional)
 	position = unitPosition.Multiply(ac.radius).Add(ac.Center)
 
 	// and tangent...
-	if ac.spin {
+	if ac.spin == CounterClockwise {
 		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(2.0))
 	} else {
 		tangent = unitPosition.Rotate(pos.OriginFractional(), math.Pi/(-2.0))
@@ -140,10 +140,7 @@ func (ac Arc) Length() float64 {
 // or counterclockwise (true) direction. For lines, this will
 // return an error.
 func (ac Arc) Spin() SpinDirection {
-	if ac.spin {
-		return CounterClockwise
-	}
-	return Clockwise
+	return ac.spin
 }
 
 // area determines the triangular area between three points.
@@ -222,9 +219,9 @@ func getQuadrant(x, y float64) int {
 
 // angleDistance determines the difference between two angles in radians.
 // spin is clockwise (false) or counterclockwise (true)
-func angleDistance(start, end float64, spin bool) float64 {
-	if spin {
-		return angleDistance(end, start, false)
+func angleDistance(start, end float64, spin SpinDirection) float64 {
+	if spin == CounterClockwise {
+		return angleDistance(end, start, Clockwise)
 	}
 	// at this point, only consider counterclockwise spin
 	if start < end {
@@ -233,19 +230,22 @@ func angleDistance(start, end float64, spin bool) float64 {
 	return end + (2*math.Pi - start)
 }
 
+func getSlope(p pos.HexFractional) float64 {
+	pX, pY := p.ToCartesian()
+	return -1.0 * pX / pY
+}
+
 // newArc creates a circular arc segment curve.
 func newArc(pi, tiu, pe pos.HexFractional) Arc {
 	// https://math.stackexchange.com/questions/996582/finding-circle-with-two-points-on-it-and-a-tangent-from-one-of-the-points
 
 	// First line segment
 	piX, piY := pi.ToCartesian()
-	tiuX, tiuY := tiu.ToCartesian()
-	tiuOrthogonalSlope := -1.0 * tiuX / tiuY
+	tiuOrthogonalSlope := getSlope(tiu)
 
 	// Second line segment
 	midX, midY := pos.LerpHexFractional(pi, pe, 0.5).ToCartesian()
-	chordX, chordY := pi.Subtract(pe).ToCartesian()
-	chordOrthogonalSlope := -1.0 * chordX / chordY
+	chordOrthogonalSlope := getSlope(pi.Subtract(pe))
 
 	// Find the intersection of two lines:
 	// pi with slope tanOrth
@@ -269,7 +269,10 @@ func newArc(pi, tiu, pe pos.HexFractional) Arc {
 
 	// Determine spin direction.
 	// clockwise (false) or counterclockwise (true)
-	spin := area(pi, pi.Add(tiu), pe) < 0
+	spin := Clockwise
+	if area(pi, pi.Add(tiu), pe) < 0 {
+		spin = CounterClockwise
+	}
 
 	// piA and peA are in the range 0 to 2pi
 	centralAngle := angleDistance(piA, peA, spin)
