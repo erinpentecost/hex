@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/erinpentecost/hexcoord/curve"
@@ -57,27 +58,91 @@ func TestSmoothCurveDrawing(t *testing.T) {
 }
 
 func TestBiarcDrawing(t *testing.T) {
+	center := pos.HexFractional{Q: -100.0, R: 100.0}
 	dd := draw.DefaultDecorator{}
 	img := image.NewRGBA(image.Rect(0, 0, 500, 400))
-	cc := draw.NewCamera(img, 0.15, pos.Origin())
+	cc := draw.NewCamera(img, 0.15, center.ToHex())
 
 	cc.Grid(dd)
 
-	rVals := []float64{0.5, 1.0, 1.5}
+	left := pos.HexFractional{Q: -1.0, R: 0.0}.Add(center)
+	right := pos.HexFractional{Q: 1.0, R: 0.0}.Add(center)
+	upish := pos.HexFractional{Q: 1.0, R: -2.0}.Normalize()
+	rightish := pos.HexFractional{Q: 1.0, R: 0.0}.Normalize()
+
+	rVals := []float64{1.0}
 	for _, r := range rVals {
-		b := curve.Biarc(
-			pos.HexFractional{Q: -1.0, R: 0.0},
-			pos.HexFractional{Q: 1.0, R: -2.1},
-			pos.HexFractional{Q: 1.0, R: 0.0},
-			pos.HexFractional{Q: 1.0, R: -0.1},
+		top := curve.Biarc(
+			left,
+			upish,
+			right,
+			rightish,
 			r)
-		for _, arc := range b {
+		for _, arc := range top {
+			c := arc.Curve()
+			cc.Curve(getColor(c), c)
+		}
+
+		bottom := curve.Biarc(
+			right,
+			rightish.Rotate(pos.OriginFractional(), math.Pi),
+			left,
+			upish.Rotate(pos.OriginFractional(), math.Pi),
+			r)
+		for _, arc := range bottom {
 			c := arc.Curve()
 			cc.Curve(getColor(c), c)
 		}
 	}
 
 	fpath, err := draw.Save(img, "TestBiarcDrawing.png")
+	assert.NoError(t, err, fpath)
+	fmt.Println(fpath)
+}
+
+func TestHappyFaceDrawingWithBiarcs(t *testing.T) {
+
+	dd := draw.DefaultDecorator{}
+	img := image.NewRGBA(image.Rect(0, 0, 500, 500))
+	cc := draw.NewCamera(img, 0.1, pos.Hex{Q: 1, R: 0})
+
+	cc.Grid(dd)
+
+	drawBiarc := func(arcs []curve.CircularArc) {
+		for _, arc := range arcs {
+			c := arc.Curve()
+			cc.Curve(getColor(c), c)
+		}
+	}
+
+	// mouth
+	clockwiseArc := curve.Biarc(
+		pos.HexFractional{Q: 2, R: 0},
+		pos.HexFractional{Q: -1, R: 2},
+		pos.HexFractional{Q: 0, R: 0},
+		pos.HexFractional{Q: 1, R: -2},
+		1.0)
+	drawBiarc(clockwiseArc)
+
+	// left eye
+	counterclockwiseArc := curve.Biarc(
+		pos.HexFractional{Q: 1, R: -1},
+		pos.HexFractional{Q: 1, R: -2},
+		pos.HexFractional{Q: 0, R: -1},
+		pos.HexFractional{Q: -1, R: 2},
+		1.0)
+	drawBiarc(counterclockwiseArc)
+
+	// right eye, wink
+	lineArc := curve.Biarc(
+		pos.HexFractional{Q: 2, R: -1},
+		pos.HexFractional{Q: 1, R: 0},
+		pos.HexFractional{Q: 3, R: -1},
+		pos.HexFractional{Q: 1, R: 0},
+		1.0)
+	drawBiarc(lineArc)
+
+	fpath, err := draw.Save(img, "TestHappyFaceDrawingWithBiarcs.png")
 	assert.NoError(t, err, fpath)
 	fmt.Println(fpath)
 }

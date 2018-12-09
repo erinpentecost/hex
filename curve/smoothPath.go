@@ -2,6 +2,7 @@ package curve
 
 import (
 	"fmt"
+	"math"
 	"math/cmplx"
 
 	"github.com/erinpentecost/hexcoord/pos"
@@ -81,6 +82,18 @@ func findRoots(a, b, c complex128) (r1 complex128, r2 complex128) {
 	return
 }
 
+func chooseRoot(r1, r2 complex128) float64 {
+	if closeEnough(imag(r1), 0.0) && real(r1) >= 0.0 {
+		return real(r1)
+	} else if closeEnough(imag(r2), 0.0) && real(r2) >= 0.0 {
+		return real(r2)
+	} else {
+		//panic(fmt.Sprintf("Can't find good roots for %v*β^2+%v*β+%v=0 (%v and %v)", a, b, c, r1, r2))
+		// turns out this is annoying and sometimes "good enough" is best
+		return math.Max(real(r1), real(r2))
+	}
+}
+
 // Biarc returns a list of circular arcs that connect pi to pe,
 // with ti being the tangent at pi and te being the tangent at pe.
 // This algorithm was adapted from "The use of Piecewise Circular Curves in Geometric
@@ -93,14 +106,15 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	ti = ti.Normalize()
 	te = te.Normalize()
 
-	t := ti.Add(te)
+	//t := ti.Add(te)
 
 	v := pi.Subtract(pe)
 
 	// This is the line segment case.
 	// Start and end points are collinear with
 	// the tangents.
-	if closeEnough(v.Normalize().DotProduct(t), -1.0) {
+	if closeEnough(area(pi, pi.Add(ti), pe), 0.0) && closeEnough(area(pi, pe.Add(te), pe), 0.0) {
+		fmt.Println("line case")
 		return []CircularArc{
 			CircularArc{pi, ti, pe},
 		}
@@ -109,14 +123,16 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// Now find the positive root for
 	// v ⋅ v + 2 β v ⋅ ( r t s + t e ) + 2 r β 2 ( t s ⋅ t e − 1 ) = 0
 	// β^2
-	a := (ti.DotProduct(te) - 1.0) * 2.0 * r
+	a := 2.0 * r * (ti.DotProduct(te) - 1.0)
 	// β
-	b := v.DotProduct(ti.Multiply(r).Add(te)) * 2.0
+	b := v.Multiply(2.0).DotProduct(ti.Multiply(r).Add(te))
 	// constant
 	c := v.DotProduct(v)
 
 	// Semicircle case
 	if closeEnough(a, 0.0) {
+		// todo: needs to be fixed
+		fmt.Println("semicircle case")
 		j := pos.LerpHexFractional(pi, pe, 0.5)
 		tj := ti.Multiply(-1.0)
 		return []CircularArc{
@@ -128,14 +144,7 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
 
 	// Pick a positive root for β
-	var beta float64
-	if closeEnough(imag(r1), 0.0) && real(r1) >= 0.0 {
-		beta = real(r1)
-	} else if closeEnough(imag(r2), 0.0) && real(r2) >= 0.0 {
-		beta = real(r2)
-	} else {
-		panic(fmt.Sprintf("Can't find good roots for %v*β^2+%v*β+%v=0", a, b, c))
-	}
+	beta := chooseRoot(r1, r2)
 
 	alpha := r * beta
 
@@ -143,16 +152,17 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// wti is p1w
 	wti := pi.Add(ti.Multiply(alpha))
 	// wte is p4w
-	wte := pe.Add(te.Multiply(beta * (-1.0)))
+	wte := pe.Subtract(te.Multiply(beta))
 
-	fmt.Printf("wti=%s, wte=%s", wti.ToString(), wte.ToString())
+	fmt.Printf("wti=%s, wte=%s\r\n", wti.ToString(), wte.ToString())
 
 	// j is the joint point between the two arcs.
-	//j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
-	j := pos.LerpHexFractional(wti, wte, beta/(alpha+beta))
+	j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
+	// todo: wte and wti are swapped
+	//j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
 	// tj is the tangent at point j
-	tj := wte.Subtract(wti).Normalize()
-	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
+	//tj := wte.Subtract(wti).Normalize()
+	_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
 	//if !c1t.AlmostEquals(tj) {
 	//	panic("not G0 connected")
 	//}
