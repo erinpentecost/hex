@@ -91,12 +91,10 @@ func chooseRoot(r1, r2 complex128) float64 {
 	if r1IsReal && r2IsReal {
 		if r1IsPositive && r2IsPositive {
 			return math.Min(real(r1), real(r2))
-		} else {
-			return math.Max(real(r1), real(r2))
 		}
-	} else {
 		return math.Max(real(r1), real(r2))
 	}
+	return math.Max(real(r1), real(r2))
 }
 
 func cartesianDotProduct(a, b pos.HexFractional) float64 {
@@ -173,13 +171,13 @@ func Biarc(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc) {
 	// j is the joint point between the two arcs.
 	//j := wti.Multiply(beta / (alpha + beta)).Add(wte.Multiply(alpha / (alpha + beta)))
 
-	j := pos.LerpHexFractional(wte, wti, beta/(alpha+beta))
+	j := pos.LerpHexFractional(wti, wte, beta/(alpha+beta))
 	// tj is the tangent at point j
-	tj := wte.Subtract(wti).Normalize()
+	//tj := wte.Subtract(wti).Normalize()
 	//_, tj, _ := CircularArc{pi, ti, j}.Curve().Sample(1.0)
 	// Dumb way #3...
-	//_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
-	//tj := tjp.Multiply(-1.0)
+	_, tjp, _ := CircularArc{pe, te.Multiply(-1.0), j}.Curve().Sample(1.0)
+	tj := tjp.Multiply(-1.0)
 
 	return []CircularArc{
 		CircularArc{pi, ti, j},
