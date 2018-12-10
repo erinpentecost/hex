@@ -65,7 +65,7 @@ func round(f float64) int {
 }
 
 func closeEnough(a, b float64) bool {
-	return fltcmp.AlmostEqual(a, b, 5)
+	return fltcmp.AlmostEqual(a, b, 50)
 }
 
 // AlmostEquals returns true when h and x are equal or close

@@ -152,12 +152,12 @@ func BiarcPark(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc)
 		}
 	}
 
-	if closeEnough(cartesianDotProduct(ti, te), 1.0) {
+	/*if closeEnough(cartesianDotProduct(ti, te), 1.0) {
 		panic("unhandled special case #1")
 	}
 	if closeEnough(cartesianDotProduct(v, ti.Multiply(r).Add(te)), 0.0) {
 		panic("unhandled special case #2")
-	}
+	}*/
 
 	r1, r2 := findRoots(complex(a, 0.0), complex(b, 0.0), complex(c, 0.0))
 

@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/erinpentecost/fltcmp"
 	"github.com/erinpentecost/hexcoord/curve"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +82,7 @@ func TestUnitArcCounterClockwise(t *testing.T) {
 		}
 		acurve := arc.Curve()
 
-		radSwp := float64(i) * math.Pi / 3.0
+		radSwp := float64(6-i) * math.Pi / 3.0
 
 		endTan := tan.Rotate(originf, radSwp)
 
@@ -111,7 +112,7 @@ func TestUnitArcClockwise(t *testing.T) {
 		}
 		acurve := arc.Curve()
 
-		radSwp := float64(6-i) * math.Pi / 3.0
+		radSwp := float64(i) * math.Pi / 3.0
 
 		endTan := end.Rotate(originf, math.Pi/(-2.0))
 
@@ -124,8 +125,9 @@ func TestUnitArcClockwise(t *testing.T) {
 }
 
 func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {
+
 	if math.Abs(a-b) > 1e-10 {
-		return assert.Equal(t, a, b, msg...)
+		return assert.True(t, fltcmp.AlmostEqual(a, b, 50), msg...)
 	}
 	return true
 }

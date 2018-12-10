@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/erinpentecost/fltcmp"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
 )
@@ -158,13 +159,6 @@ func TestAngleTo(t *testing.T) {
 		return pid3 * (float64(rot))
 	}
 
-	closeEnough := func(a, b float64) bool {
-		if a == b {
-			return true
-		}
-		return math.Abs(a-b) < 1e-10
-	}
-
 	for ia, ra := range o.Neighbors() {
 		for ib, rb := range o.Neighbors() {
 			assert.True(t,
@@ -172,4 +166,8 @@ func TestAngleTo(t *testing.T) {
 				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, ia-ib))
 		}
 	}
+}
+
+func closeEnough(a, b float64) bool {
+	return fltcmp.AlmostEqual(a, b, 50)
 }

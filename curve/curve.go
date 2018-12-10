@@ -3,6 +3,7 @@ package curve
 import (
 	"math"
 
+	"github.com/erinpentecost/fltcmp"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -384,8 +385,5 @@ func (ca CircularArc) Curve() Curver {
 }
 
 func closeEnough(a, b float64) bool {
-	if a == b {
-		return true
-	}
-	return math.Abs(a-b) < 1e-10
+	return fltcmp.AlmostEqual(a, b, 50)
 }
