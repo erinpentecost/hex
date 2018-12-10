@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/erinpentecost/fltcmp"
 	"github.com/erinpentecost/hexcoord/curve"
+	"github.com/erinpentecost/hexcoord/internal/floathelp"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
 )
@@ -125,9 +125,5 @@ func TestUnitArcClockwise(t *testing.T) {
 }
 
 func assertCloseEnough(t *testing.T, a, b float64, msg ...interface{}) bool {
-
-	if math.Abs(a-b) > 1e-10 {
-		return assert.True(t, fltcmp.AlmostEqual(a, b, 50), msg...)
-	}
-	return true
+	return assert.True(t, floathelp.CloseEnough(a, b), msg...)
 }

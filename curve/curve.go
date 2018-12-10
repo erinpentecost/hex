@@ -3,7 +3,8 @@ package curve
 import (
 	"math"
 
-	"github.com/erinpentecost/fltcmp"
+	"github.com/erinpentecost/hexcoord/internal/floathelp"
+
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -376,14 +377,10 @@ func Join(curves ...Curver) Piecewise {
 
 // Curve converts a circular arc into a sample-able curve.
 func (ca CircularArc) Curve() Curver {
-	if closeEnough(area(ca.I, ca.T.Add(ca.I), ca.E), 0.0) {
+	if floathelp.CloseEnough(area(ca.I, ca.T.Add(ca.I), ca.E), 0.0) {
 		// This is the line segment case, where ca.i + ca.tiu is collinear with ca.e.
 		return newLine(ca.I, ca.E)
 	}
 	// This is the circular arc case.
 	return newArc(ca.I, ca.T, ca.E)
-}
-
-func closeEnough(a, b float64) bool {
-	return fltcmp.AlmostEqual(a, b, 50)
 }

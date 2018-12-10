@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/cmplx"
 
+	"github.com/erinpentecost/hexcoord/internal/floathelp"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -85,8 +86,8 @@ func findRoots(a, b, c complex128) (r1 complex128, r2 complex128) {
 }
 
 func chooseRoot(r1, r2 complex128) float64 {
-	r1IsReal := closeEnough(imag(r1), 0.0)
-	r2IsReal := closeEnough(imag(r2), 0.0)
+	r1IsReal := floathelp.CloseEnough(imag(r1), 0.0)
+	r2IsReal := floathelp.CloseEnough(imag(r2), 0.0)
 	r1IsPositive := real(r1) >= 0.0
 	r2IsPositive := real(r2) >= 0.0
 
@@ -141,7 +142,7 @@ func BiarcPark(pi, ti, pe, te pos.HexFractional, r float64) (arcs []CircularArc)
 	c := cartesianDotProduct(v, v)
 
 	// Semicircle case
-	if closeEnough(a, 0.0) {
+	if floathelp.CloseEnough(a, 0.0) {
 		// todo: needs to be fixed
 		fmt.Println("semicircle case")
 		j := pos.LerpHexFractional(pi, pe, 0.5)
@@ -216,7 +217,7 @@ func BiarcJuckett(pi, ti, pe, te pos.HexFractional) (arcs []CircularArc) {
 	c := cartesianDotProduct(v, v) * (-0.5)
 
 	// Semicircle case
-	if closeEnough(a, 0.0) {
+	if floathelp.CloseEnough(a, 0.0) {
 		// todo: needs to be fixed
 		fmt.Println("semicircle case")
 		j := pos.LerpHexFractional(pi, pe, 0.5)
