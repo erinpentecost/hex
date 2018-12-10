@@ -7,4 +7,6 @@ import (
 	_ "github.com/erinpentecost/hexcoord/path"
 	// pos
 	_ "github.com/erinpentecost/hexcoord/pos"
+	// draw
+	_ "github.com/erinpentecost/hexcoord/draw"
 )
