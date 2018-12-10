@@ -8,7 +8,6 @@ import (
 	"math"
 	"os"
 
-	"github.com/erinpentecost/hexcoord/curve"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/image/font"
@@ -208,28 +207,6 @@ func blend(img *image.RGBA, x, y int, col colorful.Color, strength float64) {
 		img.Set(x, y, end)
 	} else {
 		img.Set(x, y, col.Clamped())
-	}
-}
-
-// Curve draws curve on the image.
-func (c Camera) Curve(col color.RGBA, curver curve.Curver) {
-	// Draw tangent lines
-	supportLen := 0.5
-	initPoint, initTan, _ := curver.Sample(0.0)
-	endPoint, endTan, _ := curver.Sample(1.0)
-	//midPoint, midTan, _ := curver.Sample(0.5)
-	c.Line(color.RGBA{255, 0, 0, 255}, false, initPoint, initPoint.Add(initTan.Normalize().Multiply(supportLen)))
-	c.Line(color.RGBA{0, 0, 255, 255}, false, endPoint, endPoint.Add(endTan.Normalize().Multiply(supportLen)))
-	//c.Line(color.RGBA{0, 255, 255, 255}, false, midPoint, midPoint.Add(midTan.Normalize().Multiply(supportLen)))
-
-	//c.Line(color.RGBA{0, 255, 255, 255}, false, initPoint, initCurva.Add(initPoint))
-	//c.Line(color.RGBA{0, 255, 255, 255}, false, endPoint, endCurva.Add(endPoint))
-
-	// Trace curve
-	sampleStep := float64(0.99) / (curver.Length() * c.Scale())
-	for s := 0.0; s < 1.0; s = s + sampleStep {
-		posHex, _, _ := curver.Sample(s)
-		c.Point(col, posHex)
 	}
 }
 

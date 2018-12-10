@@ -9,7 +9,6 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 * Generating sets of hexes programmatically in common patterns.
 * Compositing sets of hexes with unions, intersections, and subtractions.
 * A* pathing in a hex grid.
-* Piecewise circular curve generation (so you can generate smooth movement paths, for example).
 * Super naive drawing package!
 
 ## References
