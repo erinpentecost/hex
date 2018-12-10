@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"sync"
 	"testing"
 
 	"github.com/erinpentecost/hexcoord/draw"
@@ -68,7 +67,6 @@ func createLogoPoints() map[pos.Hex]interface{} {
 		pos.Hex{Q: 0, R: 0},
 		pos.Hex{Q: -1, R: 1},
 		pos.Hex{Q: 1, R: 0},
-		pos.Hex{Q: 2, R: 0},
 		pos.Hex{Q: 1, R: 1},
 	}
 	ec := []pos.Hex{
@@ -93,6 +91,13 @@ func createLogoPoints() map[pos.Hex]interface{} {
 		pos.Hex{Q: 1, R: -1},
 		pos.Hex{Q: 1, R: 1},
 	}
+	r := []pos.Hex{
+		pos.Hex{Q: 2, R: 0},
+		pos.Hex{Q: 2, R: -1},
+		pos.Hex{Q: 1, R: -1},
+		pos.Hex{Q: 0, R: 0},
+		pos.Hex{Q: -1, R: 1},
+	}
 	d := []pos.Hex{
 		pos.Hex{Q: 2, R: 0},
 		pos.Hex{Q: 2, R: -1},
@@ -111,35 +116,21 @@ func createLogoPoints() map[pos.Hex]interface{} {
 		ec,
 		o,
 		o,
+		r,
 		d,
 	}
 
-	chars := make(chan (<-chan pos.Hex))
-	var wg sync.WaitGroup
-	wg.Add(len(logo))
-
-	go func() {
-		//defer close(chars)
-		for offset, char := range logo {
-			go func(offset int, char []pos.Hex) {
-				wg.Done()
-				done := make(chan interface{})
-				defer close(done)
-				charOffset := pos.AreaMap(done, pos.Area(char...), func(x pos.Hex) pos.Hex { return x.Add(pos.Hex{Q: offset * 4, R: 0}) })
-				chars <- charOffset
-			}(offset, char)
-		}
-	}()
-
-	wg.Wait()
-
 	taggedPos := make(map[pos.Hex]interface{})
 
-	done := make(chan interface{})
-	defer close(done)
-	for p := range pos.AreaSum(done, chars) {
-		taggedPos[p] = nil
+	for offset, char := range logo {
+		done := make(chan interface{})
+		defer close(done)
+		charOffset := pos.AreaMap(done, pos.Area(char...), func(x pos.Hex) pos.Hex { return x.Add(pos.Hex{Q: offset * 4, R: 0}) })
+		for charSpot := range charOffset {
+			taggedPos[charSpot] = nil
+		}
 	}
+
 	return taggedPos
 }
 
@@ -148,8 +139,8 @@ func TestDrawLogo(t *testing.T) {
 	points := createLogoPoints()
 
 	dd := HighlightDecorator{interest: points}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
-	cc := draw.NewCamera(img, 0.02, pos.Origin())
+	img := image.NewRGBA(image.Rect(0, 0, 500, 100))
+	cc := draw.NewCamera(img, 0.013, pos.Hex{Q: 15, R: 0})
 
 	cc.Grid(dd)
 
