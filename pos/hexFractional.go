@@ -3,6 +3,8 @@ package pos
 import (
 	"fmt"
 	"math"
+
+	"github.com/erinpentecost/hexcoord/internal/floathelp"
 )
 
 // HexFractional is fractional hex coordinates in
@@ -62,17 +64,10 @@ func round(f float64) int {
 	return int(f - 0.5)
 }
 
-func closeEnough(a, b float64) bool {
-	if a == b {
-		return true
-	}
-	return math.Abs(a-b) < 1e-10
-}
-
 // AlmostEquals returns true when h and x are equal or close
 // enough to equal for practical matters.
 func (h HexFractional) AlmostEquals(x HexFractional) bool {
-	return closeEnough(h.Q, x.Q) && closeEnough(h.R, x.R)
+	return floathelp.CloseEnough(h.Q, x.Q) && floathelp.CloseEnough(h.R, x.R)
 }
 
 // Add combines two hexes.
@@ -128,12 +123,6 @@ func (h HexFractional) DistanceTo(x HexFractional) float64 {
 // but has a length of 1.
 func (h HexFractional) Normalize() HexFractional {
 	return h.Multiply(1.0 / h.Length())
-}
-
-// DotProduct returns the dot product.
-// See https://en.wikipedia.org/wiki/Dot_product
-func (h HexFractional) DotProduct(x HexFractional) float64 {
-	return h.Q*x.Q + h.R*x.R + h.S()*x.S()
 }
 
 // ProjectOn projects h onto x.

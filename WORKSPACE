@@ -57,3 +57,15 @@ go_repository(
     commit = "69cc3646b96e61de0b417f4815b86c36e65783ee",
     importpath = "golang.org/x/image",
 )
+
+go_repository(
+    name = "com_github_erinpentecost_fltcmp",
+    commit = "d4adf86de9b8b31db35c8874839dd5f8cb19c7ea",
+    importpath = "github.com/erinpentecost/fltcmp",
+)
+
+go_repository(
+    name = "com_github_lucasb_eyer_go_colorful",
+    commit = "345fbb3dbcdb252d9985ee899a84963c0fa24c82",
+    importpath = "github.com/lucasb-eyer/go-colorful",
+)

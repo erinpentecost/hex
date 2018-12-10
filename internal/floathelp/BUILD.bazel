@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["floathelp.go"],
+    importpath = "github.com/erinpentecost/hexcoord/internal/floathelp",
+    visibility = ["//:__subpackages__"],
+    deps = ["//vendor/github.com/erinpentecost/fltcmp:go_default_library"],
+)

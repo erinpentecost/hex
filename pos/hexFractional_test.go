@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/erinpentecost/hexcoord/internal/floathelp"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
 )
@@ -95,6 +96,47 @@ func TestRotate(t *testing.T) {
 	}
 }
 
+func TestOpposite(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := pos.Origin().Neighbors()
+	for _, h := range testHexes {
+		hf := h.ToHexFractional()
+		assert.True(t, hf.Rotate(pos.OriginFractional(), math.Pi).AlmostEquals(hf.Multiply(-1.0)))
+	}
+}
+
+func TestScale(t *testing.T) {
+	done := make(chan interface{})
+	defer close(done)
+
+	testHexes := pos.AreaToSlice(pos.Hex{Q: 9999, R: 664}.SpiralArea(done, 4))
+	scalar := []float64{-1000.0, 1.0, 3.0}
+
+	for _, a := range testHexes {
+		af := a.ToHexFractional()
+		ax, ay := af.ToCartesian()
+		for _, b := range testHexes {
+			bf := b.ToHexFractional()
+			bx, by := bf.ToCartesian()
+			for _, s := range scalar {
+				// hex scaling
+				hScale := af.Multiply(s).Add(bf).Multiply(s)
+				// cartesian scaling
+				scale := func(a, b, s float64) float64 {
+					return (a*s + b) * s
+				}
+				cScaleX := scale(ax, bx, s)
+				cScaleY := scale(ay, by, s)
+				cScale := pos.HexFractionalFromCartesian(cScaleX, cScaleY)
+
+				assert.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.ToString(), cScale.ToString()))
+			}
+		}
+	}
+}
+
 func TestAngleTo(t *testing.T) {
 
 	o := pos.Origin()
@@ -117,17 +159,10 @@ func TestAngleTo(t *testing.T) {
 		return pid3 * (float64(rot))
 	}
 
-	closeEnough := func(a, b float64) bool {
-		if a == b {
-			return true
-		}
-		return math.Abs(a-b) < 1e-10
-	}
-
 	for ia, ra := range o.Neighbors() {
 		for ib, rb := range o.Neighbors() {
 			assert.True(t,
-				closeEnough(toRad(ia, ib), ra.ToHexFractional().AngleTo(rb.ToHexFractional())),
+				floathelp.CloseEnough(toRad(ia, ib), ra.ToHexFractional().AngleTo(rb.ToHexFractional())),
 				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, ia-ib))
 		}
 	}
