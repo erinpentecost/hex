@@ -13,6 +13,12 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 * A* pathing in a hex grid.
 * Super naive drawing package! This isn't performant; it's to help you visualize what's going on.
 
+## How to Build
+
+```sh
+make test
+```
+
 ## References
 
 * [Hexagonal Grids](https://www.redblobgames.com/grids/hexagons)
