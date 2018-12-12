@@ -148,3 +148,13 @@ func TestDrawLogo(t *testing.T) {
 	assert.NoError(t, err, path)
 	fmt.Println(path)
 }
+
+func BenchmarkDrawGrid(b *testing.B) {
+	dd := HighlightDecorator{interest: make(map[pos.Hex]interface{})}
+	img := image.NewRGBA(image.Rect(0, 0, 1280, 1024))
+	cc := draw.NewCamera(img, 0.013, pos.Hex{Q: 15, R: 0})
+
+	for i := 0; i < b.N; i++ {
+		cc.Grid(dd)
+	}
+}

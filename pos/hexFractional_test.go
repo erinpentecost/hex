@@ -78,6 +78,25 @@ func TestCartesian(t *testing.T) {
 	assert.Equal(t, 0.0, oy, "Origin y is wrong.")
 }
 
+// avoid compiler optimizations
+var benchx, benchy float64
+
+func BenchmarkToCartesian(b *testing.B) {
+	hexf := pos.HexFractional{Q: 237.0, R: -23455.0}
+	for i := 0; i < b.N; i++ {
+		benchx, benchy = hexf.ToCartesian()
+	}
+}
+
+// avoid compiler optimizations
+var benchHex pos.HexFractional
+
+func BenchmarkFromCartesian(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		benchHex = pos.HexFractionalFromCartesian(2345.0, 562.5)
+	}
+}
+
 func TestRotate(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
