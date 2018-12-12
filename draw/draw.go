@@ -147,6 +147,7 @@ func (c Camera) Grid(d Decorator) {
 				foundHexes[hd] = nil
 			}
 			c.img.SetRGBA(x, y, d.AreaColor(hd))
+			//blendPoint(c.img, d.AreaColor(hd), x, y)
 		}
 	}
 
@@ -178,26 +179,30 @@ func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
 	img.SetRGBA(x, y, col)
 }
 
+func blendPoint(img *image.RGBA, toColor color.RGBA, xImg, yImg int) {
+	col, _ := colorful.MakeColor(toColor)
+
+	// center point, full strength
+	img.SetRGBA(xImg, yImg, toColor)
+
+	orth := 0.6
+	blend(img, xImg+1, yImg, col, orth)
+	blend(img, xImg-1, yImg, col, orth)
+	blend(img, xImg, yImg+1, col, orth)
+	blend(img, xImg, yImg-1, col, orth)
+
+	diag := 0.1
+	blend(img, xImg+1, yImg+1, col, diag)
+	blend(img, xImg-1, yImg-1, col, diag)
+	blend(img, xImg-1, yImg+1, col, diag)
+	blend(img, xImg+1, yImg-1, col, diag)
+}
+
 // Point draws a fat point.
 func (c Camera) Point(to color.RGBA, p pos.HexFractional) {
 	xImg, yImg := c.HexToScreen(p)
 
-	col, _ := colorful.MakeColor(to)
-
-	// center point, full strength
-	c.img.SetRGBA(xImg, yImg, to)
-
-	orth := 0.6
-	blend(c.img, xImg+1, yImg, col, orth)
-	blend(c.img, xImg-1, yImg, col, orth)
-	blend(c.img, xImg, yImg+1, col, orth)
-	blend(c.img, xImg, yImg-1, col, orth)
-
-	diag := 0.1
-	blend(c.img, xImg+1, yImg+1, col, diag)
-	blend(c.img, xImg-1, yImg-1, col, diag)
-	blend(c.img, xImg-1, yImg+1, col, diag)
-	blend(c.img, xImg+1, yImg-1, col, diag)
+	blendPoint(c.img, to, xImg, yImg)
 }
 
 func blend(img *image.RGBA, x, y int, col colorful.Color, strength float64) {
