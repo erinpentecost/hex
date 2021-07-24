@@ -45,8 +45,8 @@ func TestHexAdd(t *testing.T) {
 func TestHexDistance(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	closeHexes := pos.Origin().HexArea(done, 1)
-	for h := range closeHexes {
+	closeHexes := pos.Origin().HexArea(1)
+	for _, h := range closeHexes {
 		if h == pos.Origin() {
 			assert.Equal(t, 0, h.DistanceTo(pos.Origin()))
 		} else {
@@ -79,17 +79,15 @@ func testDirectionEquality(t *testing.T, testOrigin pos.Hex) {
 func TestDirectionEquality(t *testing.T) {
 	done := make(chan interface{})
 	defer close(done)
-	testHexes := pos.Origin().HexArea(done, 10)
-	for h := range testHexes {
+	testHexes := pos.Origin().HexArea(10)
+	for _, h := range testHexes {
 		testDirectionEquality(t, h)
 	}
 }
 
 func TestFractionalConversion(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-	testHexes := pos.Origin().HexArea(done, 10)
-	for h := range testHexes {
+	testHexes := pos.Origin().HexArea(10)
+	for _, h := range testHexes {
 		frac := h.ToHexFractional()
 		recast := frac.ToHex()
 		assert.Equal(t, h, recast)
