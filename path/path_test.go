@@ -41,9 +41,6 @@ func (p patherImp) EstimatedCost(a, b pos.Hex) int {
 }
 
 func concentricMaze(maxSize int) <-chan pos.Hex {
-	done := make(chan interface{})
-	defer close(done)
-
 	mazeGen := make(chan pos.Hex)
 
 	go func() {
@@ -51,7 +48,7 @@ func concentricMaze(maxSize int) <-chan pos.Hex {
 		for i := 2; i < maxSize; i = i + 2 {
 			opening := i
 			cur := 0
-			for h := range pos.Origin().RingArea(done, i) {
+			for _, h := range pos.Origin().RingArea(i) {
 				cur++
 				if opening != cur {
 					mazeGen <- h
@@ -83,11 +80,8 @@ func directPath(t *testing.T, target pos.Hex) {
 }
 
 func TestDirectPaths(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-
 	for i := 1; i < 11; i = i + 2 {
-		for h := range pos.Origin().RingArea(done, i) {
+		for _, h := range pos.Origin().RingArea(i) {
 			directPath(t, h)
 		}
 	}
@@ -109,11 +103,8 @@ func indirectPath(t *testing.T, target pos.Hex) {
 }
 
 func TestIndirectPaths(t *testing.T) {
-	done := make(chan interface{})
-	defer close(done)
-
 	for i := 1; i < 11; i = i + 2 {
-		for h := range pos.Origin().RingArea(done, i) {
+		for _, h := range pos.Origin().RingArea(i) {
 			indirectPath(t, h)
 		}
 	}

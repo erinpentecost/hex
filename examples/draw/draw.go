@@ -1,7 +1,6 @@
 package draw
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -232,12 +231,11 @@ func (c Camera) Line(col color.RGBA, bold bool, start, end pos.HexFractional) {
 
 // Save saves an image to a file
 func Save(img *image.RGBA, path string) (string, error) {
-	fullPath := fmt.Sprintf("%s", path)
 	f, err := os.Create(path)
 	if err != nil {
-		return fullPath, err
+		return path, err
 	}
 	defer f.Close()
 	png.Encode(f, img)
-	return fullPath, nil
+	return path, nil
 }
