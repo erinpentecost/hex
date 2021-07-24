@@ -6,7 +6,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/draw"
+	"github.com/erinpentecost/hexcoord/examples/draw"
 
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"

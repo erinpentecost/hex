@@ -8,6 +8,7 @@ import (
 	"github.com/erinpentecost/hexcoord/internal/floathelp"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHexFractionalHashIdentity(t *testing.T) {
@@ -150,7 +151,7 @@ func TestScale(t *testing.T) {
 				cScaleY := scale(ay, by, s)
 				cScale := pos.HexFractionalFromCartesian(cScaleX, cScaleY)
 
-				assert.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.ToString(), cScale.ToString()))
+				require.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.ToString(), cScale.ToString()))
 			}
 		}
 	}
