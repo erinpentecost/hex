@@ -2,50 +2,10 @@ package path
 
 import (
 	"container/heap"
+	"sync"
 
 	"github.com/erinpentecost/hexcoord/pos"
 )
-
-type pqItem struct {
-	value    pos.Hex
-	priority int
-	index    int
-}
-
-type priorityQueue []*pqItem
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority < pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x interface{}) {
-	n := len(*pq)
-	item := x.(*pqItem)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	item.index = -1
-	*pq = old[0 : n-1]
-	return item
-}
-
-type aStarInfo struct {
-	parent pos.Hex
-	cost   int
-}
 
 // Pather contains domain knowledge for finding a path.
 type Pather interface {
@@ -60,60 +20,188 @@ type Pather interface {
 	EstimatedCost(a, b pos.Hex) int
 }
 
+type aStarInfo struct {
+	// parent is the hex we moved from to get to this hex.
+	// This forms a linked list pointing all the back to `from`.
+	parent pos.Hex
+	// cost is the total value from `from` to this hex.
+	cost int
+}
+
+// unwind walks a field map backwards into a path
+func unwind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []pos.Hex {
+	path := make([]pos.Hex, 0)
+	// Unwind to get path
+	cur := destination
+	curExtras := field[cur]
+
+	// Begin unwind
+	for {
+		path = append([]pos.Hex{cur}, path...)
+
+		if cur == origin {
+			return path
+		}
+
+		cur = curExtras.parent
+		curExtras = field[cur]
+	}
+}
+
+// wind walks a field map forwards into a path
+func wind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []pos.Hex {
+	path := make([]pos.Hex, 0)
+	// Unwind to get path
+	cur := destination
+	curExtras := field[cur]
+
+	// Begin unwind
+	for {
+		path = append(path, cur)
+
+		if cur == origin {
+			return path
+		}
+
+		cur = curExtras.parent
+		curExtras = field[cur]
+	}
+}
+
 // To finds a near-optimal path to the target hex.
+//
 // The first element in the path will be the starting hex,
 // and the last will be the target hex.
-func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex, cost int, found bool) {
+//
+// If there is no path, this will be empty.
+//
+// This is an offline search algorithm; there is no caching.
+func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
+
+	// This is basically two A* searches that run in parallel.
+	// One starts at `from`, the other starts at `target`.
+	// Once they touch, the paths are stitched together.
+	// Both the searches use a priority queue to rank neighbors
+	// that need to be searched.
+
+	// This double-headed search is 350840 ns/op on my machine
+	// vs 1056354 ns/op for a typical single-threaded A*.
+
 	// Init output variables
 	path = make([]pos.Hex, 0)
-	cost = 0
-	found = false
 
+	// Base case.
 	if from == target {
-		found = true
+		path = append(path, from)
 		return
 	}
 
-	// Init supporting data structures.
-	pq := &priorityQueue{&pqItem{
+	// Set up frontier tracker starting at `to`
+	targetPaths := make(map[pos.Hex]aStarInfo)
+	targetPaths[target] = aStarInfo{
+		parent: target,
+		cost:   0,
+	}
+
+	targetMux := sync.Mutex{}
+	go func() {
+		targetPQ := &priorityQueue{&pqItem{
+			value:    target,
+			priority: 0,
+			index:    0,
+		}}
+		heap.Init(targetPQ)
+
+		// Cycle through all the neigbors starting at `target`
+		for targetPQ.Len() > 0 {
+			targetFrontier := (*(heap.Pop(targetPQ).(*pqItem))).value
+
+			// Look at all neighbors
+			for i, next := range targetFrontier.Neighbors() {
+				// edgeCost is reversed here
+				edgeCost := pather.Cost(next, pos.BoundFacing(i+3))
+				// Negative costs are a special case
+				if edgeCost < 0 {
+					continue
+				}
+
+				// Push neighbors we still need to evaluate onto the heap
+				newCost := targetPaths[targetFrontier].cost + edgeCost
+				c, ok := targetPaths[next]
+				if !ok || c.cost > newCost {
+					targetMux.Lock()
+					// check if main goroutine is done
+					if targetPaths == nil {
+						return
+					}
+					targetPaths[next] = aStarInfo{
+						parent: targetFrontier,
+						cost:   newCost,
+					}
+					targetMux.Unlock()
+					heap.Push(targetPQ, &pqItem{
+						value: next,
+						// estimatedCost is reversed here
+						priority: newCost + pather.EstimatedCost(from, next),
+					})
+				}
+			}
+		}
+		// no solution if we get to here
+	}()
+
+	// Set up frontier tracker starting at `from`
+	fromPaths := make(map[pos.Hex]aStarInfo)
+	fromPaths[from] = aStarInfo{
+		parent: from,
+		cost:   0,
+	}
+	fromPQ := &priorityQueue{&pqItem{
 		value:    from,
 		priority: 0,
 		index:    0,
 	}}
-	heap.Init(pq)
+	heap.Init(fromPQ)
 
-	extras := make(map[pos.Hex]aStarInfo)
-	extras[from] = aStarInfo{
-		parent: from,
-		cost:   0,
-	}
+	// Cycle through all the neigbors starting at `from`
+	for fromPQ.Len() > 0 {
+		fromFrontier := (*(heap.Pop(fromPQ).(*pqItem))).value
 
-	// Begin A*
-	for pq.Len() > 0 {
-		currentHeapItem := *(heap.Pop(pq).(*pqItem))
-		current := currentHeapItem.value
+		// Quit if the fromFrontier hit a visited node in the targetPaths.
+		targetMux.Lock()
+		if _, ok := targetPaths[fromFrontier]; ok {
+			firstSection := unwind(fromPaths, from, fromFrontier)
+			secondSection := wind(targetPaths, target, fromFrontier)
 
-		// Quit if we found it
-		if current == target {
-			found = true
-			break
+			// join em!
+			path = append(firstSection, secondSection[1:]...)
+
+			// let the other A* know to quit
+			targetPaths = nil
+			targetMux.Unlock()
+
+			// yay we won
+			return
 		}
+		targetMux.Unlock()
 
-		// Look at all neigbors
-		for i, next := range current.Neighbors() {
-			edgeCost := pather.Cost(current, i)
+		// Look at all neighbors
+		for i, next := range fromFrontier.Neighbors() {
+			edgeCost := pather.Cost(fromFrontier, i)
 			// Negative costs are a special case
 			if edgeCost < 0 {
 				continue
 			}
-			newCost := extras[current].cost + edgeCost
-			c, ok := extras[next]
+
+			// Push neighbors we still need to evaluate onto the heap
+			newCost := fromPaths[fromFrontier].cost + edgeCost
+			c, ok := fromPaths[next]
 			if !ok || c.cost > newCost {
-				extras[next] = aStarInfo{
-					parent: current,
+				fromPaths[next] = aStarInfo{
+					parent: fromFrontier,
 					cost:   newCost,
 				}
-				heap.Push(pq, &pqItem{
+				heap.Push(fromPQ, &pqItem{
 					value:    next,
 					priority: newCost + pather.EstimatedCost(next, target),
 				})
@@ -121,25 +209,10 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex, cost int, 
 		}
 	}
 
-	// Quit if the target is not in the found set.
-	if !found {
-		return
-	}
-
-	// Unwind to get path
-	cur := target
-	curExtras, _ := extras[cur]
-	cost = curExtras.cost
-
-	// Begin unwind
-	for {
-		path = append([]pos.Hex{cur}, path...)
-
-		if cur == from {
-			return
-		}
-
-		cur = curExtras.parent
-		curExtras, _ = extras[cur]
-	}
+	// No solution
+	// let the other A* know to quit
+	targetMux.Lock()
+	targetPaths = nil
+	targetMux.Unlock()
+	return
 }

@@ -139,12 +139,14 @@ func minInt(a, k int) int {
 }
 
 // Length gets the length of the hex to the grid origin.
+//
 // This is the Manhattan Distance.
 func (h Hex) Length() int {
 	return (absInt(h.Q) + absInt(h.R) + absInt(h.S())) / 2
 }
 
 // DistanceTo returns the distance between two hexes.
+//
 // This is the Manhattan Distance.
 func (h Hex) DistanceTo(x Hex) int {
 	return h.Subtract(x).Length()
@@ -196,6 +198,6 @@ func BoundFacing(facing int) int {
 }
 
 // ToString converts the hex to a string.
-func (h Hex) ToString() string {
+func (h Hex) String() string {
 	return fmt.Sprintf("{%v, %v, %v}", h.Q, h.R, h.S())
 }

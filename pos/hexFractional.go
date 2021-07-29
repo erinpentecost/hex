@@ -107,12 +107,14 @@ func LerpHexFractional(a HexFractional, b HexFractional, t float64) HexFractiona
 }
 
 // Length gets the length of the hex to the grid origin.
+//
 // This is the Euclidean Distance.
 func (h HexFractional) Length() float64 {
 	return h.DistanceTo(HexFractional{0, 0})
 }
 
 // DistanceTo returns the distance between two hexes.
+//
 // This is the Euclidean Distance.
 func (h HexFractional) DistanceTo(x HexFractional) float64 {
 	d := h.Subtract(x)
