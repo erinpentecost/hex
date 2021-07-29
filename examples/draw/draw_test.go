@@ -62,51 +62,51 @@ func (d HighlightDecorator) AreaLabel(h pos.Hex) string {
 
 func createLogoPoints() map[pos.Hex]interface{} {
 	h := []pos.Hex{
-		pos.Hex{Q: 2, R: -2},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 0, R: 0},
-		pos.Hex{Q: -1, R: 1},
-		pos.Hex{Q: 1, R: 0},
-		pos.Hex{Q: 1, R: 1},
+		{Q: 2, R: -2},
+		{Q: 1, R: -1},
+		{Q: 0, R: 0},
+		{Q: -1, R: 1},
+		{Q: 1, R: 0},
+		{Q: 1, R: 1},
 	}
 	ec := []pos.Hex{
-		pos.Hex{Q: 2, R: -1},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 0, R: 0},
-		pos.Hex{Q: 0, R: 1},
-		pos.Hex{Q: 1, R: 1},
+		{Q: 2, R: -1},
+		{Q: 1, R: -1},
+		{Q: 0, R: 0},
+		{Q: 0, R: 1},
+		{Q: 1, R: 1},
 	}
 	o := []pos.Hex{
-		pos.Hex{Q: 2, R: 0},
-		pos.Hex{Q: 2, R: -1},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 0, R: 0},
-		pos.Hex{Q: 0, R: 1},
-		pos.Hex{Q: 1, R: 1},
+		{Q: 2, R: 0},
+		{Q: 2, R: -1},
+		{Q: 1, R: -1},
+		{Q: 0, R: 0},
+		{Q: 0, R: 1},
+		{Q: 1, R: 1},
 	}
 	x := []pos.Hex{
-		pos.Hex{Q: 2, R: -1},
-		pos.Hex{Q: 1, R: 0},
-		pos.Hex{Q: 0, R: 1},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 1, R: 1},
+		{Q: 2, R: -1},
+		{Q: 1, R: 0},
+		{Q: 0, R: 1},
+		{Q: 1, R: -1},
+		{Q: 1, R: 1},
 	}
 	r := []pos.Hex{
-		pos.Hex{Q: 2, R: 0},
-		pos.Hex{Q: 2, R: -1},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 0, R: 0},
-		pos.Hex{Q: -1, R: 1},
+		{Q: 2, R: 0},
+		{Q: 2, R: -1},
+		{Q: 1, R: -1},
+		{Q: 0, R: 0},
+		{Q: -1, R: 1},
 	}
 	d := []pos.Hex{
-		pos.Hex{Q: 2, R: 0},
-		pos.Hex{Q: 2, R: -1},
-		pos.Hex{Q: 1, R: -1},
-		pos.Hex{Q: 0, R: 0},
-		pos.Hex{Q: 0, R: 1},
-		pos.Hex{Q: 1, R: 1},
-		pos.Hex{Q: 3, R: -1},
-		pos.Hex{Q: 4, R: -2},
+		{Q: 2, R: 0},
+		{Q: 2, R: -1},
+		{Q: 1, R: -1},
+		{Q: 0, R: 0},
+		{Q: 0, R: 1},
+		{Q: 1, R: 1},
+		{Q: 3, R: -1},
+		{Q: 4, R: -2},
 	}
 
 	logo := [][]pos.Hex{
@@ -123,10 +123,8 @@ func createLogoPoints() map[pos.Hex]interface{} {
 	taggedPos := make(map[pos.Hex]interface{})
 
 	for offset, char := range logo {
-		done := make(chan interface{})
-		defer close(done)
-		charOffset := pos.AreaMap(done, pos.Area(char...), func(x pos.Hex) pos.Hex { return x.Add(pos.Hex{Q: offset * 4, R: 0}) })
-		for charSpot := range charOffset {
+		charOffset := pos.AreaMap(char, func(x pos.Hex) pos.Hex { return x.Add(pos.Hex{Q: offset * 4, R: 0}) })
+		for _, charSpot := range charOffset {
 			taggedPos[charSpot] = nil
 		}
 	}

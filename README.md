@@ -13,12 +13,10 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 * Multithreaded A* pathing in a hex grid.
 * Super naive drawing package! This isn't performant; it's to help you visualize what's going on.
 
-## How to Include
-
 ```go
 import (
     // Base library
-	"github.com/erinpentecost/hexcoord/pos"
+    "github.com/erinpentecost/hexcoord/pos"
     // For pathfinding
     "github.com/erinpentecost/hexcoord/path"
 )
