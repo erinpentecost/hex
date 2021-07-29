@@ -47,7 +47,7 @@ func (d DefaultDecorator) AreaColor(h pos.Hex) color.RGBA {
 
 // AreaLabel uses the hex's coordinates.
 func (d DefaultDecorator) AreaLabel(h pos.Hex) string {
-	return h.ToString()
+	return h.String()
 }
 
 // UnlabeledDecorator does minimal styling.
@@ -166,7 +166,7 @@ func (c Camera) Grid(d Decorator) {
 }
 
 func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
-	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+	point := fixed.Point26_6{X: fixed.Int26_6(x * 64), Y: fixed.Int26_6(y * 64)}
 
 	d := &font.Drawer{
 		Dst:  img,
