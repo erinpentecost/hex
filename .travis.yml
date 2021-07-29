@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.x
+  - 1.16.x
 
 os:
   - linux
@@ -15,7 +15,7 @@ env:
   - GO111MODULE=on
 
 script:
-  - make test
+  - go test ./...
 
 notifications:
   email: false
