@@ -52,8 +52,8 @@ func (h HexFractional) ToHex() Hex {
 	}
 }
 
-// ToString converts the hex to a string.
-func (h HexFractional) ToString() string {
+// String converts the hex to a string.
+func (h HexFractional) String() string {
 	return fmt.Sprintf("{%.3f, %.3f, %.3f}", h.Q, h.R, h.S())
 }
 
