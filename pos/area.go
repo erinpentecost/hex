@@ -94,6 +94,12 @@ func (h Hex) SpiralArea(radius int) Area {
 	return area
 }
 
+// TriangleArea generates a triangle starting from the given hex
+// to points a and b, inclusive.
+func (h Hex) TriangleArea(a Hex, b Hex) Area {
+	panic("not implemented")
+}
+
 // AreaMap applies a function (transform) to each element in
 // input (a collection of hexes) and returns a new collection
 // with the output.

@@ -151,7 +151,7 @@ func TestScale(t *testing.T) {
 				cScaleY := scale(ay, by, s)
 				cScale := pos.HexFractionalFromCartesian(cScaleX, cScaleY)
 
-				require.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.ToString(), cScale.ToString()))
+				require.True(t, hScale.AlmostEquals(cScale), fmt.Sprintf("hex derived %v is not cartesian derived %v", hScale.String(), cScale.String()))
 			}
 		}
 	}
