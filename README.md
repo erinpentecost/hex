@@ -10,13 +10,18 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 
 * Generating sets of hexes programmatically in common patterns.
 * Compositing sets of hexes with unions, intersections, and subtractions.
-* A* pathing in a hex grid.
+* Multithreaded A* pathing in a hex grid.
 * Super naive drawing package! This isn't performant; it's to help you visualize what's going on.
 
-## How to Build
+## How to Include
 
-```sh
-make test
+```go
+import (
+    // Base library
+	"github.com/erinpentecost/hexcoord/pos"
+    // For pathfinding
+    "github.com/erinpentecost/hexcoord/path"
+)
 ```
 
 ## References
@@ -24,4 +29,3 @@ make test
 * [Hexagonal Grids](https://www.redblobgames.com/grids/hexagons)
 * [Implementation of Hex Grids](https://www.redblobgames.com/grids/hexagons/implementation.html)
 * [Priority Queue](https://golang.org/pkg/container/heap/#example__priorityQueue)
-* *Concurrency in Go* by Katherine Cox-Buday
