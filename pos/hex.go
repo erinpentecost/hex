@@ -1,6 +1,9 @@
 package pos
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // Hex is a coordinate defined axially.
 type Hex struct {
@@ -104,6 +107,18 @@ func lerpFloat(a, b, t float64) float64 {
 
 func lerpInt(a int, b int, t float64) float64 {
 	return lerpFloat(float64(a), float64(b), t)
+}
+
+// LineTo returns all hexes in a line from point x to point b, inclusive.
+// The order of elements is a line as you would expect.
+func (h Hex) LineTo(x Hex) []Hex {
+	n := h.DistanceTo(x)
+	line := make([]Hex, 0)
+	step := 1.0 / math.Max(float64(n), 1.0)
+	for i := 0; i <= n; i++ {
+		line = append(line, LerpHex(h, x, step*float64(i)))
+	}
+	return line
 }
 
 // LerpHex finds a point between a and b weighted by t.
