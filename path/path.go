@@ -7,19 +7,6 @@ import (
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
-// Pather contains domain knowledge for finding a path.
-type Pather interface {
-	// Cost indicates the move cost between a hex and one
-	// of its neighbors. Higher values are less desirable.
-	// Negative costs are treated as impassable.
-	Cost(a pos.Hex, direction int) int
-
-	// EstimatedCost returns the estimated cost between
-	// two hexes that are not necessarily neighbors.
-	// Negative costs are treated as impassable.
-	EstimatedCost(a, b pos.Hex) int
-}
-
 type aStarInfo struct {
 	// parent is the hex we moved from to get to this hex.
 	// This forms a linked list pointing all the back to `from`.
@@ -96,6 +83,13 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 		return
 	}
 
+	// Set up frontier tracker starting at `from`
+	fromPaths := make(map[pos.Hex]aStarInfo)
+	fromPaths[from] = aStarInfo{
+		parent: from,
+		cost:   0,
+	}
+
 	// Set up frontier tracker starting at `to`
 	targetPaths := make(map[pos.Hex]aStarInfo)
 	targetPaths[target] = aStarInfo{
@@ -126,36 +120,38 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 				}
 
 				// Push neighbors we still need to evaluate onto the heap
+				targetMux.Lock()
 				newCost := targetPaths[targetFrontier].cost + edgeCost
 				c, ok := targetPaths[next]
 				if !ok || c.cost > newCost {
-					targetMux.Lock()
 					// check if main goroutine is done
 					if targetPaths == nil {
+						targetMux.Unlock()
 						return
 					}
+					// Check if we are extending into main goroutine's seen area
+					_, stop := fromPaths[next]
 					targetPaths[next] = aStarInfo{
 						parent: targetFrontier,
 						cost:   newCost,
 					}
 					targetMux.Unlock()
+					if stop {
+						return
+					}
 					heap.Push(targetPQ, &pqItem{
 						value: next,
 						// estimatedCost is reversed here
 						priority: newCost + pather.EstimatedCost(from, next),
 					})
+				} else {
+					targetMux.Unlock()
 				}
 			}
 		}
 		// no solution if we get to here
 	}()
 
-	// Set up frontier tracker starting at `from`
-	fromPaths := make(map[pos.Hex]aStarInfo)
-	fromPaths[from] = aStarInfo{
-		parent: from,
-		cost:   0,
-	}
 	fromPQ := &priorityQueue{&pqItem{
 		value:    from,
 		priority: 0,
@@ -194,6 +190,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 			}
 
 			// Push neighbors we still need to evaluate onto the heap
+			targetMux.Lock()
 			newCost := fromPaths[fromFrontier].cost + edgeCost
 			c, ok := fromPaths[next]
 			if !ok || c.cost > newCost {
@@ -206,6 +203,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					priority: newCost + pather.EstimatedCost(next, target),
 				})
 			}
+			targetMux.Unlock()
 		}
 	}
 

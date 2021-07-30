@@ -123,9 +123,9 @@ func createLogoPoints() map[pos.Hex]interface{} {
 	taggedPos := make(map[pos.Hex]interface{})
 
 	for offset, char := range logo {
-		charOffset := pos.AreaMap(char, func(x pos.Hex) pos.Hex { return x.Add(pos.Hex{Q: offset * 4, R: 0}) })
-		for _, charSpot := range charOffset {
-			taggedPos[charSpot] = nil
+		for _, h := range char {
+			oh := h.Add(pos.Hex{Q: offset * 4, R: 0})
+			taggedPos[oh] = nil
 		}
 	}
 

@@ -1,8 +1,11 @@
 package path_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/erinpentecost/hexcoord/csg"
 	"github.com/erinpentecost/hexcoord/path"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
@@ -40,24 +43,21 @@ func (p patherImp) EstimatedCost(a, b pos.Hex) int {
 	return 0
 }
 
-func concentricMaze(maxSize int) <-chan pos.Hex {
-	mazeGen := make(chan pos.Hex)
+func concentricMaze(maxSize int) csg.Area {
+	c := csg.NewBuilder()
 
-	go func() {
-		defer close(mazeGen)
-		for i := 2; i < maxSize; i = i + 2 {
-			opening := i
-			cur := 0
-			for _, h := range pos.Origin().RingArea(i) {
-				cur++
-				if opening != cur {
-					mazeGen <- h
-				}
+	for i := 2; i < maxSize; i = i + 2 {
+		opening := i
+		cur := 0
+		for h := range csg.Ring(pos.Origin(), i).Build() {
+			cur++
+			if opening != cur {
+				c = c.Union(csg.NewArea(h))
 			}
 		}
-	}()
+	}
 
-	return mazeGen
+	return c.Build()
 }
 
 // indirectPath sets up a test in a map with different hex costs.
@@ -76,32 +76,45 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 	// make sure path is contiguous with no loops
 	seen := make(map[pos.Hex]interface{})
 	last := pos.Origin()
+	sb := strings.Builder{}
+	for _, p := range path {
+		sb.WriteString(p.String())
+		sb.WriteString(">")
+	}
 	for i, p := range path {
 		// assert no loops
 		if _, ok := seen[p]; ok {
-			require.FailNow(t, "Position is duplicated in found path. index=%d pos=%s", i, p)
+			require.FailNow(t, "Oh no!", "Position is duplicated in found path. index=%d pos=%s.\npath=%s", i, p.String(), sb.String())
 		}
 		seen[p] = nil
 		// assert contiguous
 		if i != 0 {
-			require.Equal(t, 1, last.DistanceTo(p), "Path is not contiguous between idx=%d pos=%s and idx=%d pos=%s", i-1, last, i, p)
+			require.Equal(t, 1, last.DistanceTo(p), "Path is not contiguous between idx=%d pos=%s and idx=%d pos=%s.\npath=%s", i-1, last.String(), i, p.String(), sb.String())
 		}
 		last = p
 	}
 }
 
 func TestDirectPaths(t *testing.T) {
+	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
-		for _, h := range pos.Origin().RingArea(i) {
-			pathCheck(t, h, newPatherImp(0))
+		for h := range csg.Ring(pos.Origin(), i) {
+			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
+				t.Parallel()
+				pathCheck(t, h, newPatherImp(0))
+			})
 		}
 	}
 }
 
 func TestIndirectPaths(t *testing.T) {
+	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
-		for _, h := range pos.Origin().RingArea(i) {
-			pathCheck(t, h, newPatherImp(h.Length()+4))
+		for h := range csg.Ring(pos.Origin(), i) {
+			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
+				t.Parallel()
+				pathCheck(t, h, newPatherImp(h.Length()+4))
+			})
 		}
 	}
 }
