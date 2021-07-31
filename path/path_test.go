@@ -16,12 +16,12 @@ type patherImp struct {
 	cost map[pos.Hex]int
 }
 
-func newPatherImp(size int) patherImp {
+func newPatherImp(walls csg.Area) patherImp {
 	pi := patherImp{
 		cost: make(map[pos.Hex]int),
 	}
 
-	for h := range concentricMaze(size) {
+	for h := range walls {
 		// Negative values are impassable
 		pi.cost[h] = -1
 	}
@@ -101,7 +101,7 @@ func TestDirectPaths(t *testing.T) {
 		for h := range csg.Ring(pos.Origin(), i) {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
 				t.Parallel()
-				pathCheck(t, h, newPatherImp(0))
+				pathCheck(t, h, newPatherImp(csg.NewArea()))
 			})
 		}
 	}
@@ -113,16 +113,25 @@ func TestIndirectPaths(t *testing.T) {
 		for h := range csg.Ring(pos.Origin(), i) {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
 				t.Parallel()
-				pathCheck(t, h, newPatherImp(h.Length()+4))
+				pathCheck(t, h, newPatherImp(concentricMaze(h.Length()+4)))
 			})
 		}
 	}
 }
 
+func TestNoPath(t *testing.T) {
+	t.Parallel()
+
+	pather := newPatherImp(csg.Ring(pos.Origin(), 5))
+
+	foundPath := path.To(pos.Origin(), pos.Hex{Q: 100, R: 100}, pather)
+	require.Empty(t, foundPath)
+}
+
 func BenchmarkDirectPath(b *testing.B) {
 	var foundPath []pos.Hex
 	target := pos.Hex{Q: 10, R: 10}
-	pather := newPatherImp(0)
+	pather := newPatherImp(csg.NewArea())
 	for i := 0; i < b.N; i++ {
 		foundPath = path.To(pos.Origin(), target, pather)
 	}

@@ -112,3 +112,38 @@ func TestFractionalConversion(t *testing.T) {
 		assert.Equal(t, h, recast)
 	}
 }
+
+func TestLine(t *testing.T) {
+	segs := [][]Hex{
+		{{Q: 1, R: -2},
+			{Q: 1, R: -1},
+			{Q: 1, R: 0},
+			{Q: 1, R: 1}},
+		{{Q: 1, R: 1},
+			{Q: 0, R: 1},
+			{Q: -1, R: 1},
+			{Q: -2, R: 1}},
+		{{Q: -2, R: 1},
+			{Q: -1, R: 0},
+			{Q: 0, R: -1},
+			{Q: 1, R: -2}},
+		{{Q: -1, R: 0},
+			{Q: 0, R: 0},
+			{Q: 1, R: 0}},
+	}
+
+	for _, seg := range segs {
+		first := seg[0]
+		last := seg[len(seg)-1]
+		t.Run(fmt.Sprintf("from-%s-to-%s", first.String(), last.String()), func(t *testing.T) {
+			found := first.LineTo(last)
+			assert.Equal(t, seg, found)
+		})
+		t.Run(fmt.Sprintf("from-%s-to-%s", last.String(), first.String()), func(t *testing.T) {
+			found := last.LineTo(first)
+			for i, s := range seg {
+				assert.Equal(t, s, found[len(seg)-i-1])
+			}
+		})
+	}
+}

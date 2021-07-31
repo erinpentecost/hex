@@ -9,7 +9,7 @@ import (
 
 type aStarInfo struct {
 	// parent is the hex we moved from to get to this hex.
-	// This forms a linked list pointing all the back to `from`.
+	// This forms a linked list pointing all the way back to `from`.
 	parent pos.Hex
 	// cost is the total value from `from` to this hex.
 	cost int
@@ -99,16 +99,16 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 	targetMux := sync.Mutex{}
 	go func() {
-		targetPQ := &priorityQueue{&pqItem{
-			value:    target,
-			priority: 0,
-			index:    0,
+		targetPQ := &PriorityQueue{&PqItem{
+			Value:    target,
+			Priority: 0,
+			Index:    0,
 		}}
 		heap.Init(targetPQ)
 
 		// Cycle through all the neigbors starting at `target`
 		for targetPQ.Len() > 0 {
-			targetFrontier := (*(heap.Pop(targetPQ).(*pqItem))).value
+			targetFrontier := (*(heap.Pop(targetPQ).(*PqItem))).Value
 
 			// Look at all neighbors
 			for i, next := range targetFrontier.Neighbors() {
@@ -139,10 +139,10 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					if stop {
 						return
 					}
-					heap.Push(targetPQ, &pqItem{
-						value: next,
+					heap.Push(targetPQ, &PqItem{
+						Value: next,
 						// estimatedCost is reversed here
-						priority: newCost + pather.EstimatedCost(from, next),
+						Priority: newCost + pather.EstimatedCost(from, next),
 					})
 				} else {
 					targetMux.Unlock()
@@ -152,16 +152,16 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 		// no solution if we get to here
 	}()
 
-	fromPQ := &priorityQueue{&pqItem{
-		value:    from,
-		priority: 0,
-		index:    0,
+	fromPQ := &PriorityQueue{&PqItem{
+		Value:    from,
+		Priority: 0,
+		Index:    0,
 	}}
 	heap.Init(fromPQ)
 
 	// Cycle through all the neigbors starting at `from`
 	for fromPQ.Len() > 0 {
-		fromFrontier := (*(heap.Pop(fromPQ).(*pqItem))).value
+		fromFrontier := (*(heap.Pop(fromPQ).(*PqItem))).Value
 
 		// Quit if the fromFrontier hit a visited node in the targetPaths.
 		targetMux.Lock()
@@ -198,9 +198,9 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					parent: fromFrontier,
 					cost:   newCost,
 				}
-				heap.Push(fromPQ, &pqItem{
-					value:    next,
-					priority: newCost + pather.EstimatedCost(next, target),
+				heap.Push(fromPQ, &PqItem{
+					Value:    next,
+					Priority: newCost + pather.EstimatedCost(next, target),
 				})
 			}
 			targetMux.Unlock()

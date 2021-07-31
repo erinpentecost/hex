@@ -55,3 +55,30 @@ func TestAreaIntersection(t *testing.T) {
 		ringCheck.Equal(Ring(pos.Origin(), 4)),
 		"Intersection failed with unmatched input.")
 }
+
+func TestTriangle(t *testing.T) {
+	// points for a big triangle
+	points := []pos.Hex{
+		{Q: 1, R: -2},
+		{Q: 1, R: 1},
+		{Q: -2, R: 1},
+	}
+	outline := Line(append(points, points[0])...)
+	expectedOutline := []pos.Hex{
+		{Q: 1, R: -2},
+		{Q: 1, R: -1},
+		{Q: 1, R: 0},
+		{Q: 1, R: 1},
+		{Q: 0, R: 1},
+		{Q: -1, R: 1},
+		{Q: -2, R: 1},
+		{Q: -1, R: 0},
+		{Q: 0, R: -1},
+	}
+	expectedOutlineArea := NewArea(expectedOutline...)
+	assert.True(t, expectedOutlineArea.Equal(outline), "expected=%s\nactual=  %s\n", expectedOutlineArea.String(), outline.String())
+
+	fill := Polygon(points...).Build()
+	expectedFillArea := NewArea(append(expectedOutline, pos.Origin())...)
+	assert.True(t, expectedFillArea.Equal(fill), "expected=%s\nactual=  %s\n", expectedFillArea.String(), fill.String())
+}

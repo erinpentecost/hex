@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/erinpentecost/hexcoord/internal/floathelp"
+	"github.com/erinpentecost/hexcoord/internal"
 )
 
 // HexFractional is fractional hex coordinates in
@@ -67,7 +67,7 @@ func round(f float64) int {
 // AlmostEquals returns true when h and x are equal or close
 // enough to equal for practical matters.
 func (h HexFractional) AlmostEquals(x HexFractional) bool {
-	return floathelp.CloseEnough(h.Q, x.Q) && floathelp.CloseEnough(h.R, x.R)
+	return internal.CloseEnough(h.Q, x.Q) && internal.CloseEnough(h.R, x.R)
 }
 
 // Add combines two hexes.
