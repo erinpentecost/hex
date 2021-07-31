@@ -13,9 +13,11 @@ func TestAreaEqual(t *testing.T) {
 	area1 := BigHex(pos.Origin(), 2).Build()
 	area2 := BigHex(pos.Origin(), 2).Build()
 	area3 := BigHex(pos.Hex{Q: 1, R: 0}, 2).Build()
+	area4 := BigHex(pos.Origin(), 2).Subtract(NewArea(pos.Hex{Q: 1, R: 1})).Build()
 
-	assert.True(t, area1.Equal(area2), "Areas are not equal.")
-	assert.False(t, area1.Equal(area3), "Areas are equal.")
+	assert.True(t, area1.Equal(area2))
+	assert.False(t, area1.Equal(area3))
+	assert.False(t, area1.Equal(area4))
 }
 
 func TestTriangle(t *testing.T) {
@@ -86,6 +88,8 @@ func TestBounding(t *testing.T) {
 		{a: BigHex(pos.Origin(), 4), b: NewArea(pos.Origin()), expected: Contains},
 		{a: BigHex(pos.Origin(), 4), b: NewArea(pos.Hex{Q: 100, R: 100}), expected: Distinct},
 		{a: BigHex(pos.Origin(), 4), b: BigHex(pos.Hex{Q: 1, R: 1}, 4), expected: Overlap},
+		{a: BigHex(pos.Origin(), 5), b: BigHex(pos.Origin(), 5).Subtract(NewArea(pos.Hex{Q: 1, R: 1})).Build(), expected: Contains},
+		{a: Rectangle(pos.Hex{Q: 5, R: 5}, pos.Hex{Q: 10, R: 10}).Union(NewArea(pos.Origin())).Build(), b: NewArea(pos.Origin()), expected: Contains},
 	}
 	for i, test := range tests {
 		test.assertBound(t, fmt.Sprintf("%d", i))

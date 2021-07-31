@@ -73,6 +73,9 @@ func unionFn(a *Area, b *Area) *Area {
 	for k := range b.hexes {
 		c[k] = exists
 	}
+	// we can determine a new bounding box
+	// without iterating on the points if we
+	// do it now
 	if a.boundsClean && b.boundsClean {
 		return &Area{
 			hexes:       c,
@@ -83,9 +86,9 @@ func unionFn(a *Area, b *Area) *Area {
 			maxQ:        maxInt(a.maxQ, b.maxQ),
 		}
 	}
-	return (&Area{
+	return &Area{
 		hexes: c,
-	}).ensureBounds()
+	}
 }
 
 // intersectionFn returns only those hexes that are in all areas.
