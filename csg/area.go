@@ -37,6 +37,9 @@ func NewArea(hexes ...pos.Hex) *Area {
 }
 
 // Equal returns true if both areas share exactly the same hexes.
+//
+// If you need more information regarding the nature of the overlap,
+// use CheckBounding().
 func (a *Area) Equal(b *Area) bool {
 	return a.CheckBounding(b) == Equals
 }
@@ -44,7 +47,7 @@ func (a *Area) Equal(b *Area) bool {
 // ContainsHexes returns true if the area contains all the provided hexes.
 //
 // If you want to determine the overlap relationship between two areas,
-// use CheckBounding().
+// use CheckBounding(), which is more optimized for that task.
 func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 	for _, k := range hexes {
 		if _, ok := a.hexes[k]; !ok {
@@ -80,6 +83,7 @@ func (a *Area) String() string {
 	return "Area: {" + strings.Join(s, " ") + "}"
 }
 
+// ensureBounds updates the bounding box if necessary.
 func (a *Area) ensureBounds() *Area {
 	if len(a.hexes) == 0 {
 		a.boundsClean = false
@@ -138,26 +142,6 @@ func (i *iterator) Next() *pos.Hex {
 		return &i.hexes[i.idx]
 	}
 	return nil
-}
-
-func bounds(p ...pos.Hex) (minR, maxR, minQ, maxQ int) {
-	if len(p) == 0 {
-		panic("can't get bounds of empty slice")
-	}
-
-	minR = p[0].R
-	maxR = p[0].R
-	minQ = p[0].Q
-	maxQ = p[0].Q
-
-	for _, point := range p[1:] {
-		minR = minInt(minR, point.R)
-		maxR = maxInt(maxR, point.R)
-
-		minQ = minInt(minQ, point.Q)
-		maxQ = maxInt(maxQ, point.Q)
-	}
-	return
 }
 
 func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int) {
