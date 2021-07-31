@@ -31,8 +31,8 @@ func BigHex(h pos.Hex, radius int) *Area {
 
 		for r := r1; r <= r2; r++ {
 			area.hexes[pos.Hex{
-				Q: q,
-				R: r,
+				Q: q + h.Q,
+				R: r + h.R,
 			}] = exists
 		}
 	}

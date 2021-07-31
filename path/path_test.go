@@ -102,12 +102,10 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 }
 
 func TestDirectPaths(t *testing.T) {
-	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
 		iter := ring(pos.Origin(), i).Iterator()
 		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				t.Parallel()
 				pathCheck(t, *h, newPatherImp(csg.NewArea()))
 			})
 		}
@@ -115,12 +113,10 @@ func TestDirectPaths(t *testing.T) {
 }
 
 func TestIndirectPaths(t *testing.T) {
-	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
 		iter := ring(pos.Origin(), i).Iterator()
 		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				t.Parallel()
 				pathCheck(t, *h, newPatherImp(concentricMaze(h.Length()+4)))
 			})
 		}
