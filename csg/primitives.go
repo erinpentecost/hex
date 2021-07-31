@@ -37,14 +37,7 @@ func BigHex(h pos.Hex, radius int) *Area {
 		}
 	}
 
-	minR, maxR, minQ, maxQ := boundsFromMap(area.hexes)
-	area.minR = minR
-	area.maxR = maxR
-	area.minQ = minQ
-	area.maxQ = maxQ
-	area.boundsClean = true
-
-	return area
+	return area.ensureBounds()
 }
 
 // Rectangle returns the set of hexes that form a rectangular

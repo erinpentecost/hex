@@ -18,7 +18,8 @@ var exists = struct{}{}
 // Area is a collection of hexes.
 type Area struct {
 	hexes map[pos.Hex]struct{}
-	// boundsClean is true if the bounding box is ok
+	// boundsClean is true if the bounding box is ok.
+	// this must be false for empty areas.
 	boundsClean bool
 	// bounding box for the area
 	minR, maxR, minQ, maxQ int
@@ -30,15 +31,9 @@ func NewArea(hexes ...pos.Hex) *Area {
 	for _, k := range hexes {
 		c[k] = exists
 	}
-	minR, maxR, minQ, maxQ := bounds(hexes...)
-	return &Area{
-		hexes:       c,
-		boundsClean: true,
-		minR:        minR,
-		maxR:        maxR,
-		minQ:        minQ,
-		maxQ:        maxQ,
-	}
+	return (&Area{
+		hexes: c,
+	}).ensureBounds()
 }
 
 // Equal returns true if both areas share exactly the same hexes.
@@ -93,8 +88,10 @@ func (a *Area) String() string {
 	return "Area: {" + strings.Join(s, " ") + "}"
 }
 
-func (a *Area) Build() *Area {
-	if !a.boundsClean {
+func (a *Area) ensureBounds() *Area {
+	if len(a.hexes) == 0 {
+		a.boundsClean = false
+	} else if !a.boundsClean {
 		minR, maxR, minQ, maxQ := boundsFromMap(a.hexes)
 		a.minR = minR
 		a.maxR = maxR
@@ -103,6 +100,10 @@ func (a *Area) Build() *Area {
 		a.boundsClean = true
 	}
 	return a
+}
+
+func (a *Area) Build() *Area {
+	return a.ensureBounds()
 }
 
 func (a *Area) Union(b Builder) Builder {
