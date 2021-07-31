@@ -16,14 +16,15 @@ type patherImp struct {
 	cost map[pos.Hex]int
 }
 
-func newPatherImp(walls csg.Area) patherImp {
+func newPatherImp(walls *csg.Area) patherImp {
 	pi := patherImp{
 		cost: make(map[pos.Hex]int),
 	}
 
-	for h := range walls {
+	iter := walls.Iterator()
+	for h := iter.Next(); h != nil; h = iter.Next() {
 		// Negative values are impassable
-		pi.cost[h] = -1
+		pi.cost[*h] = -1
 	}
 
 	return pi
@@ -43,16 +44,21 @@ func (p patherImp) EstimatedCost(a, b pos.Hex) int {
 	return 0
 }
 
-func concentricMaze(maxSize int) csg.Area {
+func ring(center pos.Hex, radius int) *csg.Area {
+	return csg.BigHex(center, radius).Subtract(csg.BigHex(center, radius-1)).Build()
+}
+
+func concentricMaze(maxSize int) *csg.Area {
 	c := csg.NewBuilder()
 
 	for i := 2; i < maxSize; i = i + 2 {
 		opening := i
 		cur := 0
-		for h := range csg.Ring(pos.Origin(), i).Build() {
+		iter := ring(pos.Origin(), i).Iterator()
+		for h := iter.Next(); h != nil; h = iter.Next() {
 			cur++
 			if opening != cur {
-				c = c.Union(csg.NewArea(h))
+				c = c.Union(csg.NewArea(*h))
 			}
 		}
 	}
@@ -96,24 +102,22 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 }
 
 func TestDirectPaths(t *testing.T) {
-	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
-		for h := range csg.Ring(pos.Origin(), i) {
+		iter := ring(pos.Origin(), i).Iterator()
+		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				t.Parallel()
-				pathCheck(t, h, newPatherImp(csg.NewArea()))
+				pathCheck(t, *h, newPatherImp(csg.NewArea()))
 			})
 		}
 	}
 }
 
 func TestIndirectPaths(t *testing.T) {
-	t.Parallel()
 	for i := 1; i < 11; i = i + 2 {
-		for h := range csg.Ring(pos.Origin(), i) {
+		iter := ring(pos.Origin(), i).Iterator()
+		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				t.Parallel()
-				pathCheck(t, h, newPatherImp(concentricMaze(h.Length()+4)))
+				pathCheck(t, *h, newPatherImp(concentricMaze(h.Length()+4)))
 			})
 		}
 	}
@@ -122,7 +126,7 @@ func TestIndirectPaths(t *testing.T) {
 func TestNoPath(t *testing.T) {
 	t.Parallel()
 
-	pather := newPatherImp(csg.Ring(pos.Origin(), 5))
+	pather := newPatherImp(ring(pos.Origin(), 5))
 
 	foundPath := path.To(pos.Origin(), pos.Hex{Q: 100, R: 100}, pather)
 	require.Empty(t, foundPath)
