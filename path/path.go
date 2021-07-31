@@ -9,7 +9,7 @@ import (
 
 type aStarInfo struct {
 	// parent is the hex we moved from to get to this hex.
-	// This forms a linked list pointing all the back to `from`.
+	// This forms a linked list pointing all the way back to `from`.
 	parent pos.Hex
 	// cost is the total value from `from` to this hex.
 	cost int
