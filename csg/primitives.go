@@ -98,33 +98,29 @@ func Ring(h pos.Hex, radius int) Area {
 	return area
 }
 
-// Line returns all hexes in a line from point a to point b, inclusive.
-func Line(a pos.Hex, b pos.Hex) Area {
-	return AreaFromSlice(a.LineTo(b))
-}
-
-// Trace traces line segments along the provided points.
-func Trace(p ...pos.Hex) Area {
+// Line traces line segments along the provided points.
+func Line(p ...pos.Hex) Area {
 	switch len(p) {
 	case 0:
 		return NewArea()
 	case 1:
 		return NewArea(p[0])
 	case 2:
-		return Line(p[0], p[1])
+		AreaFromSlice(p[0].LineTo(p[1]))
 	}
 
 	// get outline
 	outline := NewBuilder(p...)
 	last := p[0]
 	for _, point := range p[1:] {
-		outline = outline.Union(Line(last, point))
+		outline = outline.Union(AreaFromSlice(last.LineTo(point)))
+		last = point
 	}
 	return outline.Build()
 }
 
 // Polygon returns an area that contains a polygon whose points
-// are the given hexes. Order matters!
+// are the given hexes. Order matters! Concave polygons are allowed.
 func Polygon(p ...pos.Hex) Area {
 	switch len(p) {
 	case 0:
@@ -136,7 +132,7 @@ func Polygon(p ...pos.Hex) Area {
 	}
 
 	// get line segs.
-	// why not just use Trace?
+	// why not just use Line?
 	// if we end up with a hex of Q-width 1,
 	// we won't correctly count whether we are inside or outside.
 	outlines := make([]Area, 0)

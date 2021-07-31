@@ -14,8 +14,8 @@ import (
 
 func TestDraw(t *testing.T) {
 	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 600))
-	cc := draw.NewCamera(img, 0.2, pos.Origin())
+	img := image.NewRGBA(image.Rect(0, 0, 600, 600))
+	cc := draw.NewCamera(img, 0.1, pos.Origin())
 
 	cc.Grid(dd)
 

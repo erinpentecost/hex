@@ -1,6 +1,8 @@
 package csg
 
 import (
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/erinpentecost/hexcoord/pos"
@@ -70,6 +72,18 @@ func (a Area) Equal(b Area) bool {
 		}
 	}
 	return true
+}
+
+func (a Area) String() string {
+	s := []string{}
+	for k := range a {
+		ks := k.String()
+		i := sort.SearchStrings(s, ks)
+		s = append(s, "")
+		copy(s[i+1:], s[i:])
+		s[i] = ks
+	}
+	return "Area: {" + strings.Join(s, " ") + "}"
 }
 
 func (a Area) Build() Area {

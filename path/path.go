@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"sync"
 
-	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -100,7 +99,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 	targetMux := sync.Mutex{}
 	go func() {
-		targetPQ := &internal.PriorityQueue{&internal.PqItem{
+		targetPQ := &PriorityQueue{&PqItem{
 			Value:    target,
 			Priority: 0,
 			Index:    0,
@@ -109,7 +108,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 		// Cycle through all the neigbors starting at `target`
 		for targetPQ.Len() > 0 {
-			targetFrontier := (*(heap.Pop(targetPQ).(*internal.PqItem))).Value
+			targetFrontier := (*(heap.Pop(targetPQ).(*PqItem))).Value
 
 			// Look at all neighbors
 			for i, next := range targetFrontier.Neighbors() {
@@ -140,7 +139,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					if stop {
 						return
 					}
-					heap.Push(targetPQ, &internal.PqItem{
+					heap.Push(targetPQ, &PqItem{
 						Value: next,
 						// estimatedCost is reversed here
 						Priority: newCost + pather.EstimatedCost(from, next),
@@ -153,7 +152,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 		// no solution if we get to here
 	}()
 
-	fromPQ := &internal.PriorityQueue{&internal.PqItem{
+	fromPQ := &PriorityQueue{&PqItem{
 		Value:    from,
 		Priority: 0,
 		Index:    0,
@@ -162,7 +161,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 	// Cycle through all the neigbors starting at `from`
 	for fromPQ.Len() > 0 {
-		fromFrontier := (*(heap.Pop(fromPQ).(*internal.PqItem))).Value
+		fromFrontier := (*(heap.Pop(fromPQ).(*PqItem))).Value
 
 		// Quit if the fromFrontier hit a visited node in the targetPaths.
 		targetMux.Lock()
@@ -199,7 +198,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					parent: fromFrontier,
 					cost:   newCost,
 				}
-				heap.Push(fromPQ, &internal.PqItem{
+				heap.Push(fromPQ, &PqItem{
 					Value:    next,
 					Priority: newCost + pather.EstimatedCost(next, target),
 				})
