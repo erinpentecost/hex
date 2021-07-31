@@ -99,7 +99,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 	targetMux := sync.Mutex{}
 	go func() {
-		targetPQ := &PriorityQueue{&PqItem{
+		targetPQ := &priorityQueue{&pqItem{
 			Value:    target,
 			Priority: 0,
 			Index:    0,
@@ -108,7 +108,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 		// Cycle through all the neigbors starting at `target`
 		for targetPQ.Len() > 0 {
-			targetFrontier := (*(heap.Pop(targetPQ).(*PqItem))).Value
+			targetFrontier := (*(heap.Pop(targetPQ).(*pqItem))).Value
 
 			// Look at all neighbors
 			for i, next := range targetFrontier.Neighbors() {
@@ -139,7 +139,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					if stop {
 						return
 					}
-					heap.Push(targetPQ, &PqItem{
+					heap.Push(targetPQ, &pqItem{
 						Value: next,
 						// estimatedCost is reversed here
 						Priority: newCost + pather.EstimatedCost(from, next),
@@ -152,7 +152,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 		// no solution if we get to here
 	}()
 
-	fromPQ := &PriorityQueue{&PqItem{
+	fromPQ := &priorityQueue{&pqItem{
 		Value:    from,
 		Priority: 0,
 		Index:    0,
@@ -161,7 +161,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 
 	// Cycle through all the neigbors starting at `from`
 	for fromPQ.Len() > 0 {
-		fromFrontier := (*(heap.Pop(fromPQ).(*PqItem))).Value
+		fromFrontier := (*(heap.Pop(fromPQ).(*pqItem))).Value
 
 		// Quit if the fromFrontier hit a visited node in the targetPaths.
 		targetMux.Lock()
@@ -198,7 +198,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 					parent: fromFrontier,
 					cost:   newCost,
 				}
-				heap.Push(fromPQ, &PqItem{
+				heap.Push(fromPQ, &pqItem{
 					Value:    next,
 					Priority: newCost + pather.EstimatedCost(next, target),
 				})
