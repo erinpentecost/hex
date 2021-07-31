@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/internal/floathelp"
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,7 +184,7 @@ func TestAngleTo(t *testing.T) {
 	for ia, ra := range o.Neighbors() {
 		for ib, rb := range o.Neighbors() {
 			assert.True(t,
-				floathelp.CloseEnough(toRad(ia, ib), ra.ToHexFractional().AngleTo(rb.ToHexFractional())),
+				internal.CloseEnough(toRad(ia, ib), ra.ToHexFractional().AngleTo(rb.ToHexFractional())),
 				fmt.Sprintf("Angle from %v to %v (offset by %v) is wrong.", ra, rb, ia-ib))
 		}
 	}

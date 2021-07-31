@@ -1,4 +1,4 @@
-package floathelp
+package internal
 
 import (
 	"math"

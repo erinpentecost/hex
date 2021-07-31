@@ -1,6 +1,8 @@
 package csg
 
-import "github.com/erinpentecost/hexcoord/pos"
+import (
+	"github.com/erinpentecost/hexcoord/pos"
+)
 
 func maxInt(a, k int) int {
 	if a > k {
@@ -36,16 +38,33 @@ func BigHex(h pos.Hex, radius int) Area {
 	return area
 }
 
+func bounds(p ...pos.Hex) (minR, maxR, minQ, maxQ int) {
+	minR = p[0].R
+	maxR = p[0].R
+	minQ = p[0].Q
+	maxQ = p[0].Q
+
+	for _, point := range p[1:] {
+		minR = minInt(minR, point.R)
+		maxR = maxInt(maxR, point.R)
+
+		minQ = minInt(minQ, point.Q)
+		maxQ = maxInt(maxQ, point.Q)
+	}
+	return
+}
+
 // Rectangle returns the set of hexes that form a rectangular
-// area from the given hex to another hex representing an opposite corner.
-func Rectangle(h pos.Hex, opposite pos.Hex) Area {
+// area that's a bounding box of all the supplied points.
+func Rectangle(p ...pos.Hex) Area {
+	if len(p) == 0 {
+		return NewArea()
+	}
+
+	minR, maxR, minQ, maxQ := bounds(p...)
+
 	area := NewArea()
 
-	minR := minInt(h.R, opposite.R)
-	maxR := maxInt(h.R, opposite.R)
-
-	minQ := minInt(h.Q, opposite.Q)
-	maxQ := maxInt(h.Q, opposite.Q)
 	for r := minR; r <= maxR; r++ {
 		rOffset := r / 2
 		for q := minQ - rOffset; q <= maxQ-rOffset; q++ {
@@ -82,4 +101,73 @@ func Ring(h pos.Hex, radius int) Area {
 // Line returns all hexes in a line from point a to point b, inclusive.
 func Line(a pos.Hex, b pos.Hex) Area {
 	return AreaFromSlice(a.LineTo(b))
+}
+
+// Trace traces line segments along the provided points.
+func Trace(p ...pos.Hex) Area {
+	switch len(p) {
+	case 0:
+		return NewArea()
+	case 1:
+		return NewArea(p[0])
+	case 2:
+		return Line(p[0], p[1])
+	}
+
+	// get outline
+	outline := NewBuilder(p...)
+	last := p[0]
+	for _, point := range p[1:] {
+		outline = outline.Union(Line(last, point))
+	}
+	return outline.Build()
+}
+
+// Polygon returns an area that contains a polygon whose points
+// are the given hexes. Order matters!
+func Polygon(p ...pos.Hex) Area {
+	switch len(p) {
+	case 0:
+		return NewArea()
+	case 1:
+		return NewArea(p[0])
+	case 2:
+		return Line(p[0], p[1])
+	}
+
+	// get line segs.
+	// why not just use Trace?
+	// if we end up with a hex of Q-width 1,
+	// we won't correctly count whether we are inside or outside.
+	outlines := make([]Area, 0)
+	last := p[0]
+	for _, point := range append(p[1:], p[0]) {
+		outlines = append(outlines, Line(last, point))
+	}
+
+	// scanline alg
+	fill := NewArea()
+	minR, maxR, minQ, maxQ := bounds(p...)
+
+	for q := minQ; q <= maxQ; q++ {
+		// sorted set of points we hit
+		inside := false
+		for r := minR; r <= maxR; r++ {
+			testHex := pos.Hex{Q: q, R: r}
+
+			for _, outline := range outlines {
+				if _, hit := outline[testHex]; hit {
+					inside = !inside
+					// always include the intersection hex
+					fill[testHex] = exists
+				}
+			}
+
+			if inside {
+				fill[testHex] = exists
+			}
+		}
+	}
+
+	return fill.Build()
 }
