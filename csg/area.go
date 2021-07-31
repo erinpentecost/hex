@@ -38,22 +38,14 @@ func NewArea(hexes ...pos.Hex) *Area {
 
 // Equal returns true if both areas share exactly the same hexes.
 func (a *Area) Equal(b *Area) bool {
-	if len(a.hexes) != len(b.hexes) {
-		return false
-	}
-
-	// TODO: bounding box check
-
-	for k := range a.hexes {
-		if _, ok := b.hexes[k]; !ok {
-			return false
-		}
-	}
-	return true
+	return a.CheckBounding(b) == Equals
 }
 
-// Contains returns true if the area contains all the provided hexes.
-func (a *Area) Contains(hexes ...pos.Hex) bool {
+// ContainsHexes returns true if the area contains all the provided hexes.
+//
+// If you want to determine the overlap relationship between two areas,
+// use CheckBounding().
+func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 	for _, k := range hexes {
 		if _, ok := a.hexes[k]; !ok {
 			return false

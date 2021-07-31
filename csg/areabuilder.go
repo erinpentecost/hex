@@ -83,16 +83,18 @@ func unionFn(a *Area, b *Area) *Area {
 			maxQ:        maxInt(a.maxQ, b.maxQ),
 		}
 	}
-	return &Area{
+	return (&Area{
 		hexes: c,
-	}
+	}).ensureBounds()
 }
 
 // intersectionFn returns only those hexes that are in all areas.
 // this operation is commutative.
 func intersectionFn(a *Area, b *Area) *Area {
 
-	// TODO: skip by checking bounds
+	if a.boundsClean && b.boundsClean && !a.mightOverlap(b) {
+		return NewArea()
+	}
 
 	c := make(map[pos.Hex]struct{})
 	for k := range b.hexes {
@@ -108,7 +110,9 @@ func intersectionFn(a *Area, b *Area) *Area {
 // subtractFn returns a, but with hexes shared by b removed.
 func subtractFn(a *Area, b *Area) *Area {
 
-	// TODO: skip by checking bounds
+	if a.boundsClean && b.boundsClean && !a.mightOverlap(b) {
+		return a
+	}
 
 	c := make(map[pos.Hex]struct{})
 

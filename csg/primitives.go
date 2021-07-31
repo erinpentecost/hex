@@ -47,18 +47,11 @@ func Rectangle(p ...pos.Hex) *Area {
 		return NewArea()
 	}
 
-	minR, maxR, minQ, maxQ := bounds(p...)
+	area := NewArea(p...)
 
-	area := NewArea()
-	area.minR = minR
-	area.maxR = maxR
-	area.minQ = minQ
-	area.maxQ = maxQ
-	area.boundsClean = true
-
-	for r := minR; r <= maxR; r++ {
+	for r := area.minR; r <= area.maxR; r++ {
 		rOffset := r / 2
-		for q := minQ - rOffset; q <= maxQ-rOffset; q++ {
+		for q := area.minQ - rOffset; q <= area.maxQ-rOffset; q++ {
 			area.hexes[pos.Hex{
 				Q: q,
 				R: r,
@@ -113,18 +106,12 @@ func Polygon(p ...pos.Hex) *Area {
 	}
 
 	// scanline alg
-	fill := NewArea()
-	minR, maxR, minQ, maxQ := bounds(p...)
-	fill.minR = minR
-	fill.maxR = maxR
-	fill.minQ = minQ
-	fill.maxQ = maxQ
-	fill.boundsClean = true
+	fill := NewArea(p...)
 
-	for q := minQ; q <= maxQ; q++ {
+	for q := fill.minQ; q <= fill.maxQ; q++ {
 		// sorted set of points we hit
 		inside := false
-		for r := minR; r <= maxR; r++ {
+		for r := fill.minR; r <= fill.maxR; r++ {
 			testHex := pos.Hex{Q: q, R: r}
 
 			for _, outline := range outlines {
