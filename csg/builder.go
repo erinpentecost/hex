@@ -14,6 +14,10 @@ type Builder interface {
 	Intersection(b Builder) Builder
 	// Subtract returns all those hexes in the first area that are not in the second.
 	Subtract(b Builder) Builder
+	// Rotate rotates the area about some pivot some number of sides.
+	Rotate(pivot pos.Hex, direction int) Builder
+	// Translate adds some offset to the area.
+	Translate(offste pos.Hex) Builder
 }
 
 // NewBuilder creates a new area builder containing zero or more hexes to start with.

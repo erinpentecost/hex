@@ -7,44 +7,58 @@ import (
 )
 
 var (
-	_ Builder = (*AreaBuilder)(nil)
+	_ Builder = (*areaBuilderBinaryOp)(nil)
 )
 
-type op func(a *Area, b *Area) *Area
+type binOp func(a *Area, b *Area) *Area
 
-// AreaBuilder allows you to use 2-dimensional constructive solid geometry techniques
+// areaBuilderBinaryOp allows you to use 2-dimensional constructive solid geometry techniques
 // to build collections of hexes.
-type AreaBuilder struct {
+type areaBuilderBinaryOp struct {
 	a Builder
 	b Builder
-	o op
+	o binOp
 }
 
-func (ab *AreaBuilder) Union(b Builder) Builder {
-	return &AreaBuilder{
+func (ab *areaBuilderBinaryOp) Union(b Builder) Builder {
+	return &areaBuilderBinaryOp{
 		a: ab,
 		b: b,
 		o: unionFn,
 	}
 }
 
-func (ab *AreaBuilder) Intersection(b Builder) Builder {
-	return &AreaBuilder{
+func (ab *areaBuilderBinaryOp) Intersection(b Builder) Builder {
+	return &areaBuilderBinaryOp{
 		a: ab,
 		b: b,
 		o: intersectionFn,
 	}
 }
 
-func (ab *AreaBuilder) Subtract(b Builder) Builder {
-	return &AreaBuilder{
+func (ab *areaBuilderBinaryOp) Subtract(b Builder) Builder {
+	return &areaBuilderBinaryOp{
 		a: ab,
 		b: b,
 		o: subtractFn,
 	}
 }
 
-func (ab *AreaBuilder) Build() *Area {
+func (ab *areaBuilderBinaryOp) Rotate(pivot pos.Hex, direction int) Builder {
+	return &areaBuilderUnaryOp{
+		a: ab,
+		o: rotateFn(pivot, direction),
+	}
+}
+
+func (ab *areaBuilderBinaryOp) Translate(offset pos.Hex) Builder {
+	return &areaBuilderUnaryOp{
+		a: ab,
+		o: translateFn(offset),
+	}
+}
+
+func (ab *areaBuilderBinaryOp) Build() *Area {
 	// Build() allows me to defer iteration until it's needed,
 	// and we can also do things concurrently.
 
@@ -63,8 +77,6 @@ func (ab *AreaBuilder) Build() *Area {
 	return ab.o(a, c)
 }
 
-// union returns all hexes in all areas.
-// this operation is commutative.
 func unionFn(a *Area, b *Area) *Area {
 	c := make(map[pos.Hex]struct{})
 	for k := range a.hexes {

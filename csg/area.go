@@ -112,7 +112,7 @@ func (a *Area) Build() *Area {
 }
 
 func (a *Area) Union(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: unionFn,
@@ -120,7 +120,7 @@ func (a *Area) Union(b Builder) Builder {
 }
 
 func (a *Area) Intersection(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: intersectionFn,
@@ -128,10 +128,24 @@ func (a *Area) Intersection(b Builder) Builder {
 }
 
 func (a *Area) Subtract(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: subtractFn,
+	}
+}
+
+func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
+	return &areaBuilderUnaryOp{
+		a: a,
+		o: rotateFn(pivot, direction),
+	}
+}
+
+func (a *Area) Translate(offset pos.Hex) Builder {
+	return &areaBuilderUnaryOp{
+		a: a,
+		o: translateFn(offset),
 	}
 }
 
