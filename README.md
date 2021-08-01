@@ -25,7 +25,7 @@ import (
 )
 ```
 
-![hexcoord](examples/draw/TestDrawLogo.png)
+![hexcoord](examples/draw/testdraw.png)
 
 ## References
 
