@@ -60,7 +60,7 @@ func (a *Area) mightOverlap(b *Area) bool {
 	return qOverlap && rOverlap
 }
 
-func contains(min, max, test int) bool {
+func contains(min, max, test int64) bool {
 	return min <= test && max >= test
 }
 

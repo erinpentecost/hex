@@ -4,14 +4,14 @@ import (
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
-func maxInt(a, k int) int {
+func maxInt(a, k int64) int64 {
 	if a > k {
 		return a
 	}
 	return k
 }
 
-func minInt(a, k int) int {
+func minInt(a, k int64) int64 {
 	if a < k {
 		return a
 	}
@@ -22,7 +22,7 @@ func minInt(a, k int) int {
 // centered around the starting hex and with the given radius.
 // The order of elements returned is not set.
 // A radius of 0 will return the center hex.
-func BigHex(h pos.Hex, radius int) *Area {
+func BigHex(h pos.Hex, radius int64) *Area {
 	area := NewArea()
 
 	for q := -1 * radius; q <= radius; q++ {

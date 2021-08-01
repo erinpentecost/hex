@@ -12,7 +12,7 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 * Compositing sets of hexes with unions, intersections, and subtractions (constructive solid geometry).
 * Multithreaded A* pathing in a hex grid.
 * Fast intersection testing.
-* Super naive [drawing package](https://github.com/erinpentecost/hexcoord/tree/master/examples/draw)! This isn't performant; it's to help you visualize what's going on.
+* Super naive [drawing package](examples/draw)! This isn't performant; it's to help you visualize what's going on.
 
 ```go
 import (
@@ -24,6 +24,8 @@ import (
     "github.com/erinpentecost/hexcoord/csg"
 )
 ```
+
+![hexcoord](examples/draw/TestDrawLogo.png)
 
 ## References
 

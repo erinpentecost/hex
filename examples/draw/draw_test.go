@@ -1,66 +1,27 @@
-package draw_test
+package main
 
 import (
-	"fmt"
-	"image"
-	"image/color"
+	"encoding/json"
+	"os"
+	"os/exec"
+	"sync"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/examples/draw"
-
+	"github.com/erinpentecost/hexcoord/csg"
 	"github.com/erinpentecost/hexcoord/pos"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDraw(t *testing.T) {
-	dd := draw.DefaultDecorator{}
-	img := image.NewRGBA(image.Rect(0, 0, 600, 600))
-	cc := draw.NewCamera(img, 0.1, pos.Origin())
+	cc := NewCamera(800, csg.BigHex(pos.Origin(), 2).Subtract(csg.BigHex(pos.Origin(), 1)).Build())
+	img := cc.Draw()
 
-	cc.Grid(dd)
-
-	path, err := draw.Save(img, "testdraw.png")
-	assert.NoError(t, err, path)
-	fmt.Println(path)
+	err := Save(img, "testdraw.png")
+	assert.NoError(t, err)
 }
 
-type HighlightDecorator struct {
-	interest map[pos.Hex]interface{}
-}
-
-// AreaColor picks a background color for the hex.
-func (d HighlightDecorator) AreaColor(h pos.Hex) color.RGBA {
-	_, interesting := d.interest[h]
-	if interesting {
-		return color.RGBA{0, 0, 0, 255}
-	}
-
-	mod := func(a int) int {
-		if a < 0 {
-			return (a * (-1)) % 2
-		}
-		return a % 2
-	}
-
-	m := mod(h.Q) + 2*mod(h.R)
-	switch m {
-	case 0:
-		return color.RGBA{255, 200, 200, 255}
-	case 1:
-		return color.RGBA{200, 255, 200, 255}
-	case 2:
-		return color.RGBA{200, 200, 255, 255}
-	default:
-		return color.RGBA{255, 255, 200, 255}
-	}
-}
-
-// AreaLabel uses the hex's coordinates.
-func (d HighlightDecorator) AreaLabel(h pos.Hex) string {
-	return ""
-}
-
-func createLogoPoints() map[pos.Hex]interface{} {
+func createLogoPoints() []pos.Hex {
 	h := []pos.Hex{
 		{Q: 2, R: -2},
 		{Q: 1, R: -1},
@@ -120,12 +81,12 @@ func createLogoPoints() map[pos.Hex]interface{} {
 		d,
 	}
 
-	taggedPos := make(map[pos.Hex]interface{})
+	taggedPos := make([]pos.Hex, 0)
 
 	for offset, char := range logo {
 		for _, h := range char {
-			oh := h.Add(pos.Hex{Q: offset * 4, R: 0})
-			taggedPos[oh] = nil
+			oh := h.Add(pos.Hex{Q: int64(offset * 4), R: 0})
+			taggedPos = append(taggedPos, oh)
 		}
 	}
 
@@ -136,23 +97,28 @@ func TestDrawLogo(t *testing.T) {
 
 	points := createLogoPoints()
 
-	dd := HighlightDecorator{interest: points}
-	img := image.NewRGBA(image.Rect(0, 0, 500, 100))
-	cc := draw.NewCamera(img, 0.013, pos.Hex{Q: 15, R: 0})
+	b, err := json.Marshal(points)
+	require.NoError(t, err)
 
-	cc.Grid(dd)
+	f, err := os.Create("logo.json")
+	require.NoError(t, err)
+	defer f.Close()
+	f.Write(b)
 
-	path, err := draw.Save(img, "TestDrawLogo.png")
-	assert.NoError(t, err, path)
-	fmt.Println(path)
-}
+	cmd := exec.Command("go", "run", "main.go", "-file", "TestDrawLogo.png", "-w", "300")
 
-func BenchmarkDrawGrid(b *testing.B) {
-	dd := HighlightDecorator{interest: make(map[pos.Hex]interface{})}
-	img := image.NewRGBA(image.Rect(0, 0, 1280, 1024))
-	cc := draw.NewCamera(img, 0.013, pos.Hex{Q: 15, R: 0})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		writer, err := cmd.StdinPipe()
+		if err != nil {
+			writer.Close()
+		}
+		wg.Done()
+		writer.Write(b)
+	}()
+	wg.Wait()
 
-	for i := 0; i < b.N; i++ {
-		cc.Grid(dd)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 }

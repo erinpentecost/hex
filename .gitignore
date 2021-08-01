@@ -1,2 +1,5 @@
-testdraw.png
+*.png
 *.vscode
+
+!examples/draw/testdraw.png
+!examples/draw/TestDrawLogo.png
