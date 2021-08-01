@@ -7,12 +7,12 @@ import (
 
 // Hex is a coordinate defined axially.
 type Hex struct {
-	Q int
-	R int
+	Q int64
+	R int64
 }
 
 // S is the implicit additional coordinate when using cubic coordinate system.
-func (h Hex) S() int {
+func (h Hex) S() int64 {
 	return -1 * (h.Q + h.R)
 }
 
@@ -93,7 +93,7 @@ func (h Hex) Subtract(x Hex) Hex {
 }
 
 // Multiply scales a hex by a scalar value.
-func (h Hex) Multiply(k int) Hex {
+func (h Hex) Multiply(k int64) Hex {
 	o := Hex{
 		Q: h.Q * k,
 		R: h.R * k,
@@ -105,7 +105,7 @@ func lerpFloat(a, b, t float64) float64 {
 	return a*(1.0-t) + b*t
 }
 
-func lerpInt(a int, b int, t float64) float64 {
+func lerpInt(a int64, b int64, t float64) float64 {
 	return lerpFloat(float64(a), float64(b), t)
 }
 
@@ -115,7 +115,7 @@ func (h Hex) LineTo(x Hex) []Hex {
 	n := h.DistanceTo(x)
 	line := make([]Hex, 0)
 	step := 1.0 / math.Max(float64(n), 1.0)
-	for i := 0; i <= n; i++ {
+	for i := int64(0); i <= n; i++ {
 		line = append(line, LerpHex(h, x, step*float64(i)))
 	}
 	return line
@@ -131,7 +131,7 @@ func LerpHex(a Hex, b Hex, t float64) Hex {
 	return hf.ToHex()
 }
 
-func absInt(k int) int {
+func absInt(k int64) int64 {
 	if k > 0 {
 		return k
 	}
@@ -139,14 +139,14 @@ func absInt(k int) int {
 	return -1 * k
 }
 
-func maxInt(a, k int) int {
+func maxInt(a, k int64) int64 {
 	if a > k {
 		return a
 	}
 	return k
 }
 
-func minInt(a, k int) int {
+func minInt(a, k int64) int64 {
 	if a < k {
 		return a
 	}
@@ -156,14 +156,14 @@ func minInt(a, k int) int {
 // Length gets the length of the hex to the grid origin.
 //
 // This is the Manhattan Distance.
-func (h Hex) Length() int {
+func (h Hex) Length() int64 {
 	return (absInt(h.Q) + absInt(h.R) + absInt(h.S())) / 2
 }
 
 // DistanceTo returns the distance between two hexes.
 //
 // This is the Manhattan Distance.
-func (h Hex) DistanceTo(x Hex) int {
+func (h Hex) DistanceTo(x Hex) int64 {
 	return h.Subtract(x).Length()
 }
 

@@ -11,7 +11,7 @@ import (
 // centered around the starting hex and with the given radius.
 // The order of elements returned is not set.
 // A radius of 0 will return the center hex.
-func HexArea(h Hex, radius int) []Hex {
+func HexArea(h Hex, radius int64) []Hex {
 	area := make([]Hex, 0)
 	for q := -1 * radius; q <= radius; q++ {
 		r1 := maxInt(-1*radius, -1*(q+radius))
@@ -67,15 +67,15 @@ func TestHexDistance(t *testing.T) {
 	closeHexes := HexArea(Origin(), 1)
 	for _, h := range closeHexes {
 		if h == Origin() {
-			assert.Equal(t, 0, h.DistanceTo(Origin()))
+			assert.EqualValues(t, 0, h.DistanceTo(Origin()))
 		} else {
-			assert.Equal(t, 1, h.DistanceTo(Origin()), fmt.Sprintf("Hex distance to %v is wrong.", h))
+			assert.EqualValues(t, 1, h.DistanceTo(Origin()), fmt.Sprintf("Hex distance to %v is wrong.", h))
 		}
 	}
 }
 
 func testDirectionEquality(t *testing.T, testOrigin Hex) {
-	for a := -9; a < 9; a++ {
+	for a := int64(-9); a < 9; a++ {
 		if a == 0 {
 			continue
 		}

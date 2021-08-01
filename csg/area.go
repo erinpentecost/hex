@@ -22,7 +22,7 @@ type Area struct {
 	// this must be false for empty areas.
 	boundsClean bool
 	// bounding box for the area
-	minR, maxR, minQ, maxQ int
+	minR, maxR, minQ, maxQ int64
 }
 
 // NewArea creates a new area containing zero or more hexes.
@@ -34,6 +34,19 @@ func NewArea(hexes ...pos.Hex) *Area {
 	return (&Area{
 		hexes: c,
 	}).ensureBounds()
+}
+
+// Slice converts the area into a slice of hexes.
+//
+// You can use this to marshal an area.
+func (a *Area) Slice() []pos.Hex {
+	hexes := make([]pos.Hex, len(a.hexes))
+	i := 0
+	for k := range a.hexes {
+		hexes[i] = k
+		i++
+	}
+	return hexes
 }
 
 // Equal returns true if both areas share exactly the same hexes.
@@ -58,16 +71,12 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 }
 
 // Iterator returns an iterator on the area, returning each hex in it.
+//
+// If you want all the hexes, use Slice().
 func (a *Area) Iterator() Iterator {
-	hexes := make([]pos.Hex, len(a.hexes))
-	i := 0
-	for k := range a.hexes {
-		hexes[i] = k
-		i++
-	}
 	return &iterator{
 		idx:   -1,
-		hexes: hexes,
+		hexes: a.Slice(),
 	}
 }
 
@@ -126,6 +135,18 @@ func (a *Area) Subtract(b Builder) Builder {
 	}
 }
 
+func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64) {
+	if len(a.hexes) == 0 {
+		panic("can't determine bounds for an empty area")
+	}
+	a.ensureBounds()
+	minR = a.minR
+	maxR = a.maxR
+	minQ = a.minQ
+	maxQ = a.maxQ
+	return
+}
+
 type Iterator interface {
 	Next() *pos.Hex
 }
@@ -144,7 +165,7 @@ func (i *iterator) Next() *pos.Hex {
 	return nil
 }
 
-func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int) {
+func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int64) {
 	if len(hexes) == 0 {
 		panic("can't get bounds of empty map")
 	}

@@ -44,16 +44,16 @@ func (p patherImp) EstimatedCost(a, b pos.Hex) int {
 	return 0
 }
 
-func ring(center pos.Hex, radius int) *csg.Area {
+func ring(center pos.Hex, radius int64) *csg.Area {
 	return csg.BigHex(center, radius).Subtract(csg.BigHex(center, radius-1)).Build()
 }
 
-func concentricMaze(maxSize int) *csg.Area {
+func concentricMaze(maxSize int64) *csg.Area {
 	c := csg.NewBuilder()
 
-	for i := 2; i < maxSize; i = i + 2 {
+	for i := int64(2); i < maxSize; i = i + 2 {
 		opening := i
-		cur := 0
+		cur := int64(0)
 		iter := ring(pos.Origin(), i).Iterator()
 		for h := iter.Next(); h != nil; h = iter.Next() {
 			cur++
@@ -73,7 +73,7 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 	path := path.To(pos.Origin(), target, pather)
 
 	require.NotEmpty(t, path, "Can't find path to %v, %v away from source.", target, target.Length())
-	require.GreaterOrEqual(t, len(path), target.DistanceTo(target))
+	require.GreaterOrEqual(t, int64(len(path)), target.DistanceTo(target))
 	if len(path) > 0 {
 		assert.Equal(t, pos.Origin(), path[0], "First element %s in path is not the start point %s.", path[0], pos.Origin())
 		assert.Equal(t, target, path[len(path)-1], "Last element %s in path is not target point %s.", path[len(path)-1], target)
@@ -95,14 +95,14 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 		seen[p] = nil
 		// assert contiguous
 		if i != 0 {
-			require.Equal(t, 1, last.DistanceTo(p), "Path is not contiguous between idx=%d pos=%s and idx=%d pos=%s.\npath=%s", i-1, last.String(), i, p.String(), sb.String())
+			require.EqualValues(t, 1, last.DistanceTo(p), "Path is not contiguous between idx=%d pos=%s and idx=%d pos=%s.\npath=%s", i-1, last.String(), i, p.String(), sb.String())
 		}
 		last = p
 	}
 }
 
 func TestDirectPaths(t *testing.T) {
-	for i := 1; i < 11; i = i + 2 {
+	for i := int64(1); i < 11; i = i + 2 {
 		iter := ring(pos.Origin(), i).Iterator()
 		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
@@ -113,7 +113,7 @@ func TestDirectPaths(t *testing.T) {
 }
 
 func TestIndirectPaths(t *testing.T) {
-	for i := 1; i < 11; i = i + 2 {
+	for i := int64(1); i < 11; i = i + 2 {
 		iter := ring(pos.Origin(), i).Iterator()
 		for h := iter.Next(); h != nil; h = iter.Next() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {

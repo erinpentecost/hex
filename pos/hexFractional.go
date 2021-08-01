@@ -57,11 +57,11 @@ func (h HexFractional) String() string {
 	return fmt.Sprintf("{%.3f, %.3f, %.3f}", h.Q, h.R, h.S())
 }
 
-func round(f float64) int {
+func round(f float64) int64 {
 	if f > 0 {
-		return int(f + 0.5)
+		return int64(f + 0.5)
 	}
-	return int(f - 0.5)
+	return int64(f - 0.5)
 }
 
 // AlmostEquals returns true when h and x are equal or close
