@@ -89,7 +89,10 @@ type Camera struct {
 func NewCamera(width int, area *csg.Area) Camera {
 
 	// find world bounds
-	minR, maxR, minQ, maxQ := area.Bounds()
+	minR, maxR, minQ, maxQ, err := area.Bounds()
+	if err != nil {
+		log.Fatal(err)
+	}
 	//minR = minR - 2
 	//maxR = maxR + 2
 

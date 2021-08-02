@@ -1,8 +1,12 @@
 package csg
 
 import (
+	"errors"
+
 	"github.com/erinpentecost/hexcoord/pos"
 )
+
+var ErrEmptyArea = errors.New("no boundaries for an empty area")
 
 // Builder can be used to build Areas.
 type Builder interface {
