@@ -22,7 +22,7 @@ func minInt(a, k int64) int64 {
 // centered around the starting hex and with the given radius.
 // The order of elements returned is not set.
 // A radius of 0 will return the center hex.
-func BigHex(h pos.Hex, radius int64) *Area {
+func BigHex(center pos.Hex, radius int64) *Area {
 	area := NewArea()
 
 	for q := -1 * radius; q <= radius; q++ {
@@ -31,13 +31,39 @@ func BigHex(h pos.Hex, radius int64) *Area {
 
 		for r := r1; r <= r2; r++ {
 			area.hexes[pos.Hex{
-				Q: q + h.Q,
-				R: r + h.R,
+				Q: q + center.Q,
+				R: r + center.R,
 			}] = exists
 		}
 	}
 
 	return area.ensureBounds()
+}
+
+// Circle draws a circle. At small radiuses, this is just like BigHex.
+func Circle(center pos.Hex, radius int64) *Area {
+
+	// find some bounding box that contains the circle
+	p := []pos.Hex{}
+	for i := 0; i < 6; i++ {
+		p = append(p, pos.Hex{Q: radius, R: 0}.Rotate(pos.Origin(), i))
+	}
+	bounds := NewArea(p...)
+
+	// check every hex in the box and test if the hex is in the circle
+	area := NewArea()
+	rs := float64(radius * radius)
+	for q := bounds.minQ; q <= bounds.maxQ; q++ {
+		for r := bounds.minR; r <= bounds.maxR; r++ {
+			x, y := pos.HexFractional{Q: float64(q), R: float64(r)}.ToCartesian()
+			if x*x+y*y < rs {
+				area.hexes[pos.Hex{Q: q, R: r}] = exists
+			}
+		}
+	}
+
+	// move circle center
+	return area.Translate(center).Build()
 }
 
 // Rectangle returns the set of hexes that form a rectangular
@@ -105,28 +131,32 @@ func Polygon(p ...pos.Hex) *Area {
 		outlines = append(outlines, Line(last, point))
 	}
 
-	// scanline alg
-	fill := NewArea(p...)
+	return fill(outlines, p)
+}
 
-	for q := fill.minQ; q <= fill.maxQ; q++ {
+func fill(edges []*Area, vertices []pos.Hex) *Area {
+	// scanline alg
+	f := NewArea(vertices...)
+
+	for q := f.minQ; q <= f.maxQ; q++ {
 		// sorted set of points we hit
 		inside := false
-		for r := fill.minR; r <= fill.maxR; r++ {
+		for r := f.minR; r <= f.maxR; r++ {
 			testHex := pos.Hex{Q: q, R: r}
 
-			for _, outline := range outlines {
+			for _, outline := range edges {
 				if _, hit := outline.hexes[testHex]; hit {
 					inside = !inside
 					// always include the intersection hex
-					fill.hexes[testHex] = exists
+					f.hexes[testHex] = exists
 				}
 			}
 
 			if inside {
-				fill.hexes[testHex] = exists
+				f.hexes[testHex] = exists
 			}
 		}
 	}
 
-	return fill
+	return f
 }

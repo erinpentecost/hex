@@ -15,9 +15,20 @@ func TestAreaEqual(t *testing.T) {
 	area3 := BigHex(pos.Hex{Q: 1, R: 0}, 2).Build()
 	area4 := BigHex(pos.Origin(), 2).Subtract(NewArea(pos.Hex{Q: 1, R: 1})).Build()
 
-	assert.True(t, area1.Equal(area2))
-	assert.False(t, area1.Equal(area3))
-	assert.False(t, area1.Equal(area4))
+	assert.True(t, area1.Equals(area2))
+	assert.False(t, area1.Equals(area3))
+	assert.False(t, area1.Equals(area4))
+}
+
+func TestRotate(t *testing.T) {
+	orig := BigHex(pos.Origin(), 4).Build()
+	for i := 0; i < 5; i++ {
+		for q := int64(-2); q < 2; q++ {
+			for r := int64(-2); r < 2; r++ {
+				assert.True(t, orig.Equals(orig.Rotate(pos.Hex{Q: q, R: r}, i).Build()))
+			}
+		}
+	}
 }
 
 func TestTriangle(t *testing.T) {
@@ -40,11 +51,11 @@ func TestTriangle(t *testing.T) {
 		{Q: 0, R: -1},
 	}
 	expectedOutlineArea := NewArea(expectedOutline...)
-	assert.True(t, expectedOutlineArea.Equal(outline), "expected=%s\nactual=  %s\n", expectedOutlineArea.String(), outline.String())
+	assert.True(t, expectedOutlineArea.Equals(outline), "expected=%s\nactual=  %s\n", expectedOutlineArea.String(), outline.String())
 
 	fill := Polygon(points...).Build()
 	expectedFillArea := NewArea(append(expectedOutline, pos.Origin())...)
-	assert.True(t, expectedFillArea.Equal(fill), "expected=%s\nactual=  %s\n", expectedFillArea.String(), fill.String())
+	assert.True(t, expectedFillArea.Equals(fill), "expected=%s\nactual=  %s\n", expectedFillArea.String(), fill.String())
 }
 
 type boundTest struct {
@@ -78,6 +89,12 @@ func (b boundTest) assertBound(t *testing.T, name string) {
 		default:
 			assert.Equal(t, b.expected, b.b.CheckBounding(b.a), "\na=%s\nb=%s", b.a.String(), b.b.String())
 		}
+
+		// rotate
+		assert.Equal(t, b.expected, b.a.Rotate(pos.Hex{Q: 10, R: -10}, 3).Build().CheckBounding(b.b.Rotate(pos.Hex{Q: 10, R: -10}, 3).Build()), "\na=%s\nb=%s", b.a.String(), b.b.String())
+
+		// translate
+		assert.Equal(t, b.expected, b.a.Translate(pos.Hex{Q: -3, R: 100}).Build().CheckBounding(b.b.Translate(pos.Hex{Q: -3, R: 100}).Build()), "\na=%s\nb=%s", b.a.String(), b.b.String())
 	})
 }
 

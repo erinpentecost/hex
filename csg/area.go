@@ -25,7 +25,7 @@ type Area struct {
 	minR, maxR, minQ, maxQ int64
 }
 
-// NewArea creates a new area containing zero or more hexes.
+// NewArea creates a new area containing one or more hexes.
 func NewArea(hexes ...pos.Hex) *Area {
 	c := make(map[pos.Hex]struct{})
 	for _, k := range hexes {
@@ -49,11 +49,11 @@ func (a *Area) Slice() []pos.Hex {
 	return hexes
 }
 
-// Equal returns true if both areas share exactly the same hexes.
+// Equals returns true if both areas share exactly the same hexes.
 //
 // If you need more information regarding the nature of the overlap,
 // use CheckBounding().
-func (a *Area) Equal(b *Area) bool {
+func (a *Area) Equals(b *Area) bool {
 	return a.CheckBounding(b) == Equals
 }
 
@@ -68,16 +68,6 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 		}
 	}
 	return true
-}
-
-// Iterator returns an iterator on the area, returning each hex in it.
-//
-// If you want all the hexes, use Slice().
-func (a *Area) Iterator() Iterator {
-	return &iterator{
-		idx:   -1,
-		hexes: a.Slice(),
-	}
 }
 
 func (a *Area) String() string {
@@ -112,7 +102,7 @@ func (a *Area) Build() *Area {
 }
 
 func (a *Area) Union(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: unionFn,
@@ -120,7 +110,7 @@ func (a *Area) Union(b Builder) Builder {
 }
 
 func (a *Area) Intersection(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: intersectionFn,
@@ -128,18 +118,32 @@ func (a *Area) Intersection(b Builder) Builder {
 }
 
 func (a *Area) Subtract(b Builder) Builder {
-	return &AreaBuilder{
+	return &areaBuilderBinaryOp{
 		a: a,
 		b: b,
 		o: subtractFn,
 	}
 }
 
-func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64) {
-	if len(a.hexes) == 0 {
-		panic("can't determine bounds for an empty area")
+func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
+	return &areaBuilderUnaryOp{
+		a: a,
+		o: rotateFn(pivot, direction),
 	}
+}
+
+func (a *Area) Translate(offset pos.Hex) Builder {
+	return &areaBuilderUnaryOp{
+		a: a,
+		o: translateFn(offset),
+	}
+}
+
+func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64, err error) {
 	a.ensureBounds()
+	if !a.boundsClean {
+		err = ErrEmptyArea
+	}
 	minR = a.minR
 	maxR = a.maxR
 	minQ = a.minQ
@@ -147,29 +151,8 @@ func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64) {
 	return
 }
 
-type Iterator interface {
-	Next() *pos.Hex
-}
-
-type iterator struct {
-	// idx should be init-ed as -1
-	idx   int
-	hexes []pos.Hex
-}
-
-func (i *iterator) Next() *pos.Hex {
-	i.idx += 1
-	if i.idx < len(i.hexes) {
-		return &i.hexes[i.idx]
-	}
-	return nil
-}
-
+// boundsFromMap should not be called on empty areas
 func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int64) {
-	if len(hexes) == 0 {
-		panic("can't get bounds of empty map")
-	}
-
 	for p := range hexes {
 		minR = p.R
 		maxR = p.R

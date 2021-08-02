@@ -21,10 +21,9 @@ func newPatherImp(walls *csg.Area) patherImp {
 		cost: make(map[pos.Hex]int),
 	}
 
-	iter := walls.Iterator()
-	for h := iter.Next(); h != nil; h = iter.Next() {
+	for _, h := range walls.Slice() {
 		// Negative values are impassable
-		pi.cost[*h] = -1
+		pi.cost[h] = -1
 	}
 
 	return pi
@@ -54,11 +53,10 @@ func concentricMaze(maxSize int64) *csg.Area {
 	for i := int64(2); i < maxSize; i = i + 2 {
 		opening := i
 		cur := int64(0)
-		iter := ring(pos.Origin(), i).Iterator()
-		for h := iter.Next(); h != nil; h = iter.Next() {
+		for _, h := range ring(pos.Origin(), i).Slice() {
 			cur++
 			if opening != cur {
-				c = c.Union(csg.NewArea(*h))
+				c = c.Union(csg.NewArea(h))
 			}
 		}
 	}
@@ -103,10 +101,9 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 
 func TestDirectPaths(t *testing.T) {
 	for i := int64(1); i < 11; i = i + 2 {
-		iter := ring(pos.Origin(), i).Iterator()
-		for h := iter.Next(); h != nil; h = iter.Next() {
+		for _, h := range ring(pos.Origin(), i).Slice() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				pathCheck(t, *h, newPatherImp(csg.NewArea()))
+				pathCheck(t, h, newPatherImp(csg.NewArea()))
 			})
 		}
 	}
@@ -114,10 +111,9 @@ func TestDirectPaths(t *testing.T) {
 
 func TestIndirectPaths(t *testing.T) {
 	for i := int64(1); i < 11; i = i + 2 {
-		iter := ring(pos.Origin(), i).Iterator()
-		for h := iter.Next(); h != nil; h = iter.Next() {
+		for _, h := range ring(pos.Origin(), i).Slice() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				pathCheck(t, *h, newPatherImp(concentricMaze(h.Length()+4)))
+				pathCheck(t, h, newPatherImp(concentricMaze(h.Length()+4)))
 			})
 		}
 	}
