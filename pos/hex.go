@@ -186,26 +186,28 @@ func (h Hex) Neighbors() []Hex {
 //
 // Translation by tr,tq:
 //
-// [[1,0,tr]
+// [[1,0,0,tr]
 //
-// [0,t,tq]
+// [0,1,0,tq]
 //
-// [0,0,1]]
-func (h Hex) Transform(t [3][3]int64) Hex {
+// [0,0,1,0] // this is for s, which is a computed field
+//
+// [0,0,0,1]] // homogenous coords
+func (h Hex) Transform(t [4][4]int64) Hex {
 	return Hex{
-		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S(),
-		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S(),
+		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S() + t[0][3],
+		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S() + t[0][3],
 	}
 }
 
 var (
-	rotationMatrixes = [6][3][3]int64{
-		{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}},    // rotate by 0
-		{{0, 0, -1}, {-1, 0, 0}, {0, -1, 0}}, // rotate by 1
-		{{0, 1, 0}, {0, 0, 1}, {1, 0, 0}},    // etc
-		{{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}},
-		{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}},
-		{{0, -1, 0}, {0, 0, -1}, {-1, 0, 0}},
+	rotationMatrixes = [6][4][4]int64{
+		{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}},    // rotate by 0
+		{{0, 0, -1, 0}, {-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, 0, 1}}, // rotate by 1
+		{{0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 0}, {0, 0, 0, 1}},    // etc
+		{{-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, -1, 0}, {0, 0, 0, 1}},
+		{{0, 0, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 1}},
+		{{0, -1, 0, 0}, {0, 0, -1, 0}, {-1, 0, 0, 0}, {0, 0, 0, 1}},
 	}
 )
 
@@ -219,7 +221,7 @@ func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	if (pivot == Hex{}) {
 		return h.Transform(rotationMatrixes[d])
 	}
-	return h.Add(pivot).Transform(rotationMatrixes[d]).Add(pivot.Multiply(-1))
+	return h.Add(pivot).Transform(rotationMatrixes[d]).Subtract(pivot)
 }
 
 // BoundFacing maps the whole number set to 0-5.
