@@ -1,5 +1,5 @@
 *.png
 *.vscode
 
-!examples/draw/testdraw.png
-!examples/draw/TestDrawLogo.png
+!examples/drawhx/testdraw.png
+!examples/drawhx/TestDrawLogo.png
