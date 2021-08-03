@@ -214,7 +214,7 @@ func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	if (pivot == Hex{}) {
 		return h.Transform(internal.RotationMatrixes[d])
 	}
-	return h.Add(pivot).Transform(internal.RotationMatrixes[d]).Subtract(pivot)
+	return h.Subtract(pivot).Transform(internal.RotationMatrixes[d]).Add(pivot)
 }
 
 // BoundFacing maps the whole number set to 0-5.
