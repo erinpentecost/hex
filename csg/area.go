@@ -116,43 +116,43 @@ func (a *Area) Build() *Area {
 
 func (a *Area) Union(b Builder) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Union(b)
 }
 
 func (a *Area) Intersection(b Builder) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Intersection(b)
 }
 
 func (a *Area) Subtract(b Builder) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Subtract(b)
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Rotate(pivot, direction)
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Translate(offset)
 }
 
 func (a *Area) Transform(t [4][4]int64) Builder {
 	return (&areaBuilder{
-		a:   a,
-		opt: noop,
+		left: a,
+		opt:  noop,
 	}).Transform(t)
 }
 
