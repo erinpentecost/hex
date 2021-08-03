@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -116,46 +115,45 @@ func (a *Area) Build() *Area {
 }
 
 func (a *Area) Union(b Builder) Builder {
-	return &areaBuilder{
+	return (&areaBuilder{
 		a:   a,
-		b:   b,
-		opt: union,
-	}
+		opt: noop,
+	}).Union(b)
 }
 
 func (a *Area) Intersection(b Builder) Builder {
-	return &areaBuilder{
+	return (&areaBuilder{
 		a:   a,
-		b:   b,
-		opt: intersection,
-	}
+		opt: noop,
+	}).Intersection(b)
 }
 
 func (a *Area) Subtract(b Builder) Builder {
-	return &areaBuilder{
+	return (&areaBuilder{
 		a:   a,
-		b:   b,
-		opt: subtract,
-	}
+		opt: noop,
+	}).Subtract(b)
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
-	return a.
-		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R, -1*pivot.S())).
-		Transform(internal.RotateMatrix(direction)).
-		Transform(internal.TranslateMatrix(pivot.Q, pivot.R, pivot.S()))
+	return (&areaBuilder{
+		a:   a,
+		opt: noop,
+	}).Rotate(pivot, direction)
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
-	return a.Transform(internal.TranslateMatrix(offset.Q, offset.R, offset.S()))
+	return (&areaBuilder{
+		a:   a,
+		opt: noop,
+	}).Translate(offset)
 }
 
 func (a *Area) Transform(t [4][4]int64) Builder {
-	return &areaBuilder{
+	return (&areaBuilder{
 		a:   a,
-		t:   t,
-		opt: transform,
-	}
+		opt: noop,
+	}).Transform(t)
 }
 
 // Bounds returns a bounding box for the area defined by two opposite-corner

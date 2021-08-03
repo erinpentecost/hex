@@ -11,22 +11,17 @@ var (
 	}
 )
 
-func MatrixMultiply(m ...[4][4]int64) [4][4]int64 {
+func MatrixMultiply(x, y [4][4]int64) [4][4]int64 {
 	out := [4][4]int64{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 
-	for mx := 0; mx < len(m); mx++ {
-
-		x := m[mx]
-		y := m[mx+1]
-
-		for i := 0; i < len(x); i++ {
-			for j := 0; j < len(y[0]); j++ {
-				for k := 0; k < len(y); k++ {
-					out[i][j] += x[i][k] * y[k][j]
-				}
+	for i := 0; i < len(x); i++ {
+		for j := 0; j < len(y[0]); j++ {
+			for k := 0; k < len(y); k++ {
+				out[i][j] += x[i][k] * y[k][j]
 			}
 		}
 	}
+
 	return out
 }
 

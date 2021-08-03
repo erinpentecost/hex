@@ -18,6 +18,7 @@ const (
 	intersection
 	subtract
 	transform
+	noop
 )
 
 // areaBuilder allows you to use 2-dimensional constructive solid geometry techniques
@@ -68,6 +69,11 @@ func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
 
 // Transform applies a transformation matrix to all hexes in ab.
 func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
+	// if we are chaining transforms, combine them.
+	/*if ab.opt == transform {
+		ab.t = internal.MatrixMultiply(ab.t, t)
+		return ab
+	}*/
 	return &areaBuilder{
 		a:   ab,
 		t:   t,
@@ -76,9 +82,11 @@ func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
 }
 
 func (ab *areaBuilder) Build() *Area {
+	if ab.opt == noop {
+		return ab.a.Build()
+	}
+
 	if ab.opt == transform {
-		// TODO optimization: combine transforms then apply
-		// instead of applying one-at-a-time for chained transforms
 		a := ab.a.Build()
 
 		if len(a.hexes) == 0 {
