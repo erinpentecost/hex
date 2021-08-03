@@ -12,15 +12,9 @@ var (
 )
 
 func MatrixMultiply(m ...[4][4]int64) [4][4]int64 {
-	switch len(m) {
-	case 0:
-		return [4][4]int64{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
-	case 1:
-		return m[0]
-	}
+	out := [4][4]int64{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 
-	out := [4][4]int64{}
-	for mx := len(m) - 2; mx >= 0; mx-- {
+	for mx := 0; mx < len(m); mx++ {
 
 		x := m[mx]
 		y := m[mx+1]

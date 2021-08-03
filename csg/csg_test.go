@@ -30,19 +30,18 @@ func TestIdentity(t *testing.T) {
 }
 
 func TestRotate(t *testing.T) {
-	orig := BigHex(pos.Origin(), 4).Build()
 	for i := 0; i < 5; i++ {
 		for q := int64(-2); q < 2; q++ {
 			for r := int64(-2); r < 2; r++ {
+				orig := BigHex(pos.Origin(), 4).Build()
 				pivot := pos.Hex{Q: q, R: r}
 				rotatedArea := orig.Rotate(pivot, i).Build()
 				assert.Equal(t, orig.Size(), rotatedArea.Size(), "rotation caused count difference")
 				if (pivot == pos.Hex{} || i == 0) {
-					require.True(t, orig.Equals(rotatedArea), "rotate area about origin")
+					require.True(t, orig.Equals(rotatedArea), "NOP rotate")
 				} else {
 					require.False(t, orig.Equals(rotatedArea), "rotate area about pivot %s by %d", pivot.String(), i)
 				}
-
 			}
 		}
 	}

@@ -78,7 +78,7 @@ func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
 func (ab *areaBuilder) Build() *Area {
 	if ab.opt == transform {
 		// TODO optimization: combine transforms then apply
-		// instead of blindly building
+		// instead of applying one-at-a-time for chained transforms
 		a := ab.a.Build()
 
 		if len(a.hexes) == 0 {
@@ -86,7 +86,6 @@ func (ab *areaBuilder) Build() *Area {
 		}
 
 		// apply transform to all hexes
-		// TODO optimization: calculate bounds
 		bf := boundsFinder{}
 		out := NewArea()
 		for k := range a.hexes {
