@@ -217,6 +217,43 @@ func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	return rotated.Rotate(pivot, d-1)
 }
 
+var (
+	rotationMatrixes = [6][3][3]int64{
+		{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}},    // rotate by 0
+		{{0, 0, -1}, {-1, 0, 0}, {0, -1, 0}}, // rotate by 1
+		{{0, 1, 0}, {0, 0, 1}, {1, 0, 0}},    // etc
+		{{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}},
+		{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}},
+		{{0, -1, 0}, {0, 0, -1}, {-1, 0, 0}},
+	}
+)
+
+// Transform applies a matrix transformation on the hex.
+//
+// Translation by tr,tq:
+//
+// [[1,0,tr]
+//
+// [0,t,tq]
+//
+// [0,0,1]]
+func (h Hex) Transform(t [3][3]int64) Hex {
+	return Hex{
+		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S(),
+		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S(),
+	}
+}
+
+func (h Hex) Rotate2(direction int) Hex {
+	d := BoundFacing(direction)
+
+	if d == 0 {
+		return h
+	}
+
+	return h.Transform(rotationMatrixes[d])
+}
+
 // BoundFacing maps the whole number set to 0-5.
 func BoundFacing(facing int) int {
 	d := facing % 6

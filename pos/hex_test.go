@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // HexArea returns the set of hexes that form a larger hex area
@@ -110,6 +111,17 @@ func TestFractionalConversion(t *testing.T) {
 		frac := h.ToHexFractional()
 		recast := frac.ToHex()
 		assert.Equal(t, h, recast)
+	}
+}
+
+func TestRotateImp(t *testing.T) {
+	testHexes := HexArea(Origin(), 10)
+	for _, h := range testHexes {
+		for d := 0; d < 6; d++ {
+			rotated1 := h.Rotate(Origin(), d)
+			rotated2 := h.Rotate2(d)
+			require.Equal(t, rotated1, rotated2, "%s rotated by %d", h.String(), d)
+		}
 	}
 }
 
