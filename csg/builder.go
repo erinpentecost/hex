@@ -22,6 +22,10 @@ type Builder interface {
 	Rotate(pivot pos.Hex, direction int) Builder
 	// Translate adds some offset to the area.
 	Translate(offste pos.Hex) Builder
+	// Transform applies a transformation hex to each hex in the area.
+	//
+	// This doesn't infill scaling transformations!
+	Transform(t [4][4]int64) Builder
 }
 
 // NewBuilder creates a new area builder containing zero or more hexes to start with.

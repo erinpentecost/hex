@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -144,16 +145,21 @@ func (a *Area) Subtract(b Builder) Builder {
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
-	return &areaBuilderUnaryOp{
-		a: a,
-		o: rotateFn(pivot, direction),
-	}
+	return a.Transform(internal.MatrixMultiply(
+		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
+		internal.RotateMatrix(direction),
+		internal.TranslateMatrix(pivot.Q, pivot.R)))
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
-	return &areaBuilderUnaryOp{
-		a: a,
-		o: translateFn(offset),
+	return a.Transform(internal.TranslateMatrix(offset.Q, offset.R))
+}
+
+func (a *Area) Transform(t [4][4]int64) Builder {
+	return &areaBuilderBinaryOp{
+		a:   a,
+		t:   t,
+		opt: transform,
 	}
 }
 

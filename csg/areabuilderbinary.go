@@ -3,6 +3,7 @@ package csg
 import (
 	"sync"
 
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -16,8 +17,7 @@ const (
 	union operation = iota
 	intersection
 	subtract
-	rotate
-	translate
+	transform
 )
 
 // areaBuilderBinaryOp allows you to use 2-dimensional constructive solid geometry techniques
@@ -25,6 +25,7 @@ const (
 type areaBuilderBinaryOp struct {
 	a   Builder
 	b   Builder
+	t   [4][4]int64
 	opt operation
 }
 
@@ -53,16 +54,22 @@ func (ab *areaBuilderBinaryOp) Subtract(b Builder) Builder {
 }
 
 func (ab *areaBuilderBinaryOp) Rotate(pivot pos.Hex, direction int) Builder {
-	return &areaBuilderUnaryOp{
-		a: ab,
-		o: rotateFn(pivot, direction),
-	}
+	return ab.Transform(internal.MatrixMultiply(
+		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
+		internal.RotateMatrix(direction),
+		internal.TranslateMatrix(pivot.Q, pivot.R)))
 }
 
 func (ab *areaBuilderBinaryOp) Translate(offset pos.Hex) Builder {
-	return &areaBuilderUnaryOp{
-		a: ab,
-		o: translateFn(offset),
+	return ab.Transform(internal.TranslateMatrix(offset.Q, offset.R))
+}
+
+// Transform applies a transformation matrix to all hexes in ab.
+func (ab *areaBuilderBinaryOp) Transform(t [4][4]int64) Builder {
+	return &areaBuilderBinaryOp{
+		a:   ab,
+		t:   t,
+		opt: transform,
 	}
 }
 

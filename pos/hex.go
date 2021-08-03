@@ -3,6 +3,8 @@ package pos
 import (
 	"fmt"
 	"math"
+
+	"github.com/erinpentecost/hexcoord/internal"
 )
 
 // Hex is a coordinate defined axially.
@@ -190,26 +192,15 @@ func (h Hex) Neighbors() []Hex {
 //
 // [0,1,0,tq]
 //
-// [0,0,1,0] // this is for s, which is a computed field
+// [0,0,1,0] // this is for s, which is a computed field. ignored.
 //
-// [0,0,0,1]] // homogenous coords
+// [0,0,0,1]] // homogenous coords. ignored.
 func (h Hex) Transform(t [4][4]int64) Hex {
 	return Hex{
 		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S() + t[0][3],
 		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S() + t[0][3],
 	}
 }
-
-var (
-	rotationMatrixes = [6][4][4]int64{
-		{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}},    // rotate by 0
-		{{0, 0, -1, 0}, {-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, 0, 1}}, // rotate by 1
-		{{0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 0}, {0, 0, 0, 1}},    // etc
-		{{-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, -1, 0}, {0, 0, 0, 1}},
-		{{0, 0, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 1}},
-		{{0, -1, 0, 0}, {0, 0, -1, 0}, {-1, 0, 0, 0}, {0, 0, 0, 1}},
-	}
-)
 
 func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	d := BoundFacing(direction)
@@ -219,18 +210,14 @@ func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	}
 
 	if (pivot == Hex{}) {
-		return h.Transform(rotationMatrixes[d])
+		return h.Transform(internal.RotationMatrixes[d])
 	}
-	return h.Add(pivot).Transform(rotationMatrixes[d]).Subtract(pivot)
+	return h.Add(pivot).Transform(internal.RotationMatrixes[d]).Subtract(pivot)
 }
 
 // BoundFacing maps the whole number set to 0-5.
 func BoundFacing(facing int) int {
-	d := facing % 6
-	if d < 0 {
-		d = d + 6
-	}
-	return d
+	return internal.BoundFacing(facing)
 }
 
 // ToString converts the hex to a string.
