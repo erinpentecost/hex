@@ -139,20 +139,6 @@ func absInt(k int64) int64 {
 	return -1 * k
 }
 
-func maxInt(a, k int64) int64 {
-	if a > k {
-		return a
-	}
-	return k
-}
-
-func minInt(a, k int64) int64 {
-	if a < k {
-		return a
-	}
-	return k
-}
-
 // Length gets the length of the hex to the grid origin.
 //
 // This is the Manhattan Distance.
@@ -196,38 +182,6 @@ func (h Hex) Neighbors() []Hex {
 	return n
 }
 
-// Rotate rotates a hex X times counterclockwise.
-// The value can be negative.
-// The number of degrees rotated is 60*direction.
-func (h Hex) Rotate(pivot Hex, direction int) Hex {
-	d := BoundFacing(direction)
-
-	if d == 0 {
-		return h
-	}
-
-	// This could be faster. Recursion is not really
-	// necessary.
-
-	rotated := Hex{
-		Q: -h.S(),
-		R: -h.Q,
-	}
-
-	return rotated.Rotate(pivot, d-1)
-}
-
-var (
-	rotationMatrixes = [6][3][3]int64{
-		{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}},    // rotate by 0
-		{{0, 0, -1}, {-1, 0, 0}, {0, -1, 0}}, // rotate by 1
-		{{0, 1, 0}, {0, 0, 1}, {1, 0, 0}},    // etc
-		{{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}},
-		{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}},
-		{{0, -1, 0}, {0, 0, -1}, {-1, 0, 0}},
-	}
-)
-
 // Transform applies a matrix transformation on the hex.
 //
 // Translation by tr,tq:
@@ -244,14 +198,28 @@ func (h Hex) Transform(t [3][3]int64) Hex {
 	}
 }
 
-func (h Hex) Rotate2(direction int) Hex {
+var (
+	rotationMatrixes = [6][3][3]int64{
+		{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}},    // rotate by 0
+		{{0, 0, -1}, {-1, 0, 0}, {0, -1, 0}}, // rotate by 1
+		{{0, 1, 0}, {0, 0, 1}, {1, 0, 0}},    // etc
+		{{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}},
+		{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}},
+		{{0, -1, 0}, {0, 0, -1}, {-1, 0, 0}},
+	}
+)
+
+func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	d := BoundFacing(direction)
 
 	if d == 0 {
 		return h
 	}
 
-	return h.Transform(rotationMatrixes[d])
+	if (pivot == Hex{}) {
+		return h.Transform(rotationMatrixes[d])
+	}
+	return h.Add(pivot).Transform(rotationMatrixes[d]).Add(pivot.Multiply(-1))
 }
 
 // BoundFacing maps the whole number set to 0-5.

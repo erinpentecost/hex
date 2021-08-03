@@ -5,8 +5,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
+
+func maxInt(a, k int64) int64 {
+	if a > k {
+		return a
+	}
+	return k
+}
+
+func minInt(a, k int64) int64 {
+	if a < k {
+		return a
+	}
+	return k
+}
 
 // HexArea returns the set of hexes that form a larger hex area
 // centered around the starting hex and with the given radius.
@@ -111,17 +124,6 @@ func TestFractionalConversion(t *testing.T) {
 		frac := h.ToHexFractional()
 		recast := frac.ToHex()
 		assert.Equal(t, h, recast)
-	}
-}
-
-func TestRotateImp(t *testing.T) {
-	testHexes := HexArea(Origin(), 10)
-	for _, h := range testHexes {
-		for d := 0; d < 6; d++ {
-			rotated1 := h.Rotate(Origin(), d)
-			rotated2 := h.Rotate2(d)
-			require.Equal(t, rotated1, rotated2, "%s rotated by %d", h.String(), d)
-		}
 	}
 }
 
