@@ -29,6 +29,17 @@ func TestIdentity(t *testing.T) {
 	assert.True(t, orig.Equals(rotated), "expected=%s\nactual=%s", orig.String(), rotated.String())
 }
 
+func TestTranslate(t *testing.T) {
+	points := BigHex(pos.Origin(), 4).Build().Slice()
+	for _, point := range points {
+		for _, offset := range points {
+			newPoint := NewArea(point).Translate(offset).Build()
+			expectedPoint := NewArea(point.Add(offset)).Build()
+			require.Equal(t, expectedPoint, newPoint, "%s+%s\nexpected=%s\nactual=%s", point.String(), offset.String(), expectedPoint.String(), newPoint.String())
+		}
+	}
+}
+
 func TestRotate(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		for q := int64(-2); q < 2; q++ {
@@ -58,7 +69,6 @@ func TestRotateNOP(t *testing.T) {
 				if (pivot == pos.Hex{} || i == 0) {
 
 					rotatedArea := orig.Rotate(pivot, i).Build()
-					assert.Equal(t, orig.Size(), rotatedArea.Size(), "rotation caused count difference")
 					require.True(t, orig.Equals(rotatedArea), "NOP rotate")
 
 				}
