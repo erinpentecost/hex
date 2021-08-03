@@ -57,13 +57,13 @@ func (ab *areaBuilder) Subtract(b Builder) Builder {
 
 func (ab *areaBuilder) Rotate(pivot pos.Hex, direction int) Builder {
 	return ab.
-		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R)).
+		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R, -1*pivot.S())).
 		Transform(internal.RotateMatrix(direction)).
-		Transform(internal.TranslateMatrix(pivot.Q, pivot.R))
+		Transform(internal.TranslateMatrix(pivot.Q, pivot.R, pivot.S()))
 }
 
 func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
-	return ab.Transform(internal.TranslateMatrix(offset.Q, offset.R))
+	return ab.Transform(internal.TranslateMatrix(offset.Q, offset.R, offset.S()))
 }
 
 // Transform applies a transformation matrix to all hexes in ab.

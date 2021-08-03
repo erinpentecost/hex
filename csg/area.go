@@ -141,13 +141,13 @@ func (a *Area) Subtract(b Builder) Builder {
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
 	return a.
-		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R)).
+		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R, -1*pivot.S())).
 		Transform(internal.RotateMatrix(direction)).
-		Transform(internal.TranslateMatrix(pivot.Q, pivot.R))
+		Transform(internal.TranslateMatrix(pivot.Q, pivot.R, pivot.S()))
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
-	return a.Transform(internal.TranslateMatrix(offset.Q, offset.R))
+	return a.Transform(internal.TranslateMatrix(offset.Q, offset.R, offset.S()))
 }
 
 func (a *Area) Transform(t [4][4]int64) Builder {

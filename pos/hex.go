@@ -188,20 +188,28 @@ func (h Hex) Neighbors() []Hex {
 
 // Transform applies a matrix transformation on the hex.
 //
-// Translation by tr,tq:
+// Translation by tr,tq,ts:
 //
 // [[1,0,0,tr]
 //
 // [0,1,0,tq]
 //
-// [0,0,1,0] // this is for s, which is a computed field. ignored.
+// [0,0,1,ts]
 //
 // [0,0,0,1]] // homogenous coords. ignored.
 func (h Hex) Transform(t [4][4]int64) Hex {
-	return Hex{
+	p := Hex{
 		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S() + t[0][3],
-		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S() + t[0][3],
+		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S() + t[1][3],
 	}
+	/*
+		// No need to transform S since it's a derived field.
+		s := t[2][0]*h.Q + t[2][1]*h.R + t[2][2]*h.S() + t[2][3]
+		if p.S() != s {
+			panic("transformation matrix is bad")
+		}
+	*/
+	return p
 }
 
 func (h Hex) Rotate(pivot Hex, direction int) Hex {
