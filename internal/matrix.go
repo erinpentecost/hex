@@ -12,7 +12,7 @@ var (
 )
 
 func MatrixMultiply(x, y [4][4]int64) [4][4]int64 {
-	out := [4][4]int64{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
+	out := [4][4]int64{}
 
 	for i := 0; i < len(x); i++ {
 		for j := 0; j < len(y[0]); j++ {
@@ -45,6 +45,5 @@ func RotateMatrix(direction int) [4][4]int64 {
 // [0,0,1,0] // this is for s, which is a computed field. ignored.
 // [0,0,0,1]] // homogenous coords. ignored.
 func TranslateMatrix(q, r, s int64) [4][4]int64 {
-	// TODO: do I need to use S? probably yes if I want to combine matrices
 	return [4][4]int64{{1, 0, 0, q}, {0, 1, 0, r}, {0, 0, 1, s}, {0, 0, 0, 1}}
 }

@@ -70,10 +70,11 @@ func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
 // Transform applies a transformation matrix to all hexes in ab.
 func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
 	// if we are chaining transforms, combine them.
-	/*if ab.opt == transform {
-		ab.t = internal.MatrixMultiply(ab.t, t)
+	if ab.opt == transform {
+		// ab.t is applied first, then t.
+		ab.t = internal.MatrixMultiply(t, ab.t)
 		return ab
-	}*/
+	}
 	return &areaBuilder{
 		a:   ab,
 		t:   t,
