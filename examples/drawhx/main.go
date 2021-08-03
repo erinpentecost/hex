@@ -10,7 +10,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/erinpentecost/hexcoord/csg"
@@ -32,19 +31,25 @@ func init() {
 
 func main() {
 	flag.Parse()
+	var fileHandle *os.File
+	var err error
 	if outFile == "" {
-		curdir, err := os.Getwd()
+		fileHandle, err = os.CreateTemp(os.TempDir(), "hex-*.png")
 		if err != nil {
-			log.Fatal(fmt.Sprintf("failed to get current directory: %v", err))
+			log.Fatal(fmt.Sprintf("failed to make temp file: %v", err))
 		}
-		outFile = path.Join(curdir, "hexcoord.png")
-	}
-	outFile, err := filepath.Abs(outFile)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("failed to find path: %v", err))
+	} else {
+		outFile, err = filepath.Abs(outFile)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("failed to find path: %v", err))
+		}
+		fileHandle, err = os.Create(outFile)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("failed to make file %s: %v", outFile, err))
+		}
 	}
 
-	os.Stderr.WriteString(fmt.Sprintf("outfile=%s, width=%d\n", outFile, width))
+	os.Stderr.WriteString(fmt.Sprintf("outfile=%s, width=%d\n", fileHandle.Name(), width))
 
 	var hexes []pos.Hex
 
@@ -62,11 +67,12 @@ func main() {
 
 	os.Stderr.WriteString("saving...\n")
 
-	err = Save(img, outFile)
+	err = Save(img, fileHandle)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("failed to save image to file: %v", err))
 	}
-	os.Stdout.WriteString(outFile)
+
+	os.Stdout.WriteString(fileHandle.Name())
 	os.Stdout.WriteString("\n")
 }
 
@@ -211,11 +217,7 @@ func AreaColor(h pos.Hex, note *csg.Area) color.RGBA {
 }
 
 // Save saves an image to a file
-func Save(img *image.RGBA, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
+func Save(img *image.RGBA, f *os.File) error {
 	defer f.Close()
 	return png.Encode(f, img)
 }

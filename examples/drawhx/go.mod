@@ -1,4 +1,4 @@
-module github.com/erinpentecost/hexcoord/examples/draw
+module github.com/erinpentecost/hexcoord/examples/drawhx
 
 go 1.16
 

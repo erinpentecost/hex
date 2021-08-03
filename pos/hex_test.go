@@ -7,6 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func maxInt(a, k int64) int64 {
+	if a > k {
+		return a
+	}
+	return k
+}
+
+func minInt(a, k int64) int64 {
+	if a < k {
+		return a
+	}
+	return k
+}
+
 // HexArea returns the set of hexes that form a larger hex area
 // centered around the starting hex and with the given radius.
 // The order of elements returned is not set.

@@ -2,6 +2,8 @@ package csg
 
 import (
 	"sync"
+
+	"github.com/erinpentecost/hexcoord/pos"
 )
 
 // Bounding is the return type for CheckBounding.
@@ -110,4 +112,44 @@ func (a *Area) checkFineBounding(b *Area) Bounding {
 	}
 
 	return Overlap
+}
+
+type boundsFinder struct {
+	empty bool
+	minR  int64
+	maxR  int64
+	minQ  int64
+	maxQ  int64
+}
+
+func (b *boundsFinder) visit(p *pos.Hex) {
+	if b.empty {
+		b.minR = p.R
+		b.maxR = p.R
+		b.minQ = p.Q
+		b.maxQ = p.Q
+		return
+	}
+	b.minR = minInt(b.minR, p.R)
+	b.maxR = maxInt(b.maxR, p.R)
+
+	b.minQ = minInt(b.minQ, p.Q)
+	b.maxQ = maxInt(b.maxQ, p.Q)
+}
+
+func (b *boundsFinder) applyTo(a *Area) *Area {
+	if b.empty {
+		a.minR = 0
+		a.maxR = 0
+		a.minQ = 0
+		a.maxQ = 0
+		a.boundsClean = false
+		return a
+	}
+	a.minR = b.minR
+	a.maxR = b.maxR
+	a.minQ = b.minQ
+	a.maxQ = b.maxQ
+	a.boundsClean = true
+	return a
 }

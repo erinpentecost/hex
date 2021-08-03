@@ -3,9 +3,13 @@ package pos
 import (
 	"fmt"
 	"math"
+
+	"github.com/erinpentecost/hexcoord/internal"
 )
 
 // Hex is a coordinate defined axially.
+//
+// [Q,R,S]
 type Hex struct {
 	Q int64
 	R int64
@@ -139,20 +143,6 @@ func absInt(k int64) int64 {
 	return -1 * k
 }
 
-func maxInt(a, k int64) int64 {
-	if a > k {
-		return a
-	}
-	return k
-}
-
-func minInt(a, k int64) int64 {
-	if a < k {
-		return a
-	}
-	return k
-}
-
 // Length gets the length of the hex to the grid origin.
 //
 // This is the Manhattan Distance.
@@ -196,9 +186,32 @@ func (h Hex) Neighbors() []Hex {
 	return n
 }
 
-// Rotate rotates a hex X times counterclockwise.
-// The value can be negative.
-// The number of degrees rotated is 60*direction.
+// Transform applies a matrix transformation on the hex.
+//
+// Translation by tr,tq,ts:
+//
+// [[1,0,0,tr]
+//
+// [0,1,0,tq]
+//
+// [0,0,1,ts]
+//
+// [0,0,0,1]] // homogenous coords. ignored.
+func (h Hex) Transform(t [4][4]int64) Hex {
+	p := Hex{
+		Q: t[0][0]*h.Q + t[0][1]*h.R + t[0][2]*h.S() + t[0][3],
+		R: t[1][0]*h.Q + t[1][1]*h.R + t[1][2]*h.S() + t[1][3],
+	}
+	/*
+		// No need to transform S since it's a derived field.
+		s := t[2][0]*h.Q + t[2][1]*h.R + t[2][2]*h.S() + t[2][3]
+		if p.S() != s {
+			panic("transformation matrix is bad")
+		}
+	*/
+	return p
+}
+
 func (h Hex) Rotate(pivot Hex, direction int) Hex {
 	d := BoundFacing(direction)
 
@@ -206,24 +219,15 @@ func (h Hex) Rotate(pivot Hex, direction int) Hex {
 		return h
 	}
 
-	// This could be faster. Recursion is not really
-	// necessary.
-
-	rotated := Hex{
-		Q: -h.S(),
-		R: -h.Q,
+	if (pivot == Hex{}) {
+		return h.Transform(internal.RotationMatrixes[d])
 	}
-
-	return rotated.Rotate(pivot, d-1)
+	return h.Subtract(pivot).Transform(internal.RotationMatrixes[d]).Add(pivot)
 }
 
 // BoundFacing maps the whole number set to 0-5.
 func BoundFacing(facing int) int {
-	d := facing % 6
-	if d < 0 {
-		d = d + 6
-	}
-	return d
+	return internal.BoundFacing(facing)
 }
 
 // ToString converts the hex to a string.

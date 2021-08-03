@@ -1,9 +1,11 @@
 package csg
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -49,6 +51,11 @@ func (a *Area) Slice() []pos.Hex {
 	return hexes
 }
 
+// Size returns the number of hexes in the area.
+func (a *Area) Size() int {
+	return len(a.hexes)
+}
+
 // Equals returns true if both areas share exactly the same hexes.
 //
 // If you need more information regarding the nature of the overlap,
@@ -73,28 +80,35 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 func (a *Area) String() string {
 	s := []string{}
 	for k := range a.hexes {
-		ks := k.String()
+		ks := fmt.Sprintf("{\"Q\":%d,\"R\":%d}", k.Q, k.R)
 		i := sort.SearchStrings(s, ks)
 		s = append(s, "")
 		copy(s[i+1:], s[i:])
 		s[i] = ks
 	}
-	return "Area: {" + strings.Join(s, " ") + "}"
+	return "[" + strings.Join(s, ",") + "]"
 }
 
 // ensureBounds updates the bounding box if necessary.
 func (a *Area) ensureBounds() *Area {
 	if len(a.hexes) == 0 {
 		a.boundsClean = false
-	} else if !a.boundsClean {
-		minR, maxR, minQ, maxQ := boundsFromMap(a.hexes)
-		a.minR = minR
-		a.maxR = maxR
-		a.minQ = minQ
-		a.maxQ = maxQ
-		a.boundsClean = true
+		a.minR = 0
+		a.maxR = 0
+		a.minQ = 0
+		a.maxQ = 0
+		return a
+	} else if a.boundsClean {
+		return a
 	}
-	return a
+
+	bf := boundsFinder{}
+
+	for p := range a.hexes {
+		bf.visit(&p)
+	}
+
+	return bf.applyTo(a)
 }
 
 func (a *Area) Build() *Area {
@@ -102,43 +116,50 @@ func (a *Area) Build() *Area {
 }
 
 func (a *Area) Union(b Builder) Builder {
-	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: unionFn,
+	return &areaBuilder{
+		a:   a,
+		b:   b,
+		opt: union,
 	}
 }
 
 func (a *Area) Intersection(b Builder) Builder {
-	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: intersectionFn,
+	return &areaBuilder{
+		a:   a,
+		b:   b,
+		opt: intersection,
 	}
 }
 
 func (a *Area) Subtract(b Builder) Builder {
-	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: subtractFn,
+	return &areaBuilder{
+		a:   a,
+		b:   b,
+		opt: subtract,
 	}
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
-	return &areaBuilderUnaryOp{
-		a: a,
-		o: rotateFn(pivot, direction),
-	}
+	return a.
+		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R, -1*pivot.S())).
+		Transform(internal.RotateMatrix(direction)).
+		Transform(internal.TranslateMatrix(pivot.Q, pivot.R, pivot.S()))
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
-	return &areaBuilderUnaryOp{
-		a: a,
-		o: translateFn(offset),
+	return a.Transform(internal.TranslateMatrix(offset.Q, offset.R, offset.S()))
+}
+
+func (a *Area) Transform(t [4][4]int64) Builder {
+	return &areaBuilder{
+		a:   a,
+		t:   t,
+		opt: transform,
 	}
 }
 
+// Bounds returns a bounding box for the area defined by two opposite-corner
+// hexes. This function returns an error if the area is empty.
 func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64, err error) {
 	a.ensureBounds()
 	if !a.boundsClean {
@@ -148,24 +169,5 @@ func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64, err error) {
 	maxR = a.maxR
 	minQ = a.minQ
 	maxQ = a.maxQ
-	return
-}
-
-// boundsFromMap should not be called on empty areas
-func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int64) {
-	for p := range hexes {
-		minR = p.R
-		maxR = p.R
-		minQ = p.Q
-		maxQ = p.Q
-	}
-
-	for p := range hexes {
-		minR = minInt(minR, p.R)
-		maxR = maxInt(maxR, p.R)
-
-		minQ = minInt(minQ, p.Q)
-		maxQ = maxInt(maxQ, p.Q)
-	}
 	return
 }

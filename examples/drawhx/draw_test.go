@@ -17,7 +17,9 @@ func TestDraw(t *testing.T) {
 	cc := NewCamera(800, csg.BigHex(pos.Origin(), 2).Subtract(csg.BigHex(pos.Origin(), 1)).Build())
 	img := cc.Draw()
 
-	err := Save(img, "testdraw.png")
+	fileHandle, err := os.Create("testdraw.png")
+	require.NoError(t, err)
+	err = Save(img, fileHandle)
 	assert.NoError(t, err)
 }
 

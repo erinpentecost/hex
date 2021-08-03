@@ -20,12 +20,58 @@ func TestAreaEqual(t *testing.T) {
 	assert.False(t, area1.Equals(area4))
 }
 
-func TestRotate(t *testing.T) {
+func TestIdentity(t *testing.T) {
 	orig := BigHex(pos.Origin(), 4).Build()
+	translate := orig.Translate(pos.Origin()).Build()
+	rotated := orig.Rotate(pos.Origin(), 0).Build()
+
+	assert.True(t, orig.Equals(translate), "expected=%s\nactual=%s", orig.String(), rotated.String())
+	assert.True(t, orig.Equals(rotated), "expected=%s\nactual=%s", orig.String(), rotated.String())
+}
+
+func TestTranslate(t *testing.T) {
+	points := BigHex(pos.Origin(), 4).Build().Slice()
+	for _, point := range points {
+		for _, offset := range points {
+			newPoint := NewArea(point).Translate(offset).Build()
+			expectedPoint := NewArea(point.Add(offset)).Build()
+			require.Equal(t, expectedPoint, newPoint, "%s+%s\nexpected=%s\nactual=%s", point.String(), offset.String(), expectedPoint.String(), newPoint.String())
+		}
+	}
+}
+
+func TestRotate(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		for q := int64(-2); q < 2; q++ {
 			for r := int64(-2); r < 2; r++ {
-				assert.True(t, orig.Equals(orig.Rotate(pos.Hex{Q: q, R: r}, i).Build()))
+				orig := pos.Hex{Q: 1, R: 1}
+				pivot := pos.Hex{Q: q, R: r}
+				rotatedArea := NewArea(orig).Rotate(pivot, i).Build()
+				var found pos.Hex
+				for _, h := range rotatedArea.Slice() {
+					found = h
+					break
+				}
+				expected := orig.Rotate(pivot, i)
+				dbg := NewArea(orig, pivot, found, expected).String()
+				require.Equal(t, expected, found, "rotated %s about %s by %d. %s", orig.String(), pivot.String(), i, dbg)
+			}
+		}
+	}
+}
+
+func TestRotateNOP(t *testing.T) {
+	for i := 0; i < 5; i++ {
+		for q := int64(-2); q < 2; q++ {
+			for r := int64(-2); r < 2; r++ {
+				orig := BigHex(pos.Origin(), 4).Build()
+				pivot := pos.Hex{Q: q, R: r}
+				if (pivot == pos.Hex{} || i == 0) {
+
+					rotatedArea := orig.Rotate(pivot, i).Build()
+					require.True(t, orig.Equals(rotatedArea), "NOP rotate")
+
+				}
 			}
 		}
 	}

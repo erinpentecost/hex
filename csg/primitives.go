@@ -1,6 +1,7 @@
 package csg
 
 import (
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -24,29 +25,32 @@ func minInt(a, k int64) int64 {
 // A radius of 0 will return the center hex.
 func BigHex(center pos.Hex, radius int64) *Area {
 	area := NewArea()
-
+	bf := boundsFinder{}
 	for q := -1 * radius; q <= radius; q++ {
 		r1 := maxInt(-1*radius, -1*(q+radius))
 		r2 := minInt(radius, (-1*q)+radius)
 
 		for r := r1; r <= r2; r++ {
-			area.hexes[pos.Hex{
+			h := pos.Hex{
 				Q: q + center.Q,
 				R: r + center.R,
-			}] = exists
+			}
+			area.hexes[h] = exists
+			bf.visit(&h)
 		}
 	}
 
-	return area.ensureBounds()
+	return bf.applyTo(area)
 }
 
 // Circle draws a circle. At small radiuses, this is just like BigHex.
 func Circle(center pos.Hex, radius int64) *Area {
 
 	// find some bounding box that contains the circle
+	edgePoint := pos.HexFractionalFromCartesian(0, float64(radius+1)).ToHex()
 	p := []pos.Hex{}
 	for i := 0; i < 6; i++ {
-		p = append(p, pos.Hex{Q: radius, R: 0}.Rotate(pos.Origin(), i))
+		p = append(p, edgePoint.Rotate(pos.Origin(), i))
 	}
 	bounds := NewArea(p...)
 
@@ -56,7 +60,8 @@ func Circle(center pos.Hex, radius int64) *Area {
 	for q := bounds.minQ; q <= bounds.maxQ; q++ {
 		for r := bounds.minR; r <= bounds.maxR; r++ {
 			x, y := pos.HexFractional{Q: float64(q), R: float64(r)}.ToCartesian()
-			if x*x+y*y < rs {
+			dist := x*x + y*y
+			if dist <= rs || internal.CloseEnough(dist, rs) {
 				area.hexes[pos.Hex{Q: q, R: r}] = exists
 			}
 		}
