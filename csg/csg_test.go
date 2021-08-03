@@ -37,7 +37,7 @@ func TestRotate(t *testing.T) {
 				pivot := pos.Hex{Q: q, R: r}
 				rotatedArea := orig.Rotate(pivot, i).Build()
 				assert.Equal(t, orig.Size(), rotatedArea.Size(), "rotation caused count difference")
-				if (pivot == pos.Hex{}) {
+				if (pivot == pos.Hex{} || i == 0) {
 					require.True(t, orig.Equals(rotatedArea), "rotate area about origin")
 				} else {
 					require.False(t, orig.Equals(rotatedArea), "rotate area about pivot %s by %d", pivot.String(), i)

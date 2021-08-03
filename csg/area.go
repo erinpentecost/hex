@@ -1,6 +1,7 @@
 package csg
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -79,13 +80,13 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 func (a *Area) String() string {
 	s := []string{}
 	for k := range a.hexes {
-		ks := k.String()
+		ks := fmt.Sprintf("{\"Q\":%d,\"R\":%d}", k.Q, k.R)
 		i := sort.SearchStrings(s, ks)
 		s = append(s, "")
 		copy(s[i+1:], s[i:])
 		s[i] = ks
 	}
-	return "Area: {" + strings.Join(s, " ") + "}"
+	return "[" + strings.Join(s, ",") + "]"
 }
 
 // ensureBounds updates the bounding box if necessary.
@@ -139,11 +140,10 @@ func (a *Area) Subtract(b Builder) Builder {
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
-	m := internal.MatrixMultiply(
-		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
-		internal.RotateMatrix(direction),
-		internal.TranslateMatrix(pivot.Q, pivot.R))
-	return a.Transform(m)
+	return a.
+		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R)).
+		Transform(internal.RotateMatrix(direction)).
+		Transform(internal.TranslateMatrix(pivot.Q, pivot.R))
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {

@@ -56,11 +56,10 @@ func (ab *areaBuilder) Subtract(b Builder) Builder {
 }
 
 func (ab *areaBuilder) Rotate(pivot pos.Hex, direction int) Builder {
-	m := internal.MatrixMultiply(
-		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
-		internal.RotateMatrix(direction),
-		internal.TranslateMatrix(pivot.Q, pivot.R))
-	return ab.Transform(m)
+	return ab.
+		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R)).
+		Transform(internal.RotateMatrix(direction)).
+		Transform(internal.TranslateMatrix(pivot.Q, pivot.R))
 }
 
 func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
