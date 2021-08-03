@@ -4,7 +4,7 @@
 [![Travis CI](https://travis-ci.org/erinpentecost/hexcoord.svg?branch=master)](https://travis-ci.org/erinpentecost/hexcoord.svg?branch=master)
 [![GoDoc](https://godoc.org/github.com/erinpentecost/hexcoord?status.svg)](https://godoc.org/github.com/erinpentecost/hexcoord)
 
-![hexcoord](examples/draw/TestDrawLogo.png)
+![hexcoord](examples/drawhx/TestDrawLogo.png)
 
 hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagonal Grids* articles. This package focuses on hexagonal grid math, including:
 
@@ -12,7 +12,7 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 * Compositing sets of hexes with unions, intersections, and subtractions (constructive solid geometry).
 * Multithreaded A* pathing in a hex grid.
 * Fast intersection testing.
-* Super naive [drawing package](examples/draw)! This isn't performant; it's to help you visualize what's going on.
+* Super naive [drawing package](examples/drawhx)! This isn't performant; it's to help you visualize what's going on.
 
 ```go
 import (
@@ -25,7 +25,7 @@ import (
 )
 ```
 
-![hexcoord](examples/draw/testdraw.png)
+![hexcoord](examples/drawhx/testdraw.png)
 
 ## References
 
