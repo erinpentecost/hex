@@ -19,25 +19,25 @@ type areaBuilderUnaryOp struct {
 
 func (ab *areaBuilderUnaryOp) Union(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: unionFn,
+		a:   ab,
+		b:   b,
+		opt: union,
 	}
 }
 
 func (ab *areaBuilderUnaryOp) Intersection(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: intersectionFn,
+		a:   ab,
+		b:   b,
+		opt: intersection,
 	}
 }
 
 func (ab *areaBuilderUnaryOp) Subtract(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: subtractFn,
+		a:   ab,
+		b:   b,
+		opt: subtract,
 	}
 }
 

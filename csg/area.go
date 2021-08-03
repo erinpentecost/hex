@@ -86,14 +86,32 @@ func (a *Area) String() string {
 func (a *Area) ensureBounds() *Area {
 	if len(a.hexes) == 0 {
 		a.boundsClean = false
-	} else if !a.boundsClean {
-		minR, maxR, minQ, maxQ := boundsFromMap(a.hexes)
-		a.minR = minR
-		a.maxR = maxR
-		a.minQ = minQ
-		a.maxQ = maxQ
-		a.boundsClean = true
+		a.minR = 0
+		a.maxR = 0
+		a.minQ = 0
+		a.maxQ = 0
+		return a
+	} else if a.boundsClean {
+		return a
 	}
+
+	var minR, maxR, minQ, maxQ int64
+	for p := range a.hexes {
+		minR = p.R
+		maxR = p.R
+		minQ = p.Q
+		maxQ = p.Q
+		break
+	}
+
+	for p := range a.hexes {
+		minR = minInt(minR, p.R)
+		maxR = maxInt(maxR, p.R)
+
+		minQ = minInt(minQ, p.Q)
+		maxQ = maxInt(maxQ, p.Q)
+	}
+
 	return a
 }
 
@@ -103,25 +121,25 @@ func (a *Area) Build() *Area {
 
 func (a *Area) Union(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: unionFn,
+		a:   a,
+		b:   b,
+		opt: union,
 	}
 }
 
 func (a *Area) Intersection(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: intersectionFn,
+		a:   a,
+		b:   b,
+		opt: intersection,
 	}
 }
 
 func (a *Area) Subtract(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: a,
-		b: b,
-		o: subtractFn,
+		a:   a,
+		b:   b,
+		opt: subtract,
 	}
 }
 
@@ -139,6 +157,8 @@ func (a *Area) Translate(offset pos.Hex) Builder {
 	}
 }
 
+// Bounds returns a bounding box for the area defined by two opposite-corner
+// hexes. This function returns an error if the area is empty.
 func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64, err error) {
 	a.ensureBounds()
 	if !a.boundsClean {
@@ -148,24 +168,5 @@ func (a *Area) Bounds() (minR, maxR, minQ, maxQ int64, err error) {
 	maxR = a.maxR
 	minQ = a.minQ
 	maxQ = a.maxQ
-	return
-}
-
-// boundsFromMap should not be called on empty areas
-func boundsFromMap(hexes map[pos.Hex]struct{}) (minR, maxR, minQ, maxQ int64) {
-	for p := range hexes {
-		minR = p.R
-		maxR = p.R
-		minQ = p.Q
-		maxQ = p.Q
-	}
-
-	for p := range hexes {
-		minR = minInt(minR, p.R)
-		maxR = maxInt(maxR, p.R)
-
-		minQ = minInt(minQ, p.Q)
-		maxQ = maxInt(maxQ, p.Q)
-	}
 	return
 }

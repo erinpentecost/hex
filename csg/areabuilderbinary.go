@@ -10,37 +10,45 @@ var (
 	_ Builder = (*areaBuilderBinaryOp)(nil)
 )
 
-type binOp func(a *Area, b *Area) *Area
+type operation byte
+
+const (
+	union operation = iota
+	intersection
+	subtract
+	rotate
+	translate
+)
 
 // areaBuilderBinaryOp allows you to use 2-dimensional constructive solid geometry techniques
 // to build collections of hexes.
 type areaBuilderBinaryOp struct {
-	a Builder
-	b Builder
-	o binOp
+	a   Builder
+	b   Builder
+	opt operation
 }
 
 func (ab *areaBuilderBinaryOp) Union(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: unionFn,
+		a:   ab,
+		b:   b,
+		opt: union,
 	}
 }
 
 func (ab *areaBuilderBinaryOp) Intersection(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: intersectionFn,
+		a:   ab,
+		b:   b,
+		opt: intersection,
 	}
 }
 
 func (ab *areaBuilderBinaryOp) Subtract(b Builder) Builder {
 	return &areaBuilderBinaryOp{
-		a: ab,
-		b: b,
-		o: subtractFn,
+		a:   ab,
+		b:   b,
+		opt: subtract,
 	}
 }
 
@@ -74,7 +82,15 @@ func (ab *areaBuilderBinaryOp) Build() *Area {
 
 	wg.Wait()
 
-	return ab.o(a, c)
+	switch ab.opt {
+	case union:
+		return unionFn(a, c)
+	case intersection:
+		return intersectionFn(a, c)
+	case subtract:
+		return subtractFn(a, c)
+	}
+	panic("unsupported operation")
 }
 
 func unionFn(a *Area, b *Area) *Area {
