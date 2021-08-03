@@ -18,40 +18,89 @@ const (
 	intersection
 	subtract
 	transform
+	noop
 )
+
+func (o operation) String() string {
+	switch o {
+	case union:
+		return "u"
+	case intersection:
+		return "i"
+	case subtract:
+		return "s"
+	case transform:
+		return "t"
+	case noop:
+		return "n"
+	default:
+		return "?"
+	}
+}
 
 // areaBuilder allows you to use 2-dimensional constructive solid geometry techniques
 // to build collections of hexes.
+// this is a node of a tree with a and b being the two child nodes
 type areaBuilder struct {
-	a   Builder
-	b   Builder
-	t   [4][4]int64
-	opt operation
+	left  Builder
+	right Builder
+	t     [4][4]int64
+	opt   operation
+}
+
+func height(b Builder) int64 {
+	if bb, ok := b.(*areaBuilder); ok {
+		return maxInt(height(bb.left), height(bb.right)) + 1
+	}
+	return 1
 }
 
 func (ab *areaBuilder) Union(b Builder) Builder {
-	// TODO optimization: rotate subtree
+	// at this point, we are inserting a new root node (that is returned)
+	// whose child a is the old root (ab) and child b is the new builder we are adding.
+	// this has an effect of making the tree really unbalanced when doing long chains
+	// of operations. in these cases, we get a long chain of nodes along the `a` path
+	// but only 1 node on the `b` path.
+
+	// We can optimize this since unions are associative operations.
+
+	// Normally, we make a new node and stick ab as a child and b as another.
+	// But if those children have different heights AND
+	// both those children are also unions, THEN
+	// we can do a rotation insertion.
+
+	// optimization: rotate subtree
+	// bad (big b): union(a, union(b, union(c, d)))
+	// bad (big a): union(union(union(a, b), c), d)
+	// good: union(union(a, b), union(c,d))
+
 	return &areaBuilder{
-		a:   ab,
-		b:   b,
-		opt: union,
+		left:  ab,
+		right: b,
+		opt:   union,
 	}
 }
 
 func (ab *areaBuilder) Intersection(b Builder) Builder {
-	// TODO optimization: rotate subtree
+
+	// We can optimize interstions in the same way as unions since insertions
+	// are also associative.
+
 	return &areaBuilder{
-		a:   ab,
-		b:   b,
-		opt: intersection,
+		left:  ab,
+		right: b,
+		opt:   intersection,
 	}
 }
 
 func (ab *areaBuilder) Subtract(b Builder) Builder {
+
+	// Subtractions can't be optimized.
+
 	return &areaBuilder{
-		a:   ab,
-		b:   b,
-		opt: subtract,
+		left:  ab,
+		right: b,
+		opt:   subtract,
 	}
 }
 
@@ -68,18 +117,26 @@ func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
 
 // Transform applies a transformation matrix to all hexes in ab.
 func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
+	// if we are chaining transforms, combine them.
+	if ab.opt == transform {
+		// ab.t is applied first, then t.
+		ab.t = internal.MatrixMultiply(t, ab.t)
+		return ab
+	}
 	return &areaBuilder{
-		a:   ab,
-		t:   t,
-		opt: transform,
+		left: ab,
+		t:    t,
+		opt:  transform,
 	}
 }
 
 func (ab *areaBuilder) Build() *Area {
+	if ab.opt == noop {
+		return ab.left.Build()
+	}
+
 	if ab.opt == transform {
-		// TODO optimization: combine transforms then apply
-		// instead of applying one-at-a-time for chained transforms
-		a := ab.a.Build()
+		a := ab.left.Build()
 
 		if len(a.hexes) == 0 {
 			return a
@@ -105,10 +162,10 @@ func (ab *areaBuilder) Build() *Area {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		c = ab.b.Build()
+		c = ab.right.Build()
 	}()
 
-	a := ab.a.Build()
+	a := ab.left.Build()
 
 	wg.Wait()
 
