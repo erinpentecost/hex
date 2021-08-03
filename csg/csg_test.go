@@ -20,12 +20,29 @@ func TestAreaEqual(t *testing.T) {
 	assert.False(t, area1.Equals(area4))
 }
 
+func TestIdentity(t *testing.T) {
+	orig := BigHex(pos.Origin(), 4).Build()
+	translate := orig.Translate(pos.Origin()).Build()
+	rotated := orig.Rotate(pos.Origin(), 0).Build()
+
+	assert.True(t, orig.Equals(translate), "expected=%s\nactual=%s", orig.String(), rotated.String())
+	assert.True(t, orig.Equals(rotated), "expected=%s\nactual=%s", orig.String(), rotated.String())
+}
+
 func TestRotate(t *testing.T) {
 	orig := BigHex(pos.Origin(), 4).Build()
 	for i := 0; i < 5; i++ {
 		for q := int64(-2); q < 2; q++ {
 			for r := int64(-2); r < 2; r++ {
-				assert.True(t, orig.Equals(orig.Rotate(pos.Hex{Q: q, R: r}, i).Build()))
+				pivot := pos.Hex{Q: q, R: r}
+				rotatedArea := orig.Rotate(pivot, i).Build()
+				assert.Equal(t, orig.Size(), rotatedArea.Size(), "rotation caused count difference")
+				if (pivot == pos.Hex{}) {
+					require.True(t, orig.Equals(rotatedArea), "rotate area about origin")
+				} else {
+					require.False(t, orig.Equals(rotatedArea), "rotate area about pivot %s by %d", pivot.String(), i)
+				}
+
 			}
 		}
 	}

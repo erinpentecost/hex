@@ -2,7 +2,7 @@ package internal
 
 var (
 	RotationMatrixes = [6][4][4]int64{
-		{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}},    // rotate by 0
+		{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}},    // rotate by 0 (identity)
 		{{0, 0, -1, 0}, {-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, 0, 1}}, // rotate by 1
 		{{0, 1, 0, 0}, {0, 0, 1, 0}, {1, 0, 0, 0}, {0, 0, 0, 1}},    // etc
 		{{-1, 0, 0, 0}, {0, -1, 0, 0}, {0, 0, -1, 0}, {0, 0, 0, 1}},
@@ -55,6 +55,6 @@ func RotateMatrix(direction int) [4][4]int64 {
 // [0,1,0,tq]
 // [0,0,1,0] // this is for s, which is a computed field. ignored.
 // [0,0,0,1]] // homogenous coords. ignored.
-func TranslateMatrix(r, s int64) [4][4]int64 {
-	return [4][4]int64{{1, 0, 0, r}, {0, 1, 0, s}, {0, 0, 1, 0}, {0, 0, 0, 1}}
+func TranslateMatrix(q, r int64) [4][4]int64 {
+	return [4][4]int64{{1, 0, 0, q}, {0, 1, 0, r}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 }

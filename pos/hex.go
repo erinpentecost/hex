@@ -8,6 +8,8 @@ import (
 )
 
 // Hex is a coordinate defined axially.
+//
+// [Q,R,S]
 type Hex struct {
 	Q int64
 	R int64

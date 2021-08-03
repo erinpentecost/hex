@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_ Builder = (*areaBuilderBinaryOp)(nil)
+	_ Builder = (*areaBuilder)(nil)
 )
 
 type operation byte
@@ -20,60 +20,85 @@ const (
 	transform
 )
 
-// areaBuilderBinaryOp allows you to use 2-dimensional constructive solid geometry techniques
+// areaBuilder allows you to use 2-dimensional constructive solid geometry techniques
 // to build collections of hexes.
-type areaBuilderBinaryOp struct {
+type areaBuilder struct {
 	a   Builder
 	b   Builder
 	t   [4][4]int64
 	opt operation
 }
 
-func (ab *areaBuilderBinaryOp) Union(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+func (ab *areaBuilder) Union(b Builder) Builder {
+	// TODO optimization: rotate subtree
+	return &areaBuilder{
 		a:   ab,
 		b:   b,
 		opt: union,
 	}
 }
 
-func (ab *areaBuilderBinaryOp) Intersection(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+func (ab *areaBuilder) Intersection(b Builder) Builder {
+	// TODO optimization: rotate subtree
+	return &areaBuilder{
 		a:   ab,
 		b:   b,
 		opt: intersection,
 	}
 }
 
-func (ab *areaBuilderBinaryOp) Subtract(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+func (ab *areaBuilder) Subtract(b Builder) Builder {
+	return &areaBuilder{
 		a:   ab,
 		b:   b,
 		opt: subtract,
 	}
 }
 
-func (ab *areaBuilderBinaryOp) Rotate(pivot pos.Hex, direction int) Builder {
-	return ab.Transform(internal.MatrixMultiply(
+func (ab *areaBuilder) Rotate(pivot pos.Hex, direction int) Builder {
+	m := internal.MatrixMultiply(
 		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
 		internal.RotateMatrix(direction),
-		internal.TranslateMatrix(pivot.Q, pivot.R)))
+		internal.TranslateMatrix(pivot.Q, pivot.R))
+	return ab.Transform(m)
 }
 
-func (ab *areaBuilderBinaryOp) Translate(offset pos.Hex) Builder {
+func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
 	return ab.Transform(internal.TranslateMatrix(offset.Q, offset.R))
 }
 
 // Transform applies a transformation matrix to all hexes in ab.
-func (ab *areaBuilderBinaryOp) Transform(t [4][4]int64) Builder {
-	return &areaBuilderBinaryOp{
+func (ab *areaBuilder) Transform(t [4][4]int64) Builder {
+	return &areaBuilder{
 		a:   ab,
 		t:   t,
 		opt: transform,
 	}
 }
 
-func (ab *areaBuilderBinaryOp) Build() *Area {
+func (ab *areaBuilder) Build() *Area {
+	if ab.opt == transform {
+		// TODO optimization: combine transforms then apply
+		// instead of blindly building
+		a := ab.a.Build()
+
+		if len(a.hexes) == 0 {
+			return a
+		}
+
+		// apply transform to all hexes
+		// TODO optimization: calculate bounds
+		bf := boundsFinder{}
+		out := NewArea()
+		for k := range a.hexes {
+			h := k.Transform(ab.t)
+			out.hexes[h] = exists
+			bf.visit(&h)
+		}
+
+		return bf.applyTo(out)
+	}
+
 	// Build() allows me to defer iteration until it's needed,
 	// and we can also do things concurrently.
 

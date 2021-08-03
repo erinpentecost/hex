@@ -50,6 +50,11 @@ func (a *Area) Slice() []pos.Hex {
 	return hexes
 }
 
+// Size returns the number of hexes in the area.
+func (a *Area) Size() int {
+	return len(a.hexes)
+}
+
 // Equals returns true if both areas share exactly the same hexes.
 //
 // If you need more information regarding the nature of the overlap,
@@ -96,24 +101,13 @@ func (a *Area) ensureBounds() *Area {
 		return a
 	}
 
-	var minR, maxR, minQ, maxQ int64
-	for p := range a.hexes {
-		minR = p.R
-		maxR = p.R
-		minQ = p.Q
-		maxQ = p.Q
-		break
-	}
+	bf := boundsFinder{}
 
 	for p := range a.hexes {
-		minR = minInt(minR, p.R)
-		maxR = maxInt(maxR, p.R)
-
-		minQ = minInt(minQ, p.Q)
-		maxQ = maxInt(maxQ, p.Q)
+		bf.visit(&p)
 	}
 
-	return a
+	return bf.applyTo(a)
 }
 
 func (a *Area) Build() *Area {
@@ -121,7 +115,7 @@ func (a *Area) Build() *Area {
 }
 
 func (a *Area) Union(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+	return &areaBuilder{
 		a:   a,
 		b:   b,
 		opt: union,
@@ -129,7 +123,7 @@ func (a *Area) Union(b Builder) Builder {
 }
 
 func (a *Area) Intersection(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+	return &areaBuilder{
 		a:   a,
 		b:   b,
 		opt: intersection,
@@ -137,7 +131,7 @@ func (a *Area) Intersection(b Builder) Builder {
 }
 
 func (a *Area) Subtract(b Builder) Builder {
-	return &areaBuilderBinaryOp{
+	return &areaBuilder{
 		a:   a,
 		b:   b,
 		opt: subtract,
@@ -145,10 +139,11 @@ func (a *Area) Subtract(b Builder) Builder {
 }
 
 func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
-	return a.Transform(internal.MatrixMultiply(
+	m := internal.MatrixMultiply(
 		internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R),
 		internal.RotateMatrix(direction),
-		internal.TranslateMatrix(pivot.Q, pivot.R)))
+		internal.TranslateMatrix(pivot.Q, pivot.R))
+	return a.Transform(m)
 }
 
 func (a *Area) Translate(offset pos.Hex) Builder {
@@ -156,7 +151,7 @@ func (a *Area) Translate(offset pos.Hex) Builder {
 }
 
 func (a *Area) Transform(t [4][4]int64) Builder {
-	return &areaBuilderBinaryOp{
+	return &areaBuilder{
 		a:   a,
 		t:   t,
 		opt: transform,
