@@ -33,3 +33,5 @@ import (
 * [Implementation of Hex Grids](https://www.redblobgames.com/grids/hexagons/implementation.html)
 * [Priority Queue](https://golang.org/pkg/container/heap/#example__priorityQueue)
 * [Constructive solid geometry (CSG)](https://en.wikipedia.org/wiki/Constructive_solid_geometry)
+* [GLTF](https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#meshes)
+* [More GLTF](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_005_BuffersBufferViewsAccessors.md)

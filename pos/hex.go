@@ -158,17 +158,16 @@ func (h Hex) DistanceTo(x Hex) int64 {
 }
 
 // Center returns the hex at the center of mass of the given points.
-func Center(h ...Hex) Hex {
+func Center(h ...Hex) HexFractional {
 	if len(h) == 0 {
-		return Origin()
+		return OriginFractional()
 	}
 	c := h[0]
 	for _, e := range h[1:] {
 		c = c.Add(e)
 	}
 	cf := c.ToHexFractional()
-	cf = cf.Multiply(1.0 / float64(len(h)))
-	return cf.ToHex()
+	return cf.Multiply(1.0 / float64(len(h)))
 }
 
 // Neighbor returns the neighbor in the given directon.
@@ -184,6 +183,13 @@ func (h Hex) Neighbors() []Hex {
 		n[i] = h.Neighbor(i)
 	}
 	return n
+}
+
+// Vertex returns one point on the Hex, which is the point
+// between this hex, it's Neighbor(direction), and Neighbor(direction+1).
+func (h Hex) Vertex(direction int) HexFractional {
+	// TODO: optimize this
+	return Center(h, h.Neighbor(direction), h.Neighbor(direction+1))
 }
 
 // Transform applies a matrix transformation on the hex.
