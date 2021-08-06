@@ -29,6 +29,11 @@ func init() {
 
 }
 
+type annotatedHex struct {
+	pos.Hex
+	Label string
+}
+
 func main() {
 	flag.Parse()
 	var fileHandle *os.File
@@ -51,18 +56,25 @@ func main() {
 
 	os.Stderr.WriteString(fmt.Sprintf("outfile=%s, width=%d\n", fileHandle.Name(), width))
 
-	var hexes []pos.Hex
+	var wrappedHexes []annotatedHex
 
 	os.Stderr.WriteString("reading from stdin...\n")
 
-	err = json.NewDecoder(os.Stdin).Decode(&hexes)
+	err = json.NewDecoder(os.Stdin).Decode(&wrappedHexes)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("failed to decode stdin: %v", err))
 	}
 
 	os.Stderr.WriteString("decoded json. drawing...\n")
 
-	cc := NewCamera(width, csg.NewArea(hexes...))
+	labelLookup := make(map[pos.Hex]string)
+	hexes := make([]pos.Hex, len(wrappedHexes))
+	for i, h := range wrappedHexes {
+		hexes[i] = h.Hex
+		labelLookup[h.Hex] = h.Label
+	}
+
+	cc := NewCamera(width, csg.NewArea(hexes...), func(h pos.Hex) string { return labelLookup[h] })
 	img := cc.Draw()
 
 	os.Stderr.WriteString("saving...\n")
@@ -88,11 +100,12 @@ type Camera struct {
 	minQ      int64
 	maxQ      int64
 
-	area *csg.Area
+	labeller func(pos.Hex) string
+	area     *csg.Area
 }
 
 // NewCamera creates a new camera object
-func NewCamera(width int, area *csg.Area) Camera {
+func NewCamera(width int, area *csg.Area, labeller func(pos.Hex) string) Camera {
 
 	// find world bounds
 	minR, maxR, minQ, maxQ, err := area.Bounds()
@@ -124,6 +137,13 @@ func NewCamera(width int, area *csg.Area) Camera {
 
 	hWidth := imgDiag / worldDiag
 
+	wrappedLabeller := func(h pos.Hex) string {
+		if l := labeller(h); l != "" {
+			return l
+		}
+		return h.String()
+	}
+
 	return Camera{
 		imageLenX: imageLenX,
 		imageLenY: imageLenY,
@@ -135,6 +155,7 @@ func NewCamera(width int, area *csg.Area) Camera {
 		minQ:      minQ,
 		maxQ:      maxQ,
 		area:      area,
+		labeller:  wrappedLabeller,
 	}
 }
 
@@ -169,8 +190,12 @@ func (c Camera) Draw() *image.RGBA {
 	// label the hexes
 	if c.hWidth > 75.0 {
 		for h := range seen {
+			col := color.RGBA{0, 0, 0, 255}
+			if c.area.ContainsHexes(h) {
+				col = color.RGBA{200, 200, 200, 255}
+			}
 			hx, hy := c.HexToScreen(h.ToHexFractional())
-			addLabel(img, hx-int(c.hWidth)/2, hy, color.RGBA{0, 0, 0, 255}, h.String())
+			addLabel(img, hx-int(c.hWidth)/2, hy, col, c.labeller(h))
 		}
 	}
 

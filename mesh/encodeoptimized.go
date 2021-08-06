@@ -13,6 +13,8 @@ import (
 // OptimizedTransformer converts 2-dimensional cartesian space into three dimensions.
 // Use this to select which dimension is "up" and do stretching if needed.
 type OptimizedTransformer interface {
+	// ConvertToOptimized3D converts some hex vector to 3D cartesian space.
+	// glTF defines +Y as up, +Z as forward, and -X as right.
 	ConvertToOptimized3D(actual pos.HexFractional) [3]float32
 	// EmbedNormals should be true if you want edge information embedded in the NORMAL
 	// attributes.
