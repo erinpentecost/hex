@@ -185,13 +185,6 @@ func (h Hex) Neighbors() []Hex {
 	return n
 }
 
-// Vertex returns one point on the Hex, which is the point
-// between this hex, it's Neighbor(direction), and Neighbor(direction+1).
-func (h Hex) Vertex(direction int) HexFractional {
-	// TODO: optimize this
-	return Center(h, h.Neighbor(direction), h.Neighbor(direction+1))
-}
-
 // Transform applies a matrix transformation on the hex.
 //
 // Translation by tr,tq,ts:
