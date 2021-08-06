@@ -7,6 +7,8 @@ import (
 )
 
 type DetailedTransformer interface {
+	// ConvertToDetailed3D converts some hex vector to 3D cartesian space.
+	// glTF defines +Y as up, +Z as forward, and -X as right.
 	ConvertToDetailed3D(hd pos.Hex, actual pos.HexFractional) [3]float32
 }
 

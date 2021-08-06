@@ -11,7 +11,9 @@ type BaseTransform struct{}
 
 func (b *BaseTransform) ConvertToOptimized3D(actual pos.HexFractional) [3]float32 {
 	x, y := actual.ToCartesian()
-	return [3]float32{float32(x), float32(y), 0.0}
+	// ConvertToDetailed3D
+	// // glTF defines +Y as up, +Z as forward, and -X as right.
+	return [3]float32{float32(x), 0.0, float32(y)}
 }
 
 func (b *BaseTransform) EmbedNormals() bool {
