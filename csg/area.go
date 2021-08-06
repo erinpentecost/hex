@@ -76,6 +76,11 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 	return true
 }
 
+// Center returns the hex at the center of mass of the area.
+func (a *Area) Center() pos.HexFractional {
+	return pos.Center(a.Slice()...)
+}
+
 func (a *Area) String() string {
 	s := []string{}
 	for k := range a.hexes {

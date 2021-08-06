@@ -158,17 +158,16 @@ func (h Hex) DistanceTo(x Hex) int64 {
 }
 
 // Center returns the hex at the center of mass of the given points.
-func Center(h ...Hex) Hex {
+func Center(h ...Hex) HexFractional {
 	if len(h) == 0 {
-		return Origin()
+		return OriginFractional()
 	}
 	c := h[0]
 	for _, e := range h[1:] {
 		c = c.Add(e)
 	}
 	cf := c.ToHexFractional()
-	cf = cf.Multiply(1.0 / float64(len(h)))
-	return cf.ToHex()
+	return cf.Multiply(1.0 / float64(len(h)))
 }
 
 // Neighbor returns the neighbor in the given directon.
