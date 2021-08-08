@@ -10,19 +10,7 @@ import (
 	"github.com/qmuntal/gltf/modeler"
 )
 
-// OptimizedTransformer converts 2-dimensional cartesian space into three dimensions.
-// Use this to select which dimension is "up" and do stretching if needed.
-type OptimizedTransformer interface {
-	// ConvertToOptimized3D converts some hex vector to 3D cartesian space.
-	// glTF defines +Y as up, +Z as forward, and -X as right.
-	ConvertToOptimized3D(actual pos.HexFractional) [3]float32
-
-	HexColor(h pos.Hex) [3]uint8
-
-	EdgeColor(h, n1, n2 pos.Hex) [3]uint8
-}
-
-type bufferBuilder struct {
+type optimizedBufferBuilder struct {
 	// verts are actual vertices that exist in 3d space
 	verts [][3]float32
 	// indices are a list of indexes into the verts array.
@@ -37,17 +25,14 @@ type bufferBuilder struct {
 
 	colors [][3]uint8
 
-	transformer OptimizedTransformer
+	transformer Transformer
 
 	area *csg.Area
 }
 
-func newBufferBuilder(t OptimizedTransformer, a *csg.Area) *bufferBuilder {
-	if t == nil {
-		t = &BaseTransform{}
-	}
+func newOptimizedBufferBuilder(t Transformer, a *csg.Area) *optimizedBufferBuilder {
 
-	b := &bufferBuilder{
+	b := &optimizedBufferBuilder{
 		verts:        make([][3]float32, 0),
 		indices:      make([]uint16, 0),
 		hexesToIndex: make(map[[3]pos.Hex]uint16),
@@ -61,7 +46,7 @@ func newBufferBuilder(t OptimizedTransformer, a *csg.Area) *bufferBuilder {
 
 // gets the index from the hex edge point.
 // this does not add the index to the indices array
-func (b *bufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
+func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
 	// this is so bad. stick in a consistent order
 	vertTriple := h[:]
 	sort.Sort(pos.Sort(vertTriple))
@@ -73,14 +58,14 @@ func (b *bufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
 	}
 
 	newVert := len(b.verts)
-	b.verts = append(b.verts, b.transformer.ConvertToOptimized3D(pos.Center(h[:]...)))
+	b.verts = append(b.verts, b.transformer.ConvertTo3D(nil, pos.Center(h[:]...)))
 	b.colors = append(b.colors, [3]uint8{})
 	b.hexesToIndex[h] = uint16(newVert)
 
 	return uint16(newVert)
 }
 
-func (b *bufferBuilder) addNewHex(h pos.Hex) {
+func (b *optimizedBufferBuilder) addNewHex(h pos.Hex) {
 	// we need the internal vertex
 	originIndex := b.getIndexFromHexes([3]pos.Hex{h, h, h})
 	b.colors[originIndex] = b.transformer.HexColor(h)
@@ -89,17 +74,14 @@ func (b *bufferBuilder) addNewHex(h pos.Hex) {
 
 	// now we need to get all the neighbor vertices
 	for i := 0; i < 6; i++ {
-		n1 := h.Neighbor(i)
-		n2 := h.Neighbor(i + 1)
-		neighborIndexes[i] = b.getIndexFromHexes([3]pos.Hex{n1, n2, h})
+		neighborIndexes[i] = b.getIndexFromHexes([3]pos.Hex{h.Neighbor(i), h.Neighbor(i + 1), h})
 
-		b.colors[neighborIndexes[i]] = b.transformer.EdgeColor(h, n1, n2)
+		b.colors[neighborIndexes[i]] = b.transformer.PointColor(h, i)
 	}
 
 	// add a bunch of triangles now
 	for i := 0; i < 6; i++ {
 		b.indices = append(b.indices, originIndex, neighborIndexes[i], neighborIndexes[pos.BoundFacing(i+1)])
-
 	}
 }
 
@@ -112,15 +94,19 @@ func (b *bufferBuilder) addNewHex(h pos.Hex) {
 // 2. be normal to the hex face for shared internal vertices
 // 3. point away from the hex area for Concave boundary vertices
 // 4. point toward the hex area for Convex boundary verticesshared by 3 hexes.
-func EncodeOptimizedMesh(a *csg.Area, t OptimizedTransformer) (doc *gltf.Document, err error) {
+func EncodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
 	if a.Size() == 0 {
 		err = errors.New("can't convert empty area into a mesh")
 		return
 	}
 
+	if t == nil {
+		t = &BaseTransform{}
+	}
+
 	doc = gltf.NewDocument()
 
-	bb := newBufferBuilder(t, a)
+	bb := newOptimizedBufferBuilder(t, a)
 
 	for _, h := range a.Slice() {
 		bb.addNewHex(h)
