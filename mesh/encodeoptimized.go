@@ -58,7 +58,7 @@ func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
 	}
 
 	newVert := len(b.verts)
-	b.verts = append(b.verts, b.transformer.ConvertTo3D(nil, pos.Center(h[:]...)))
+	b.verts = append(b.verts, b.transformer.ConvertTo3D(pos.Origin(), pos.Center(h[:]...)))
 	b.colors = append(b.colors, [3]uint8{})
 	b.hexesToIndex[h] = uint16(newVert)
 
@@ -94,7 +94,7 @@ func (b *optimizedBufferBuilder) addNewHex(h pos.Hex) {
 // 2. be normal to the hex face for shared internal vertices
 // 3. point away from the hex area for Concave boundary vertices
 // 4. point toward the hex area for Convex boundary verticesshared by 3 hexes.
-func EncodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
+func encodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
 	if a.Size() == 0 {
 		err = errors.New("can't convert empty area into a mesh")
 		return
