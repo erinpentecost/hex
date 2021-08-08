@@ -231,7 +231,7 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			b = nh1.points[reverseDirection(i-1)]
 
 			nh2 := hexPoints.addOrGetHex(n2, t, false)
-			c = nh2.points[reverseDirection(i-1)]
+			c = nh2.points[reverseDirection(i+1)] //-1
 
 			// don't draw triangle on border unless this hex is taller
 			// TODO: I don't like this
