@@ -10,22 +10,9 @@ import (
 	"github.com/qmuntal/gltf/modeler"
 )
 
-// TODO: the detailed encoder makes a BUNCH of extra vertices and triangles.
-// it basically is meant to be able to mimic https://en.wikipedia.org/wiki/Giant%27s_Causeway
-// each hex gets its own set of vertices, and there's a typically vertical rectangle along
-// each side of a hex instead of hexes sharing sides directly.
-
-// There's a potential for a lot of degenerate triangles in this output,
-// so dedupe em somehow.
-
-// step 1: assemble each individual hex. there's no vertex sharing here, so it should be easy.
-// step 2: for each pair of neighboring hexes, create a rectangle between their shared points.
-//		   if this rectangle's area is near zero, don't add the rectangle; just snap the hexes together.
-//         else, add the rectangle.
-
-// bonuses:
-// 1. pass in the barycentric center of the triangle to the ConvertTo3D() function
-//    and use that in combination with the face normals to find better vertex normals
+// TODO:
+// 1. pass in the barycentric center of each triangle to the ConvertTo3D() function
+//    and use that in combination with the face normals to find smooth vertex normals
 
 type pointCollection struct {
 	hexMap map[pos.Hex]*hexPoints
@@ -66,13 +53,13 @@ func (pc *pointCollection) addOrGetHex(h pos.Hex, t Transformer, invisible bool)
 		invisible: invisible,
 		h:         h,
 		center: &point{
-			vert:   t.ConvertTo3D(&h, h.ToHexFractional()),
+			vert:   t.ConvertTo3D(h, h.ToHexFractional()),
 			normal: [3]float32{0, 1, 0},
 			color:  t.HexColor(h)},
 	}
 	for i := 0; i < 6; i++ {
 		hp.points[i] = &point{
-			vert:   t.ConvertTo3D(&h, pos.Center(h, h.Neighbor(i), h.Neighbor(i+1))),
+			vert:   t.ConvertTo3D(h, pos.Center(h, h.Neighbor(i), h.Neighbor(i+1))),
 			color:  t.PointColor(h, pos.BoundFacing(i)),
 			normal: [3]float32{0, 1, 0},
 		}
@@ -234,7 +221,7 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			c = nh2.points[reverseDirection(i+1)] //-1
 
 			// don't draw triangle on border unless this hex is taller
-			// TODO: I don't like this
+			// TODO: I don't like this. potential for missing triangles.
 			if nh1.invisible && nh2.invisible && a.vert[1] < c.vert[1] {
 				continue
 			}

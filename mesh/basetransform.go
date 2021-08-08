@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"github.com/erinpentecost/hexcoord/internal"
 	"github.com/erinpentecost/hexcoord/pos"
 )
 
@@ -10,14 +11,10 @@ var (
 
 type BaseTransform struct{}
 
-func (b *BaseTransform) ConvertTo3D(h *pos.Hex, actual pos.HexFractional) [3]float32 {
+func (b *BaseTransform) ConvertTo3D(h pos.Hex, actual pos.HexFractional) [3]float32 {
 	// ConvertToDetailed3D
 	// // glTF defines +Y as up, +Z as forward, and -X as right.
 	x, y := actual.ToCartesian()
-
-	if h == nil {
-		return [3]float32{float32(x), 0.0, float32(y)}
-	}
 
 	// fancy z
 	z := float32(0)
@@ -37,7 +34,11 @@ func (b *BaseTransform) ConvertTo3D(h *pos.Hex, actual pos.HexFractional) [3]flo
 		z = 0
 	}
 
-	return [3]float32{float32(x), z, float32(y)}
+	// put some noise into it
+	return [3]float32{
+		float32(x + internal.Noise3(x+1000.0, y-3000, float64(z))/10),
+		z + float32(internal.Noise3(x-9000, y+6000, float64(z))/10),
+		float32(y + internal.Noise3(x, y, float64(z))/10)}
 }
 
 func (b *BaseTransform) HexColor(h pos.Hex) [3]uint8 {

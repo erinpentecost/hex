@@ -58,7 +58,7 @@ func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
 	}
 
 	newVert := len(b.verts)
-	b.verts = append(b.verts, b.transformer.ConvertTo3D(nil, pos.Center(h[:]...)))
+	b.verts = append(b.verts, b.transformer.ConvertTo3D(pos.Origin(), pos.Center(h[:]...)))
 	b.colors = append(b.colors, [3]uint8{})
 	b.hexesToIndex[h] = uint16(newVert)
 

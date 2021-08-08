@@ -10,7 +10,7 @@ type Transformer interface {
 	// ConvertTo3D converts some hex vector to 3D cartesian space.
 	//
 	// glTF defines +Y as up, +Z as forward, and -X as right.
-	ConvertTo3D(h *pos.Hex, actual pos.HexFractional) [3]float32
+	ConvertTo3D(h pos.Hex, actual pos.HexFractional) [3]float32
 	// HexColor sets the color for the center vertex of each hex.
 	HexColor(h pos.Hex) [3]uint8
 	// PointColor sets the color for a hex point vertex that
