@@ -94,7 +94,7 @@ func (b *optimizedBufferBuilder) addNewHex(h pos.Hex) {
 // 2. be normal to the hex face for shared internal vertices
 // 3. point away from the hex area for Concave boundary vertices
 // 4. point toward the hex area for Convex boundary verticesshared by 3 hexes.
-func EncodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
+func encodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
 	if a.Size() == 0 {
 		err = errors.New("can't convert empty area into a mesh")
 		return

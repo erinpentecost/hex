@@ -17,11 +17,7 @@ func TestDrawArea(t *testing.T) {
 		Union(csg.NewArea(pos.Hex{Q: 1, R: 2})).
 		Build()
 
-	doc, err := EncodeOptimizedMesh(area, nil)
-	require.NoError(t, err)
-	gltf.SaveBinary(doc, "optimized_sample.glb")
-
-	doc, err = EncodeDetailedMesh(area, nil)
+	doc, err := EncodeDetailedMesh(area, nil)
 	require.NoError(t, err)
 	gltf.SaveBinary(doc, "detail_sample.glb")
 }
