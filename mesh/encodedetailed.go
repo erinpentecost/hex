@@ -28,10 +28,9 @@ import (
 //    and use that in combination with the face normals to find better vertex normals
 
 type pointCollection struct {
-	hexMap  map[pos.Hex]*hexPoints
-	verts   [][3]float32
-	normals [][3]float32
-	colors  [][3]uint8
+	hexMap map[pos.Hex]*hexPoints
+	verts  [][3]float32
+	colors [][3]uint8
 
 	indices []uint16
 
@@ -45,10 +44,9 @@ func newPointCollection(t Transformer, a *csg.Area) *pointCollection {
 	}
 
 	b := &pointCollection{
-		hexMap:  make(map[pos.Hex]*hexPoints),
-		verts:   make([][3]float32, 0),
-		normals: make([][3]float32, 0),
-		colors:  make([][3]uint8, 0),
+		hexMap: make(map[pos.Hex]*hexPoints),
+		verts:  make([][3]float32, 0),
+		colors: make([][3]uint8, 0),
 
 		indices: make([]uint16, 0),
 
@@ -71,7 +69,6 @@ func (pc *pointCollection) addHex(h pos.Hex, t Transformer) *hexPoints {
 		idx := uint16(len(pc.verts))
 		p.index = idx
 		pc.verts = append(pc.verts, p.vert)
-		pc.normals = append(pc.normals, p.normal)
 		pc.colors = append(pc.colors, p.color)
 	}
 
@@ -151,19 +148,30 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			}
 			seenHexPairs[key] = seen
 
-			nh, ok := hexPoints.hexMap[n]
-			if !ok {
-				continue
-			}
-			// process the pair
+			// get points for the rect
 			a := h.points[pos.BoundFacing(i)]
 			b := h.points[pos.BoundFacing(i-1)]
-			c := nh.points[reverseDirection(i-1)]
-			d := nh.points[reverseDirection(i)]
+			var c, d *point
+
+			nh, insideArea := hexPoints.hexMap[n]
+			if !insideArea {
+				nh = newHexPoints(n, t)
+			}
+
+			c = nh.points[reverseDirection(i-1)]
+			d = nh.points[reverseDirection(i)]
+
+			// don't draw rects unless this hex is taller
+			if !insideArea && a.vert[1] < c.vert[1] {
+				continue
+			}
+
 			// find area
 			rectArea := rectArea(a.vert, b.vert, c.vert)
-			if rectArea < 0.01 {
+			if rectArea < 0.01 && insideArea {
 				// snap together degenerate sides
+				a.vert = c.vert
+				b.vert = d.vert
 				hexPoints.verts[a.index] = hexPoints.verts[c.index]
 				hexPoints.verts[b.index] = hexPoints.verts[d.index]
 				continue
@@ -171,11 +179,27 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			// add rect.
 			// TODO: duplicate verts so they aren't shared,
 			// and apply correct color
-			hexPoints.indices = append(hexPoints.indices, a.index, b.index, c.index)
-			hexPoints.indices = append(hexPoints.indices, b.index, d.index, c.index)
+			//hexPoints.indices = append(hexPoints.indices, a.index, b.index, c.index)
+			//hexPoints.indices = append(hexPoints.indices, b.index, d.index, c.index)
 
+			start := uint16(len(hexPoints.verts))
+			hexPoints.verts = append(hexPoints.verts, a.vert, b.vert, c.vert, d.vert)
+
+			if a.vert[1] > c.vert[1] {
+				topColor, bottomColor := t.EdgeColor(h.h, i)
+				hexPoints.colors = append(hexPoints.colors, topColor, topColor, bottomColor, bottomColor)
+			} else {
+				topColor, bottomColor := t.EdgeColor(nh.h, i)
+				hexPoints.colors = append(hexPoints.colors, bottomColor, bottomColor, topColor, topColor)
+			}
+
+			hexPoints.indices = append(hexPoints.indices, start, start+1, start+2)
+			hexPoints.indices = append(hexPoints.indices, start+1, start+3, start+2)
 		}
 	}
+
+	// TODO: add 1 triangle between each hex triple, in case the hexes are offset
+	// along the main plain
 
 	doc.Meshes = []*gltf.Mesh{
 		{
@@ -185,7 +209,6 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 				Attributes: map[string]uint32{
 					gltf.POSITION: modeler.WritePosition(doc, hexPoints.verts),
 					gltf.COLOR_0:  modeler.WriteColor(doc, hexPoints.colors),
-					gltf.NORMAL:   modeler.WriteNormal(doc, hexPoints.normals),
 				},
 			}},
 		},

@@ -13,7 +13,8 @@ import (
 func TestDrawArea(t *testing.T) {
 	area := csg.BigHex(pos.Origin(), 3).
 		Subtract(csg.Line(pos.Hex{Q: -2, R: 0}, pos.Hex{Q: 2, R: 0})).
-		Union(csg.Line(pos.Hex{Q: 4, R: 4}, pos.Hex{Q: 4, R: 5})).
+		Subtract(csg.BigHex(pos.Hex{Q: 2, R: 1}, 2)).
+		Union(csg.NewArea(pos.Hex{Q: 1, R: 2})).
 		Build()
 
 	doc, err := EncodeOptimizedMesh(area, nil)

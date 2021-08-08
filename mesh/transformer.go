@@ -34,5 +34,5 @@ type Transformer interface {
 	// EdgeColor returns the color of the rectangle that sits between
 	// h and h.Neigbor(direction). This is not used by EncodeDetailed,
 	// since that rectangle doesn't exist.
-	EdgeColor(h pos.Hex, direction int) [3]uint8
+	EdgeColor(h pos.Hex, direction int) (top, bottom [3]uint8)
 }

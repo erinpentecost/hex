@@ -65,6 +65,6 @@ func (b *BaseTransform) PointColor(h pos.Hex, direction int) [3]uint8 {
 	return [3]uint8{100, 100, 100}
 }
 
-func (b *BaseTransform) EdgeColor(h pos.Hex, direction int) [3]uint8 {
-	return [3]uint8{150, 150, 150}
+func (b *BaseTransform) EdgeColor(h pos.Hex, direction int) (top, bottom [3]uint8) {
+	return [3]uint8{190, 190, 190}, [3]uint8{0, 0, 0}
 }
