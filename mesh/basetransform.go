@@ -35,10 +35,11 @@ func (b *BaseTransform) ConvertTo3D(h pos.Hex, actual pos.HexFractional) [3]floa
 	}
 
 	// put some noise into it
+	// TODO: maybe don't put noise in the z direction
 	return [3]float32{
-		float32(x + internal.Noise3(x+1000.0, y-3000, float64(z))/10),
-		z + float32(internal.Noise3(x-9000, y+6000, float64(z))/10),
-		float32(y + internal.Noise3(x, y, float64(z))/10)}
+		float32(x + (internal.Noise3(x+1000.0, y-3000, float64(z))-0.5)/10),
+		z + float32((internal.Noise3(x-9000, y+6000, float64(z))-0.5)/10),
+		float32(y + (internal.Noise3(x, y, float64(z))-0.5)/10)}
 }
 
 func (b *BaseTransform) HexColor(h pos.Hex) [3]uint8 {

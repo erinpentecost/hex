@@ -80,6 +80,9 @@ func (pc *pointCollection) addOrGetHex(h pos.Hex, t Transformer, invisible bool)
 	}
 
 	// add triangles for hex top
+	// TODO: calculate normals for each vertex.
+	//       get face normal of each pair of triangles, then average them, apply vertex normal
+	//       of shared vertex
 	for i := 0; i < 6; i++ {
 		pc.indices = append(pc.indices, hp.center.index, hp.points[i].index, hp.points[pos.BoundFacing(i+1)].index)
 	}
@@ -160,6 +163,9 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			}
 
 			// find area
+			// TODO: rectArea should only take into account verticle area
+			//       that way, when hex faces are shrunk, they will be snapped
+			//       if they are at the same level
 			rectArea := rectArea(a.vert, b.vert, c.vert)
 			if rectArea < 0.01 && !nh.invisible {
 				// snap together degenerate sides
