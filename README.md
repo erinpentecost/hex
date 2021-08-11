@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/erinpentecost/hexcoord?status.svg)](https://godoc.org/github.com/erinpentecost/hexcoord)
 
 ![hex logo](examples/drawhx/TestDrawLogo.png)
-s
+
 hex is a Go implementation of hexagonal grid math based on amitp's *Hexagonal Grids* articles. This package focuses on hexagonal grid math, including:
 
 * Generating sets of hexes programmatically in common patterns.
