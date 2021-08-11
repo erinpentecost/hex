@@ -4,27 +4,27 @@ import (
 	"container/heap"
 	"sync"
 
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
 )
 
 type aStarInfo struct {
 	// parent is the hex we moved from to get to this hex.
 	// This forms a linked list pointing all the way back to `from`.
-	parent pos.Hex
+	parent hex.Hex
 	// cost is the total value from `from` to this hex.
 	cost int
 }
 
 // unwind walks a field map backwards into a path
-func unwind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []pos.Hex {
-	path := make([]pos.Hex, 0)
+func unwind(field map[hex.Hex]aStarInfo, origin hex.Hex, destination hex.Hex) []hex.Hex {
+	path := make([]hex.Hex, 0)
 	// Unwind to get path
 	cur := destination
 	curExtras := field[cur]
 
 	// Begin unwind
 	for {
-		path = append([]pos.Hex{cur}, path...)
+		path = append([]hex.Hex{cur}, path...)
 
 		if cur == origin {
 			return path
@@ -36,8 +36,8 @@ func unwind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []
 }
 
 // wind walks a field map forwards into a path
-func wind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []pos.Hex {
-	path := make([]pos.Hex, 0)
+func wind(field map[hex.Hex]aStarInfo, origin hex.Hex, destination hex.Hex) []hex.Hex {
+	path := make([]hex.Hex, 0)
 	// Unwind to get path
 	cur := destination
 	curExtras := field[cur]
@@ -63,7 +63,7 @@ func wind(field map[pos.Hex]aStarInfo, origin pos.Hex, destination pos.Hex) []po
 // If there is no path, this will be empty.
 //
 // This is an offline search algorithm; there is no caching.
-func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
+func To(from hex.Hex, target hex.Hex, pather Pather) (path []hex.Hex) {
 
 	// This is basically two A* searches that run in parallel.
 	// One starts at `from`, the other starts at `target`.
@@ -75,7 +75,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 	// vs 1056354 ns/op for a typical single-threaded A*.
 
 	// Init output variables
-	path = make([]pos.Hex, 0)
+	path = make([]hex.Hex, 0)
 
 	// Base case.
 	if from == target {
@@ -84,14 +84,14 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 	}
 
 	// Set up frontier tracker starting at `from`
-	fromPaths := make(map[pos.Hex]aStarInfo)
+	fromPaths := make(map[hex.Hex]aStarInfo)
 	fromPaths[from] = aStarInfo{
 		parent: from,
 		cost:   0,
 	}
 
 	// Set up frontier tracker starting at `to`
-	targetPaths := make(map[pos.Hex]aStarInfo)
+	targetPaths := make(map[hex.Hex]aStarInfo)
 	targetPaths[target] = aStarInfo{
 		parent: target,
 		cost:   0,
@@ -113,7 +113,7 @@ func To(from pos.Hex, target pos.Hex, pather Pather) (path []pos.Hex) {
 			// Look at all neighbors
 			for i, next := range targetFrontier.Neighbors() {
 				// edgeCost is reversed here
-				edgeCost := pather.Cost(next, pos.BoundFacing(i+3))
+				edgeCost := pather.Cost(next, hex.BoundFacing(i+3))
 				// Negative costs are a special case
 				if edgeCost < 0 {
 					continue

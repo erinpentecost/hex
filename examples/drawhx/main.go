@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
@@ -30,7 +30,7 @@ func init() {
 }
 
 type annotatedHex struct {
-	pos.Hex
+	hex.Hex
 	Label string
 }
 
@@ -67,14 +67,14 @@ func main() {
 
 	os.Stderr.WriteString("decoded json. drawing...\n")
 
-	labelLookup := make(map[pos.Hex]string)
-	hexes := make([]pos.Hex, len(wrappedHexes))
+	labelLookup := make(map[hex.Hex]string)
+	hexes := make([]hex.Hex, len(wrappedHexes))
 	for i, h := range wrappedHexes {
 		hexes[i] = h.Hex
 		labelLookup[h.Hex] = h.Label
 	}
 
-	cc := NewCamera(width, csg.NewArea(hexes...), func(h pos.Hex) string { return labelLookup[h] })
+	cc := NewCamera(width, area.NewArea(hexes...), func(h hex.Hex) string { return labelLookup[h] })
 	img := cc.Draw()
 
 	os.Stderr.WriteString("saving...\n")
@@ -100,12 +100,12 @@ type Camera struct {
 	minQ      int64
 	maxQ      int64
 
-	labeller func(pos.Hex) string
-	area     *csg.Area
+	labeller func(hex.Hex) string
+	area     *area.Area
 }
 
 // NewCamera creates a new camera object
-func NewCamera(width int, area *csg.Area, labeller func(pos.Hex) string) Camera {
+func NewCamera(width int, area *area.Area, labeller func(hex.Hex) string) Camera {
 
 	// find world bounds
 	minR, maxR, minQ, maxQ, err := area.Bounds()
@@ -116,9 +116,9 @@ func NewCamera(width int, area *csg.Area, labeller func(pos.Hex) string) Camera 
 	//maxR = maxR + 2
 
 	// world bounds
-	topLeftX, topLeftY := pos.Hex{Q: minQ, R: minR}.ToHexFractional().ToCartesian()
-	bottomRightX, bottomRightY := pos.Hex{Q: maxQ, R: maxR}.ToHexFractional().ToCartesian()
-	_, addY := pos.Hex{Q: -1, R: 2}.ToHexFractional().ToCartesian()
+	topLeftX, topLeftY := hex.Hex{Q: minQ, R: minR}.ToHexFractional().ToCartesian()
+	bottomRightX, bottomRightY := hex.Hex{Q: maxQ, R: maxR}.ToHexFractional().ToCartesian()
+	_, addY := hex.Hex{Q: -1, R: 2}.ToHexFractional().ToCartesian()
 	addY = math.Abs(addY) * 1.5
 	worldX := bottomRightX - topLeftX
 	worldY := bottomRightY - topLeftY + addY
@@ -133,11 +133,11 @@ func NewCamera(width int, area *csg.Area, labeller func(pos.Hex) string) Camera 
 
 	imgDiag := math.Sqrt(float64(imageLenX*imageLenX + imageLenY*imageLenY))
 
-	centerX, centerY := pos.LerpHex(pos.Hex{Q: minQ, R: minR}, pos.Hex{Q: maxQ, R: maxR}, 0.5).ToHexFractional().ToCartesian()
+	centerX, centerY := hex.LerpHex(hex.Hex{Q: minQ, R: minR}, hex.Hex{Q: maxQ, R: maxR}, 0.5).ToHexFractional().ToCartesian()
 
 	hWidth := imgDiag / worldDiag
 
-	wrappedLabeller := func(h pos.Hex) string {
+	wrappedLabeller := func(h hex.Hex) string {
 		if l := labeller(h); l != "" {
 			return l
 		}
@@ -160,15 +160,15 @@ func NewCamera(width int, area *csg.Area, labeller func(pos.Hex) string) Camera 
 }
 
 // ScreenToHex converts camera coordinates to hex coordinates
-func (c Camera) ScreenToHex(x, y int) pos.HexFractional {
+func (c Camera) ScreenToHex(x, y int) hex.HexFractional {
 	xM := (float64(x-c.imageLenX/2) / c.hWidth) + c.centerX
 	xY := (float64(y-c.imageLenY/2) / c.hWidth) + c.centerY
-	return pos.HexFractionalFromCartesian(xM, xY)
+	return hex.HexFractionalFromCartesian(xM, xY)
 }
 
 // HexToScreen converts hex coord to screen coord.
 // returned value may be out of bounds.
-func (c Camera) HexToScreen(p pos.HexFractional) (x, y int) {
+func (c Camera) HexToScreen(p hex.HexFractional) (x, y int) {
 	hx, hy := p.ToCartesian()
 	return int((hx-c.centerX)*c.hWidth) + c.imageLenX/2, int((hy-c.centerY)*c.hWidth) + c.imageLenY/2
 }
@@ -176,7 +176,7 @@ func (c Camera) HexToScreen(p pos.HexFractional) (x, y int) {
 // Grid draws a hex grid.
 func (c Camera) Draw() *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, c.imageLenX, c.imageLenY))
-	seen := make(map[pos.Hex]interface{})
+	seen := make(map[hex.Hex]interface{})
 	// look at each pixel and color in the hex background
 	for x := 0; x < c.imageLenX; x++ {
 		for y := 0; y < c.imageLenY; y++ {
@@ -216,7 +216,7 @@ func addLabel(img *image.RGBA, x, y int, col color.RGBA, label string) {
 }
 
 // AreaColor picks a background color for the hex.
-func AreaColor(h pos.Hex, note *csg.Area) color.RGBA {
+func AreaColor(h hex.Hex, note *area.Area) color.RGBA {
 	if note.ContainsHexes(h) {
 		return color.RGBA{50, 50, 50, 255}
 	}

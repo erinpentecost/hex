@@ -1,4 +1,4 @@
-package pos
+package hex
 
 import "sort"
 

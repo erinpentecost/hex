@@ -1,9 +1,9 @@
 package path
 
-import "github.com/erinpentecost/hexcoord/pos"
+import "github.com/erinpentecost/hex"
 
 type pqItem struct {
-	Value    pos.Hex
+	Value    hex.Hex
 	Priority int
 	Index    int
 }

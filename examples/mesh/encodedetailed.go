@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
 	"github.com/qmuntal/gltf"
 	"github.com/qmuntal/gltf/modeler"
 )
@@ -15,23 +15,23 @@ import (
 //    and use that in combination with the face normals to find smooth vertex normals
 
 type pointCollection struct {
-	hexMap map[pos.Hex]*hexPoints
+	hexMap map[hex.Hex]*hexPoints
 	verts  [][3]float32
 	colors [][3]uint8
 
 	indices []uint16
 
 	transformer Transformer
-	area        *csg.Area
+	area        *area.Area
 }
 
-func newPointCollection(t Transformer, a *csg.Area) *pointCollection {
+func newPointCollection(t Transformer, a *area.Area) *pointCollection {
 	if t == nil {
 		t = &BaseTransform{}
 	}
 
 	b := &pointCollection{
-		hexMap: make(map[pos.Hex]*hexPoints),
+		hexMap: make(map[hex.Hex]*hexPoints),
 		verts:  make([][3]float32, 0),
 		colors: make([][3]uint8, 0),
 
@@ -44,7 +44,7 @@ func newPointCollection(t Transformer, a *csg.Area) *pointCollection {
 	return b
 }
 
-func (pc *pointCollection) addOrGetHex(h pos.Hex, t Transformer, invisible bool) *hexPoints {
+func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool) *hexPoints {
 	if hp, ok := pc.hexMap[h]; ok {
 		return hp
 	}
@@ -59,8 +59,8 @@ func (pc *pointCollection) addOrGetHex(h pos.Hex, t Transformer, invisible bool)
 	}
 	for i := 0; i < 6; i++ {
 		hp.points[i] = &point{
-			vert:   t.ConvertTo3D(h, pos.Center(h, h.Neighbor(i), h.Neighbor(i+1))),
-			color:  t.PointColor(h, pos.BoundFacing(i)),
+			vert:   t.ConvertTo3D(h, hex.Center(h, h.Neighbor(i), h.Neighbor(i+1))),
+			color:  t.PointColor(h, hex.BoundFacing(i)),
 			normal: [3]float32{0, 1, 0},
 		}
 	}
@@ -80,15 +80,18 @@ func (pc *pointCollection) addOrGetHex(h pos.Hex, t Transformer, invisible bool)
 	}
 
 	// add triangles for hex top
+	// TODO: calculate normals for each vertex.
+	//       get face normal of each pair of triangles, then average them, apply vertex normal
+	//       of shared vertex
 	for i := 0; i < 6; i++ {
-		pc.indices = append(pc.indices, hp.center.index, hp.points[i].index, hp.points[pos.BoundFacing(i+1)].index)
+		pc.indices = append(pc.indices, hp.center.index, hp.points[i].index, hp.points[hex.BoundFacing(i+1)].index)
 	}
 
 	return hp
 }
 
 type hexPoints struct {
-	h         pos.Hex
+	h         hex.Hex
 	invisible bool
 	center    *point
 	points    [6]*point
@@ -106,7 +109,7 @@ type point struct {
 }
 
 // EncodeDetailedMesh
-func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
+func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err error) {
 	if a.Size() == 0 {
 		err = errors.New("can't convert empty area into a mesh")
 		return
@@ -128,7 +131,7 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 
 	// second pass: add edge rects by looking at every neighboring hex pair
 	seen := struct{}{}
-	seenHexPairs := make(map[[2]pos.Hex]struct{})
+	seenHexPairs := make(map[[2]hex.Hex]struct{})
 	for _, h := range hexPoints.hexMap {
 		if h.invisible {
 			continue
@@ -136,17 +139,17 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 
 		for i, n := range h.h.Neighbors() {
 			// only look at each hex pair once
-			keySlice := []pos.Hex{h.h, n}
-			sort.Sort(pos.Sort(keySlice))
-			key := [2]pos.Hex{keySlice[0], keySlice[1]}
+			keySlice := []hex.Hex{h.h, n}
+			sort.Sort(hex.Sort(keySlice))
+			key := [2]hex.Hex{keySlice[0], keySlice[1]}
 			if _, ok := seenHexPairs[key]; ok {
 				continue
 			}
 			seenHexPairs[key] = seen
 
 			// get points for the rect
-			a := h.points[pos.BoundFacing(i)]
-			b := h.points[pos.BoundFacing(i-1)]
+			a := h.points[hex.BoundFacing(i)]
+			b := h.points[hex.BoundFacing(i-1)]
 			var c, d *point
 
 			nh := hexPoints.addOrGetHex(n, t, true)
@@ -160,6 +163,9 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 			}
 
 			// find area
+			// TODO: rectArea should only take into account verticle area
+			//       that way, when hex faces are shrunk, they will be snapped
+			//       if they are at the same level
 			rectArea := rectArea(a.vert, b.vert, c.vert)
 			if rectArea < 0.01 && !nh.invisible {
 				// snap together degenerate sides
@@ -193,7 +199,7 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 	}
 
 	// third pass: add triangle between each triple
-	seenHexTriples := make(map[[3]pos.Hex]struct{})
+	seenHexTriples := make(map[[3]hex.Hex]struct{})
 	for _, h := range hexPoints.hexMap {
 		if h.invisible {
 			continue
@@ -202,16 +208,16 @@ func EncodeDetailedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err err
 		for i, n1 := range h.h.Neighbors() {
 			n2 := h.h.Neighbor(i + 1)
 			// only look at each hex triple once
-			keySlice := []pos.Hex{h.h, n1, n2}
-			sort.Sort(pos.Sort(keySlice))
-			key := [3]pos.Hex{keySlice[0], keySlice[1], keySlice[2]}
+			keySlice := []hex.Hex{h.h, n1, n2}
+			sort.Sort(hex.Sort(keySlice))
+			key := [3]hex.Hex{keySlice[0], keySlice[1], keySlice[2]}
 			if _, ok := seenHexTriples[key]; ok {
 				continue
 			}
 			seenHexTriples[key] = seen
 
 			// get points for the triangle
-			a := h.points[pos.BoundFacing(i)]
+			a := h.points[hex.BoundFacing(i)]
 			var b, c *point
 
 			nh1 := hexPoints.addOrGetHex(n1, t, false)
@@ -267,5 +273,5 @@ func rectArea(a, b, c [3]float32) float64 {
 }
 
 func reverseDirection(direction int) int {
-	return pos.BoundFacing(direction - 3)
+	return hex.BoundFacing(direction - 3)
 }

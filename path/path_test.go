@@ -5,20 +5,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/path"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
+	"github.com/erinpentecost/hex/path"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type patherImp struct {
-	cost map[pos.Hex]int
+	cost map[hex.Hex]int
 }
 
-func newPatherImp(walls *csg.Area) patherImp {
+func newPatherImp(walls *area.Area) patherImp {
 	pi := patherImp{
-		cost: make(map[pos.Hex]int),
+		cost: make(map[hex.Hex]int),
 	}
 
 	for _, h := range walls.Slice() {
@@ -29,7 +29,7 @@ func newPatherImp(walls *csg.Area) patherImp {
 	return pi
 }
 
-func (p patherImp) Cost(a pos.Hex, direction int) int {
+func (p patherImp) Cost(a hex.Hex, direction int) int {
 	v, ok := p.cost[a.Neighbor(direction)]
 	if ok {
 		return v
@@ -37,26 +37,26 @@ func (p patherImp) Cost(a pos.Hex, direction int) int {
 	return 1
 }
 
-func (p patherImp) EstimatedCost(a, b pos.Hex) int {
+func (p patherImp) EstimatedCost(a, b hex.Hex) int {
 	// This makes the alg perform like Djikstra's alg.
 	// Used for testing to help ensure determinism.
 	return 0
 }
 
-func ring(center pos.Hex, radius int64) *csg.Area {
-	return csg.BigHex(center, radius).Subtract(csg.BigHex(center, radius-1)).Build()
+func ring(center hex.Hex, radius int64) *area.Area {
+	return area.BigHex(center, radius).Subtract(area.BigHex(center, radius-1)).Build()
 }
 
-func concentricMaze(maxSize int64) *csg.Area {
-	c := csg.NewBuilder()
+func concentricMaze(maxSize int64) *area.Area {
+	c := area.NewBuilder()
 
 	for i := int64(2); i < maxSize; i = i + 2 {
 		opening := i
 		cur := int64(0)
-		for _, h := range ring(pos.Origin(), i).Slice() {
+		for _, h := range ring(hex.Origin(), i).Slice() {
 			cur++
 			if opening != cur {
-				c = c.Union(csg.NewArea(h))
+				c = c.Union(area.NewArea(h))
 			}
 		}
 	}
@@ -65,21 +65,21 @@ func concentricMaze(maxSize int64) *csg.Area {
 }
 
 // indirectPath sets up a test in a map with different hex costs.
-func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
+func pathCheck(t *testing.T, target hex.Hex, pather path.Pather) {
 	t.Helper()
 
-	path := path.To(pos.Origin(), target, pather)
+	path := path.To(hex.Origin(), target, pather)
 
 	require.NotEmpty(t, path, "Can't find path to %v, %v away from source.", target, target.Length())
 	require.GreaterOrEqual(t, int64(len(path)), target.DistanceTo(target))
 	if len(path) > 0 {
-		assert.Equal(t, pos.Origin(), path[0], "First element %s in path is not the start point %s.", path[0], pos.Origin())
+		assert.Equal(t, hex.Origin(), path[0], "First element %s in path is not the start point %s.", path[0], hex.Origin())
 		assert.Equal(t, target, path[len(path)-1], "Last element %s in path is not target point %s.", path[len(path)-1], target)
 	}
 
 	// make sure path is contiguous with no loops
-	seen := make(map[pos.Hex]interface{})
-	last := pos.Origin()
+	seen := make(map[hex.Hex]interface{})
+	last := hex.Origin()
 	sb := strings.Builder{}
 	for _, p := range path {
 		sb.WriteString(p.String())
@@ -101,9 +101,9 @@ func pathCheck(t *testing.T, target pos.Hex, pather path.Pather) {
 
 func TestDirectPaths(t *testing.T) {
 	for i := int64(1); i < 11; i = i + 2 {
-		for _, h := range ring(pos.Origin(), i).Slice() {
+		for _, h := range ring(hex.Origin(), i).Slice() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
-				pathCheck(t, h, newPatherImp(csg.NewArea()))
+				pathCheck(t, h, newPatherImp(area.NewArea()))
 			})
 		}
 	}
@@ -111,7 +111,7 @@ func TestDirectPaths(t *testing.T) {
 
 func TestIndirectPaths(t *testing.T) {
 	for i := int64(1); i < 11; i = i + 2 {
-		for _, h := range ring(pos.Origin(), i).Slice() {
+		for _, h := range ring(hex.Origin(), i).Slice() {
 			t.Run(fmt.Sprintf("to-%s", h.String()), func(t *testing.T) {
 				pathCheck(t, h, newPatherImp(concentricMaze(h.Length()+4)))
 			})
@@ -122,18 +122,18 @@ func TestIndirectPaths(t *testing.T) {
 func TestNoPath(t *testing.T) {
 	t.Parallel()
 
-	pather := newPatherImp(ring(pos.Origin(), 5))
+	pather := newPatherImp(ring(hex.Origin(), 5))
 
-	foundPath := path.To(pos.Origin(), pos.Hex{Q: 100, R: 100}, pather)
+	foundPath := path.To(hex.Origin(), hex.Hex{Q: 100, R: 100}, pather)
 	require.Empty(t, foundPath)
 }
 
 func BenchmarkDirectPath(b *testing.B) {
-	var foundPath []pos.Hex
-	target := pos.Hex{Q: 10, R: 10}
-	pather := newPatherImp(csg.NewArea())
+	var foundPath []hex.Hex
+	target := hex.Hex{Q: 10, R: 10}
+	pather := newPatherImp(area.NewArea())
 	for i := 0; i < b.N; i++ {
-		foundPath = path.To(pos.Origin(), target, pather)
+		foundPath = path.To(hex.Origin(), target, pather)
 	}
-	assert.Equal(b, pos.Origin().DistanceTo(target)+1, len(foundPath))
+	assert.Equal(b, hex.Origin().DistanceTo(target)+1, len(foundPath))
 }

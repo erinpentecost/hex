@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
 	"github.com/qmuntal/gltf"
 	"github.com/qmuntal/gltf/modeler"
 )
@@ -21,21 +21,21 @@ type optimizedBufferBuilder struct {
 	// hexesToIndex maps the center point of three neighboring hexes
 	// to some index in the indices field.
 	// this is used for deduping.
-	hexesToIndex map[[3]pos.Hex]uint16
+	hexesToIndex map[[3]hex.Hex]uint16
 
 	colors [][3]uint8
 
 	transformer Transformer
 
-	area *csg.Area
+	area *area.Area
 }
 
-func newOptimizedBufferBuilder(t Transformer, a *csg.Area) *optimizedBufferBuilder {
+func newOptimizedBufferBuilder(t Transformer, a *area.Area) *optimizedBufferBuilder {
 
 	b := &optimizedBufferBuilder{
 		verts:        make([][3]float32, 0),
 		indices:      make([]uint16, 0),
-		hexesToIndex: make(map[[3]pos.Hex]uint16),
+		hexesToIndex: make(map[[3]hex.Hex]uint16),
 		colors:       make([][3]uint8, 0),
 		transformer:  t,
 		area:         a,
@@ -46,11 +46,11 @@ func newOptimizedBufferBuilder(t Transformer, a *csg.Area) *optimizedBufferBuild
 
 // gets the index from the hex edge point.
 // this does not add the index to the indices array
-func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
+func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]hex.Hex) uint16 {
 	// this is so bad. stick in a consistent order
 	vertTriple := h[:]
-	sort.Sort(pos.Sort(vertTriple))
-	h = [3]pos.Hex{vertTriple[0], vertTriple[1], vertTriple[2]}
+	sort.Sort(hex.Sort(vertTriple))
+	h = [3]hex.Hex{vertTriple[0], vertTriple[1], vertTriple[2]}
 
 	// then do the lookup
 	if found, ok := b.hexesToIndex[h]; ok {
@@ -58,30 +58,30 @@ func (b *optimizedBufferBuilder) getIndexFromHexes(h [3]pos.Hex) uint16 {
 	}
 
 	newVert := len(b.verts)
-	b.verts = append(b.verts, b.transformer.ConvertTo3D(pos.Origin(), pos.Center(h[:]...)))
+	b.verts = append(b.verts, b.transformer.ConvertTo3D(hex.Origin(), hex.Center(h[:]...)))
 	b.colors = append(b.colors, [3]uint8{})
 	b.hexesToIndex[h] = uint16(newVert)
 
 	return uint16(newVert)
 }
 
-func (b *optimizedBufferBuilder) addNewHex(h pos.Hex) {
+func (b *optimizedBufferBuilder) addNewHex(h hex.Hex) {
 	// we need the internal vertex
-	originIndex := b.getIndexFromHexes([3]pos.Hex{h, h, h})
+	originIndex := b.getIndexFromHexes([3]hex.Hex{h, h, h})
 	b.colors[originIndex] = b.transformer.HexColor(h)
 
 	neighborIndexes := [6]uint16{}
 
 	// now we need to get all the neighbor vertices
 	for i := 0; i < 6; i++ {
-		neighborIndexes[i] = b.getIndexFromHexes([3]pos.Hex{h.Neighbor(i), h.Neighbor(i + 1), h})
+		neighborIndexes[i] = b.getIndexFromHexes([3]hex.Hex{h.Neighbor(i), h.Neighbor(i + 1), h})
 
 		b.colors[neighborIndexes[i]] = b.transformer.PointColor(h, i)
 	}
 
 	// add a bunch of triangles now
 	for i := 0; i < 6; i++ {
-		b.indices = append(b.indices, originIndex, neighborIndexes[i], neighborIndexes[pos.BoundFacing(i+1)])
+		b.indices = append(b.indices, originIndex, neighborIndexes[i], neighborIndexes[hex.BoundFacing(i+1)])
 	}
 }
 
@@ -94,7 +94,7 @@ func (b *optimizedBufferBuilder) addNewHex(h pos.Hex) {
 // 2. be normal to the hex face for shared internal vertices
 // 3. point away from the hex area for Concave boundary vertices
 // 4. point toward the hex area for Convex boundary verticesshared by 3 hexes.
-func encodeOptimizedMesh(a *csg.Area, t Transformer) (doc *gltf.Document, err error) {
+func encodeOptimizedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err error) {
 	if a.Size() == 0 {
 		err = errors.New("can't convert empty area into a mesh")
 		return

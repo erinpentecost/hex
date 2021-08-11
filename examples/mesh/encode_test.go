@@ -3,18 +3,18 @@ package mesh
 import (
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
 	"github.com/qmuntal/gltf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDrawArea(t *testing.T) {
-	area := csg.BigHex(pos.Origin(), 3).
-		Subtract(csg.Line(pos.Hex{Q: -2, R: 0}, pos.Hex{Q: 2, R: 0})).
-		Subtract(csg.BigHex(pos.Hex{Q: 2, R: 1}, 2)).
-		Union(csg.NewArea(pos.Hex{Q: 1, R: 2})).
+	area := area.BigHex(hex.Origin(), 3).
+		Subtract(area.Line(hex.Hex{Q: -2, R: 0}, hex.Hex{Q: 2, R: 0})).
+		Subtract(area.BigHex(hex.Hex{Q: 2, R: 1}, 2)).
+		Union(area.NewArea(hex.Hex{Q: 1, R: 2})).
 		Build()
 
 	doc, err := EncodeDetailedMesh(area, nil)
@@ -23,7 +23,7 @@ func TestDrawArea(t *testing.T) {
 }
 
 func TestDir(t *testing.T) {
-	p := pos.Hex{Q: 2, R: -1}
+	p := hex.Hex{Q: 2, R: -1}
 	for i := -10; i < 10; i++ {
 		d := p.Neighbor(i)
 		dd := d.Neighbor(reverseDirection(i))

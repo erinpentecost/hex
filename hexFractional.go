@@ -1,10 +1,10 @@
-package pos
+package hex
 
 import (
 	"fmt"
 	"math"
 
-	"github.com/erinpentecost/hexcoord/internal"
+	"github.com/erinpentecost/hex/internal"
 )
 
 // HexFractional is fractional hex coordinates in

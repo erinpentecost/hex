@@ -1,11 +1,11 @@
-package pos
+package hex
 
 import (
 	"fmt"
 	"math"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/internal"
+	"github.com/erinpentecost/hex/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

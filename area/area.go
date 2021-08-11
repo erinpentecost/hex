@@ -1,24 +1,24 @@
-package csg
+package area
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
 )
 
 var (
 	_ Builder = (*Area)(nil)
 )
 
-// exists is a dummy object to stick into map[pos.Hex]struct{}s
+// exists is a dummy object to stick into map[hex.Hex]struct{}s
 // to avoid allocating a bunch of small objects.
 var exists = struct{}{}
 
 // Area is a collection of hexes.
 type Area struct {
-	hexes map[pos.Hex]struct{}
+	hexes map[hex.Hex]struct{}
 	// boundsClean is true if the bounding box is ok.
 	// this must be false for empty areas.
 	boundsClean bool
@@ -27,8 +27,8 @@ type Area struct {
 }
 
 // NewArea creates a new area containing one or more hexes.
-func NewArea(hexes ...pos.Hex) *Area {
-	c := make(map[pos.Hex]struct{})
+func NewArea(hexes ...hex.Hex) *Area {
+	c := make(map[hex.Hex]struct{})
 	for _, k := range hexes {
 		c[k] = exists
 	}
@@ -40,8 +40,8 @@ func NewArea(hexes ...pos.Hex) *Area {
 // Slice converts the area into a slice of hexes.
 //
 // You can use this to marshal an area.
-func (a *Area) Slice() []pos.Hex {
-	hexes := make([]pos.Hex, len(a.hexes))
+func (a *Area) Slice() []hex.Hex {
+	hexes := make([]hex.Hex, len(a.hexes))
 	i := 0
 	for k := range a.hexes {
 		hexes[i] = k
@@ -67,7 +67,7 @@ func (a *Area) Equals(b *Area) bool {
 //
 // If you want to determine the overlap relationship between two areas,
 // use CheckBounding(), which is more optimized for that task.
-func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
+func (a *Area) ContainsHexes(hexes ...hex.Hex) bool {
 	for _, k := range hexes {
 		if _, ok := a.hexes[k]; !ok {
 			return false
@@ -77,8 +77,8 @@ func (a *Area) ContainsHexes(hexes ...pos.Hex) bool {
 }
 
 // Center returns the hex at the center of mass of the area.
-func (a *Area) Center() pos.HexFractional {
-	return pos.Center(a.Slice()...)
+func (a *Area) Center() hex.HexFractional {
+	return hex.Center(a.Slice()...)
 }
 
 func (a *Area) String() string {
@@ -140,14 +140,14 @@ func (a *Area) Subtract(b Builder) Builder {
 	}).Subtract(b)
 }
 
-func (a *Area) Rotate(pivot pos.Hex, direction int) Builder {
+func (a *Area) Rotate(pivot hex.Hex, direction int) Builder {
 	return (&areaBuilder{
 		left: a,
 		opt:  noop,
 	}).Rotate(pivot, direction)
 }
 
-func (a *Area) Translate(offset pos.Hex) Builder {
+func (a *Area) Translate(offset hex.Hex) Builder {
 	return (&areaBuilder{
 		left: a,
 		opt:  noop,

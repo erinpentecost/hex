@@ -1,8 +1,8 @@
-package csg
+package area
 
 import (
-	"github.com/erinpentecost/hexcoord/internal"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/internal"
 )
 
 func maxInt(a, k int64) int64 {
@@ -23,7 +23,7 @@ func minInt(a, k int64) int64 {
 // centered around the starting hex and with the given radius.
 // The order of elements returned is not set.
 // A radius of 0 will return the center hex.
-func BigHex(center pos.Hex, radius int64) *Area {
+func BigHex(center hex.Hex, radius int64) *Area {
 	area := NewArea()
 	bf := boundsFinder{}
 	for q := -1 * radius; q <= radius; q++ {
@@ -31,7 +31,7 @@ func BigHex(center pos.Hex, radius int64) *Area {
 		r2 := minInt(radius, (-1*q)+radius)
 
 		for r := r1; r <= r2; r++ {
-			h := pos.Hex{
+			h := hex.Hex{
 				Q: q + center.Q,
 				R: r + center.R,
 			}
@@ -44,13 +44,13 @@ func BigHex(center pos.Hex, radius int64) *Area {
 }
 
 // Circle draws a circle. At small radiuses, this is just like BigHex.
-func Circle(center pos.Hex, radius int64) *Area {
+func Circle(center hex.Hex, radius int64) *Area {
 
 	// find some bounding box that contains the circle
-	edgePoint := pos.HexFractionalFromCartesian(0, float64(radius+1)).ToHex()
-	p := []pos.Hex{}
+	edgePoint := hex.HexFractionalFromCartesian(0, float64(radius+1)).ToHex()
+	p := []hex.Hex{}
 	for i := 0; i < 6; i++ {
-		p = append(p, edgePoint.Rotate(pos.Origin(), i))
+		p = append(p, edgePoint.Rotate(hex.Origin(), i))
 	}
 	bounds := NewArea(p...)
 
@@ -59,10 +59,10 @@ func Circle(center pos.Hex, radius int64) *Area {
 	rs := float64(radius * radius)
 	for q := bounds.minQ; q <= bounds.maxQ; q++ {
 		for r := bounds.minR; r <= bounds.maxR; r++ {
-			x, y := pos.HexFractional{Q: float64(q), R: float64(r)}.ToCartesian()
+			x, y := hex.HexFractional{Q: float64(q), R: float64(r)}.ToCartesian()
 			dist := x*x + y*y
 			if dist <= rs || internal.CloseEnough(dist, rs) {
-				area.hexes[pos.Hex{Q: q, R: r}] = exists
+				area.hexes[hex.Hex{Q: q, R: r}] = exists
 			}
 		}
 	}
@@ -73,7 +73,7 @@ func Circle(center pos.Hex, radius int64) *Area {
 
 // Rectangle returns the set of hexes that form a rectangular
 // area that's a bounding box of all the supplied points.
-func Rectangle(p ...pos.Hex) *Area {
+func Rectangle(p ...hex.Hex) *Area {
 	if len(p) == 0 {
 		return NewArea()
 	}
@@ -83,7 +83,7 @@ func Rectangle(p ...pos.Hex) *Area {
 	for r := area.minR; r <= area.maxR; r++ {
 		rOffset := r / 2
 		for q := area.minQ - rOffset; q <= area.maxQ-rOffset; q++ {
-			area.hexes[pos.Hex{
+			area.hexes[hex.Hex{
 				Q: q,
 				R: r,
 			}] = exists
@@ -93,7 +93,7 @@ func Rectangle(p ...pos.Hex) *Area {
 }
 
 // Line traces line segments along the provided points.
-func Line(p ...pos.Hex) *Area {
+func Line(p ...hex.Hex) *Area {
 	switch len(p) {
 	case 0:
 		return NewArea()
@@ -116,7 +116,7 @@ func Line(p ...pos.Hex) *Area {
 
 // Polygon returns an area that contains a polygon whose points
 // are the given hexes. Order matters! Concave polygons are allowed.
-func Polygon(p ...pos.Hex) *Area {
+func Polygon(p ...hex.Hex) *Area {
 	switch len(p) {
 	case 0:
 		return NewArea()
@@ -139,7 +139,7 @@ func Polygon(p ...pos.Hex) *Area {
 	return fill(outlines, p)
 }
 
-func fill(edges []*Area, vertices []pos.Hex) *Area {
+func fill(edges []*Area, vertices []hex.Hex) *Area {
 	// scanline alg
 	f := NewArea(vertices...)
 
@@ -147,7 +147,7 @@ func fill(edges []*Area, vertices []pos.Hex) *Area {
 		// sorted set of points we hit
 		inside := false
 		for r := f.minR; r <= f.maxR; r++ {
-			testHex := pos.Hex{Q: q, R: r}
+			testHex := hex.Hex{Q: q, R: r}
 
 			for _, outline := range edges {
 				if _, hit := outline.hexes[testHex]; hit {
