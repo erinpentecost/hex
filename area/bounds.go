@@ -1,9 +1,9 @@
-package csg
+package area
 
 import (
 	"sync"
 
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
 )
 
 // Bounding is the return type for CheckBounding.
@@ -122,7 +122,7 @@ type boundsFinder struct {
 	maxQ  int64
 }
 
-func (b *boundsFinder) visit(p *pos.Hex) {
+func (b *boundsFinder) visit(p *hex.Hex) {
 	if b.empty {
 		b.minR = p.R
 		b.maxR = p.R

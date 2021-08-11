@@ -1,10 +1,10 @@
-package csg
+package area
 
 import (
 	"sync"
 
-	"github.com/erinpentecost/hexcoord/internal"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/internal"
 )
 
 var (
@@ -104,14 +104,14 @@ func (ab *areaBuilder) Subtract(b Builder) Builder {
 	}
 }
 
-func (ab *areaBuilder) Rotate(pivot pos.Hex, direction int) Builder {
+func (ab *areaBuilder) Rotate(pivot hex.Hex, direction int) Builder {
 	return ab.
 		Transform(internal.TranslateMatrix(-1*pivot.Q, -1*pivot.R, -1*pivot.S())).
 		Transform(internal.RotateMatrix(direction)).
 		Transform(internal.TranslateMatrix(pivot.Q, pivot.R, pivot.S()))
 }
 
-func (ab *areaBuilder) Translate(offset pos.Hex) Builder {
+func (ab *areaBuilder) Translate(offset hex.Hex) Builder {
 	return ab.Transform(internal.TranslateMatrix(offset.Q, offset.R, offset.S()))
 }
 
@@ -181,7 +181,7 @@ func (ab *areaBuilder) Build() *Area {
 }
 
 func unionFn(a *Area, b *Area) *Area {
-	c := make(map[pos.Hex]struct{})
+	c := make(map[hex.Hex]struct{})
 	for k := range a.hexes {
 		c[k] = exists
 	}
@@ -214,7 +214,7 @@ func intersectionFn(a *Area, b *Area) *Area {
 		return NewArea()
 	}
 
-	c := make(map[pos.Hex]struct{})
+	c := make(map[hex.Hex]struct{})
 	for k := range b.hexes {
 		if _, ok := a.hexes[k]; ok {
 			c[k] = exists
@@ -232,7 +232,7 @@ func subtractFn(a *Area, b *Area) *Area {
 		return a
 	}
 
-	c := make(map[pos.Hex]struct{})
+	c := make(map[hex.Hex]struct{})
 
 	for k := range a.hexes {
 		if _, ok := b.hexes[k]; !ok {

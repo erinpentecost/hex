@@ -17,11 +17,11 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 ```go
 import (
     // Base library
-    "github.com/erinpentecost/hexcoord/pos"
+    "github.com/erinpentecost/hex/hex"
     // For pathfinding
-    "github.com/erinpentecost/hexcoord/path"
+    "github.com/erinpentecost/hex/path"
     // For constructive solid geometry
-    "github.com/erinpentecost/hexcoord/csg"
+    "github.com/erinpentecost/hex/area"
 )
 ```
 

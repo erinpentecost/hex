@@ -1,9 +1,9 @@
-package csg
+package area
 
 import (
 	"errors"
 
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
 )
 
 var ErrEmptyArea = errors.New("no boundaries for an empty area")
@@ -19,9 +19,9 @@ type Builder interface {
 	// Subtract returns all those hexes in the first area that are not in the second.
 	Subtract(b Builder) Builder
 	// Rotate rotates the area about some pivot some number of sides.
-	Rotate(pivot pos.Hex, direction int) Builder
+	Rotate(pivot hex.Hex, direction int) Builder
 	// Translate adds some offset to the area.
-	Translate(offste pos.Hex) Builder
+	Translate(offste hex.Hex) Builder
 	// Transform applies a transformation hex to each hex in the area.
 	//
 	// This doesn't infill scaling transformations!
@@ -29,6 +29,6 @@ type Builder interface {
 }
 
 // NewBuilder creates a new area builder containing zero or more hexes to start with.
-func NewBuilder(hexes ...pos.Hex) Builder {
+func NewBuilder(hexes ...hex.Hex) Builder {
 	return NewArea(hexes...)
 }

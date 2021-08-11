@@ -7,16 +7,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/erinpentecost/hexcoord/csg"
-	"github.com/erinpentecost/hexcoord/pos"
+	"github.com/erinpentecost/hex"
+	"github.com/erinpentecost/hex/area"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDraw(t *testing.T) {
 	cc := NewCamera(800,
-		csg.BigHex(pos.Origin(), 2).Subtract(csg.BigHex(pos.Origin(), 1)).Build(),
-		func(h pos.Hex) string { return "" },
+		area.BigHex(hex.Origin(), 2).Subtract(area.BigHex(hex.Origin(), 1)).Build(),
+		func(h hex.Hex) string { return "" },
 	)
 	img := cc.Draw()
 
@@ -26,8 +26,8 @@ func TestDraw(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createLogoPoints() []pos.Hex {
-	h := []pos.Hex{
+func createLogoPoints() []hex.Hex {
+	h := []hex.Hex{
 		{Q: 2, R: -2},
 		{Q: 1, R: -1},
 		{Q: 0, R: 0},
@@ -35,14 +35,14 @@ func createLogoPoints() []pos.Hex {
 		{Q: 1, R: 0},
 		{Q: 1, R: 1},
 	}
-	ec := []pos.Hex{
+	ec := []hex.Hex{
 		{Q: 2, R: -1},
 		{Q: 1, R: -1},
 		{Q: 0, R: 0},
 		{Q: 0, R: 1},
 		{Q: 1, R: 1},
 	}
-	o := []pos.Hex{
+	o := []hex.Hex{
 		{Q: 2, R: 0},
 		{Q: 2, R: -1},
 		{Q: 1, R: -1},
@@ -50,21 +50,21 @@ func createLogoPoints() []pos.Hex {
 		{Q: 0, R: 1},
 		{Q: 1, R: 1},
 	}
-	x := []pos.Hex{
+	x := []hex.Hex{
 		{Q: 2, R: -1},
 		{Q: 1, R: 0},
 		{Q: 0, R: 1},
 		{Q: 1, R: -1},
 		{Q: 1, R: 1},
 	}
-	r := []pos.Hex{
+	r := []hex.Hex{
 		{Q: 2, R: 0},
 		{Q: 2, R: -1},
 		{Q: 1, R: -1},
 		{Q: 0, R: 0},
 		{Q: -1, R: 1},
 	}
-	d := []pos.Hex{
+	d := []hex.Hex{
 		{Q: 2, R: 0},
 		{Q: 2, R: -1},
 		{Q: 1, R: -1},
@@ -75,7 +75,7 @@ func createLogoPoints() []pos.Hex {
 		{Q: 4, R: -2},
 	}
 
-	logo := [][]pos.Hex{
+	logo := [][]hex.Hex{
 		h,
 		ec,
 		x,
@@ -86,11 +86,11 @@ func createLogoPoints() []pos.Hex {
 		d,
 	}
 
-	taggedPos := make([]pos.Hex, 0)
+	taggedPos := make([]hex.Hex, 0)
 
 	for offset, char := range logo {
 		for _, h := range char {
-			oh := h.Add(pos.Hex{Q: int64(offset * 4), R: 0})
+			oh := h.Add(hex.Hex{Q: int64(offset * 4), R: 0})
 			taggedPos = append(taggedPos, oh)
 		}
 	}

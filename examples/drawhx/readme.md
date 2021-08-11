@@ -1,6 +1,6 @@
 # Draw
 
-Pipe in a JSON-marshalled slice of `pos.Hex`es to convert it into a PNG.
+Pipe in a JSON-marshalled slice of `hex.Hex`es to convert it into a PNG.
 
 Install:
 ```
