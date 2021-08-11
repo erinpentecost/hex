@@ -35,15 +35,7 @@ func createLogoPoints() []hex.Hex {
 		{Q: 1, R: 0},
 		{Q: 1, R: 1},
 	}
-	ec := []hex.Hex{
-		{Q: 2, R: -1},
-		{Q: 1, R: -1},
-		{Q: 0, R: 0},
-		{Q: 0, R: 1},
-		{Q: 1, R: 1},
-	}
-	o := []hex.Hex{
-		{Q: 2, R: 0},
+	e := []hex.Hex{
 		{Q: 2, R: -1},
 		{Q: 1, R: -1},
 		{Q: 0, R: 0},
@@ -57,33 +49,11 @@ func createLogoPoints() []hex.Hex {
 		{Q: 1, R: -1},
 		{Q: 1, R: 1},
 	}
-	r := []hex.Hex{
-		{Q: 2, R: 0},
-		{Q: 2, R: -1},
-		{Q: 1, R: -1},
-		{Q: 0, R: 0},
-		{Q: -1, R: 1},
-	}
-	d := []hex.Hex{
-		{Q: 2, R: 0},
-		{Q: 2, R: -1},
-		{Q: 1, R: -1},
-		{Q: 0, R: 0},
-		{Q: 0, R: 1},
-		{Q: 1, R: 1},
-		{Q: 3, R: -1},
-		{Q: 4, R: -2},
-	}
 
 	logo := [][]hex.Hex{
 		h,
-		ec,
+		e,
 		x,
-		ec,
-		o,
-		o,
-		r,
-		d,
 	}
 
 	taggedPos := make([]hex.Hex, 0)
