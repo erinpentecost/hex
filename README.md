@@ -1,12 +1,12 @@
-# hexcoord
+# hex
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/erinpentecost/hexcoord)](https://goreportcard.com/report/github.com/erinpentecost/hexcoord)
 [![Travis CI](https://travis-ci.org/erinpentecost/hexcoord.svg?branch=master)](https://travis-ci.org/erinpentecost/hexcoord.svg?branch=master)
 [![GoDoc](https://godoc.org/github.com/erinpentecost/hexcoord?status.svg)](https://godoc.org/github.com/erinpentecost/hexcoord)
 
-![hexcoord](examples/drawhx/TestDrawLogo.png)
-
-hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagonal Grids* articles. This package focuses on hexagonal grid math, including:
+![hex logo](examples/drawhx/TestDrawLogo.png)
+s
+hex is a Go implementation of hexagonal grid math based on amitp's *Hexagonal Grids* articles. This package focuses on hexagonal grid math, including:
 
 * Generating sets of hexes programmatically in common patterns.
 * Compositing sets of hexes with unions, intersections, and subtractions (constructive solid geometry).
@@ -17,7 +17,7 @@ hexcoord is a Go implementation of hexagonal grid math based on amitp's *Hexagon
 ```go
 import (
     // Base library
-    "github.com/erinpentecost/hex/hex"
+    "github.com/erinpentecost/hex"
     // For pathfinding
     "github.com/erinpentecost/hex/path"
     // For constructive solid geometry
@@ -25,7 +25,7 @@ import (
 )
 ```
 
-![hexcoord](examples/drawhx/testdraw.png)
+![hex map](examples/drawhx/testdraw.png)
 
 ## References
 
