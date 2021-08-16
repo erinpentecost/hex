@@ -2,12 +2,14 @@ package mesh
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/erinpentecost/hex"
 	"github.com/erinpentecost/hex/area"
 	"github.com/qmuntal/gltf"
 	"github.com/qmuntal/gltf/modeler"
+	"github.com/ungerik/go3d/vec3"
 )
 
 // TODO:
@@ -15,7 +17,7 @@ import (
 //    and use that in combination with the face normals to find smooth vertex normals
 
 type pointCollection struct {
-	hexMap map[hex.Hex]*hexPoints
+	hexMap map[hex.Hex]*hexPointCollection
 	verts  [][3]float32
 	colors [][3]uint8
 
@@ -31,7 +33,7 @@ func newPointCollection(t Transformer, a *area.Area) *pointCollection {
 	}
 
 	b := &pointCollection{
-		hexMap: make(map[hex.Hex]*hexPoints),
+		hexMap: make(map[hex.Hex]*hexPointCollection),
 		verts:  make([][3]float32, 0),
 		colors: make([][3]uint8, 0),
 
@@ -44,12 +46,12 @@ func newPointCollection(t Transformer, a *area.Area) *pointCollection {
 	return b
 }
 
-func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool) *hexPoints {
+func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool) *hexPointCollection {
 	if hp, ok := pc.hexMap[h]; ok {
 		return hp
 	}
 
-	hp := &hexPoints{
+	hp := &hexPointCollection{
 		invisible: invisible,
 		h:         h,
 		center: &point{
@@ -90,7 +92,7 @@ func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool)
 	return hp
 }
 
-type hexPoints struct {
+type hexPointCollection struct {
 	h         hex.Hex
 	invisible bool
 	center    *point
@@ -129,10 +131,13 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 		hexPoints.addOrGetHex(a, t, false)
 	}
 
-	// second pass: add edge rects by looking at every neighboring hex pair
 	seen := struct{}{}
+
+	// second pass: snap Y if edges are close enough
 	seenHexPairs := make(map[[2]hex.Hex]struct{})
-	for _, h := range hexPoints.hexMap {
+	for _, hp := range areaHexes {
+		h := hexPoints.hexMap[hp]
+
 		if h.invisible {
 			continue
 		}
@@ -157,17 +162,9 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 			c = nh.points[reverseDirection(i-1)]
 			d = nh.points[reverseDirection(i)]
 
-			// don't draw rects unless this hex is taller on the border
-			if nh.invisible && a.vert[1] < c.vert[1] {
-				continue
-			}
-
-			// find area
-			// TODO: rectArea should only take into account verticle area
-			//       that way, when hex faces are shrunk, they will be snapped
-			//       if they are at the same level
-			rectArea := rectArea(a.vert, b.vert, c.vert)
-			if rectArea < 0.01 && !nh.invisible {
+			// find area in the Y plane
+			rectArea := rectYArea(a.vert, b.vert, c.vert)
+			if rectArea < 0.001 && !nh.invisible {
 				// snap together degenerate sides
 				a.vert = c.vert
 				b.vert = d.vert
@@ -175,6 +172,104 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 				hexPoints.verts[b.index] = hexPoints.verts[d.index]
 				continue
 			}
+		}
+	}
+
+	// third pass: look at each hex triple and identify if the shared point
+	// has 3 levels. if it does, find the middle point and snap it to line
+	// formed by the higher and lower point.
+	seenHexTriples := make(map[[3]hex.Hex]struct{})
+	for di, hp := range areaHexes {
+		h := hexPoints.hexMap[hp]
+		if h.invisible {
+			continue
+		}
+
+		for i, n1 := range h.h.Neighbors() {
+			n2 := h.h.Neighbor(i + 1)
+			// only look at each hex triple once
+			keySlice := []hex.Hex{h.h, n1, n2}
+			sort.Sort(hex.Sort(keySlice))
+			key := [3]hex.Hex{keySlice[0], keySlice[1], keySlice[2]}
+			if _, ok := seenHexTriples[key]; ok {
+				continue
+			}
+			seenHexTriples[key] = seen
+
+			// get points for the triangle
+			var upper, mid, lower *point
+			{
+				upperHx := h
+				upper = h.points[hex.BoundFacing(i)]
+				midHx := hexPoints.addOrGetHex(n1, t, true)
+				mid = midHx.points[reverseDirection(i-1)]
+				lowerHx := hexPoints.addOrGetHex(n2, t, true)
+				lower = lowerHx.points[reverseDirection(i+1)]
+
+				if upper.vert[1] < lower.vert[1] {
+					upper, lower = lower, upper
+					upperHx, lowerHx = lowerHx, upperHx
+				}
+				if mid.vert[1] < lower.vert[1] {
+					mid, lower = lower, mid
+					midHx, lowerHx = lowerHx, midHx
+				}
+				if upper.vert[1] < lower.vert[1] {
+					upper, lower = lower, upper
+					upperHx, lowerHx = lowerHx, upperHx
+				}
+
+				if midHx.invisible {
+					continue
+				}
+			}
+
+			if upper.vert[1]+0.0001 > lower.vert[1] && lower.vert[1]+0.0001 > upper.vert[1] {
+				// they are flat, so no snapping
+				continue // TODO: if I don't do this then everything REALLY breaks
+			}
+
+			// snap mid to point along line formed by upper and lower
+			t := (mid.vert[1] - lower.vert[1]) / (upper.vert[1] - lower.vert[1])
+			newMid := vec3.Interpolate((*vec3.T)(&lower.vert), (*vec3.T)(&upper.vert), t)
+
+			if vec3.Distance(&newMid, (*vec3.T)(&mid.vert)) > 0.5 {
+				panic(fmt.Sprintf("what? %d/%d", di, len(areaHexes)))
+			}
+
+			mid.vert = newMid
+			hexPoints.verts[mid.index] = mid.vert
+		}
+	}
+
+	// fourth pass: add edge rects by looking at every neighboring hex pair
+	seenHexPairs = make(map[[2]hex.Hex]struct{})
+	for _, hp := range areaHexes {
+		h := hexPoints.hexMap[hp]
+
+		if h.invisible {
+			continue
+		}
+
+		for i, n := range h.h.Neighbors() {
+			// only look at each hex pair once
+			keySlice := []hex.Hex{h.h, n}
+			sort.Sort(hex.Sort(keySlice))
+			key := [2]hex.Hex{keySlice[0], keySlice[1]}
+			if _, ok := seenHexPairs[key]; ok {
+				continue
+			}
+			seenHexPairs[key] = seen
+
+			// get points for the rect
+			a := h.points[hex.BoundFacing(i)]
+			b := h.points[hex.BoundFacing(i-1)]
+			var c, d *point
+
+			nh := hexPoints.addOrGetHex(n, t, true)
+
+			c = nh.points[reverseDirection(i-1)]
+			d = nh.points[reverseDirection(i)]
 
 			// add rect.
 			start := uint16(len(hexPoints.verts))
@@ -198,51 +293,6 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 		}
 	}
 
-	// third pass: add triangle between each triple
-	seenHexTriples := make(map[[3]hex.Hex]struct{})
-	for _, h := range hexPoints.hexMap {
-		if h.invisible {
-			continue
-		}
-
-		for i, n1 := range h.h.Neighbors() {
-			n2 := h.h.Neighbor(i + 1)
-			// only look at each hex triple once
-			keySlice := []hex.Hex{h.h, n1, n2}
-			sort.Sort(hex.Sort(keySlice))
-			key := [3]hex.Hex{keySlice[0], keySlice[1], keySlice[2]}
-			if _, ok := seenHexTriples[key]; ok {
-				continue
-			}
-			seenHexTriples[key] = seen
-
-			// get points for the triangle
-			a := h.points[hex.BoundFacing(i)]
-			var b, c *point
-
-			nh1 := hexPoints.addOrGetHex(n1, t, false)
-			b = nh1.points[reverseDirection(i-1)]
-
-			nh2 := hexPoints.addOrGetHex(n2, t, false)
-			c = nh2.points[reverseDirection(i+1)] //-1
-
-			// don't draw triangle on border unless this hex is taller
-			// TODO: I don't like this. potential for missing triangles.
-			if nh1.invisible && nh2.invisible && a.vert[1] < c.vert[1] {
-				continue
-			}
-
-			// don't bother if there are no rectindexes
-			if a.rectIndex == 0 || b.rectIndex == 0 || c.rectIndex == 0 {
-				continue
-			}
-
-			// find verts used by the rects and attach em
-			hexPoints.indices = append(hexPoints.indices, a.rectIndex, b.rectIndex, c.rectIndex)
-
-		}
-	}
-
 	doc.Meshes = []*gltf.Mesh{
 		{
 			Name: "hexarea",
@@ -262,6 +312,18 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 	doc.Scenes = []*gltf.Scene{{Name: "hex export", Nodes: []uint32{*doc.Scene}}}
 
 	return doc, nil
+}
+
+func rectYArea(a, b, c [3]float32) float64 {
+
+	s1 := [3]float32{a[0] - b[0], a[1] - b[1], a[2] - b[2]}
+	s2 := [3]float32{b[0] - c[0], a[1] - b[1], b[2] - c[2]}
+
+	cross := vecCross(s1, s2)
+	cross[0] = 0
+	cross[2] = 0
+
+	return vecMagnitude(cross)
 }
 
 func rectArea(a, b, c [3]float32) float64 {

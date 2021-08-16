@@ -17,7 +17,7 @@ func TestDrawArea(t *testing.T) {
 		Union(area.NewArea(hex.Hex{Q: 1, R: 2})).
 		Build()
 
-	doc, err := EncodeDetailedMesh(area, nil)
+	doc, err := EncodeDetailedMesh(area, &BaseTransform{area: *area})
 	require.NoError(t, err)
 	gltf.SaveBinary(doc, "detail_sample.glb")
 }
