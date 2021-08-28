@@ -38,12 +38,14 @@ func (b *BaseTransform) ConvertTo3D(h hex.Hex, actual hex.HexFractional) [3]floa
 		}
 	}
 
-	// put some noise into it
-	// TODO: maybe don't put noise in the z direction
-	return [3]float32{
-		float32(x + (Noise3(x+1000.0, y-3000, float64(z))-0.5)/10),
-		z + float32((Noise3(x-9000, y+6000, float64(z))-0.5)/10),
-		float32(y + (Noise3(x, y, float64(z))-0.5)/10)}
+	// put some noise into it?
+
+	/*return [3]float32{
+	float32(x + (Noise3(x+1000.0, y-3000, float64(z))-0.5)/10),
+	z + float32((Noise3(x-9000, y+6000, float64(z))-0.5)/10),
+	float32(y + (Noise3(x, y, float64(z))-0.5)/10)}
+	*/
+	return [3]float32{float32(x), z * 2, float32(y)}
 }
 
 func (b *BaseTransform) HexColor(h hex.Hex) [3]uint8 {
@@ -73,4 +75,12 @@ func (b *BaseTransform) PointColor(h hex.Hex, direction int) [3]uint8 {
 
 func (b *BaseTransform) EdgeColor(h hex.Hex, direction int) (top, bottom [3]uint8) {
 	return [3]uint8{190, 190, 190}, [3]uint8{0, 0, 0}
+}
+
+func (b *BaseTransform) PaintEdge(h hex.Hex, direction int) bool {
+	return true
+}
+
+func (b *BaseTransform) EdgeSlopeStrength() float32 {
+	return 0.2
 }
