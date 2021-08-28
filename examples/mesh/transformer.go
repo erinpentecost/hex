@@ -21,4 +21,10 @@ type Transformer interface {
 	// h and h.Neigbor(direction). This is not used by EncodeDetailed,
 	// since that rectangle doesn't exist.
 	EdgeColor(h hex.Hex, direction int) (top, bottom [3]uint8)
+	// PaintEdge should return true if you want to draw the vertical edge between hexes
+	// of different heights.
+	PaintEdge(h hex.Hex, direction int) bool
+	// EdgeSlopeStrength determines if hexes of different heights are shear (0.0) or
+	// VERY sloped (1.0).
+	EdgeSlopeStrength() float32
 }

@@ -2,22 +2,27 @@ package mesh
 
 import (
 	"errors"
+	"math"
 	"sort"
 
 	"github.com/erinpentecost/hex"
 	"github.com/erinpentecost/hex/area"
 	"github.com/qmuntal/gltf"
 	"github.com/qmuntal/gltf/modeler"
+	"github.com/ungerik/go3d/vec3"
 )
+
+var seen struct{}
 
 // TODO:
 // 1. pass in the barycentric center of each triangle to the ConvertTo3D() function
 //    and use that in combination with the face normals to find smooth vertex normals
 
 type pointCollection struct {
-	hexMap map[hex.Hex]*hexPoints
-	verts  [][3]float32
-	colors [][3]uint8
+	hexMap  map[hex.Hex]*hexPointCollection
+	verts   [][3]float32
+	colors  [][3]uint8
+	normals [][3]float32
 
 	indices []uint16
 
@@ -31,7 +36,7 @@ func newPointCollection(t Transformer, a *area.Area) *pointCollection {
 	}
 
 	b := &pointCollection{
-		hexMap: make(map[hex.Hex]*hexPoints),
+		hexMap: make(map[hex.Hex]*hexPointCollection),
 		verts:  make([][3]float32, 0),
 		colors: make([][3]uint8, 0),
 
@@ -44,12 +49,12 @@ func newPointCollection(t Transformer, a *area.Area) *pointCollection {
 	return b
 }
 
-func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool) *hexPoints {
+func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool) *hexPointCollection {
 	if hp, ok := pc.hexMap[h]; ok {
 		return hp
 	}
 
-	hp := &hexPoints{
+	hp := &hexPointCollection{
 		invisible: invisible,
 		h:         h,
 		center: &point{
@@ -77,6 +82,7 @@ func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool)
 		p.index = idx
 		pc.verts = append(pc.verts, p.vert)
 		pc.colors = append(pc.colors, p.color)
+		pc.normals = append(pc.normals, [3]float32{0.0, 1.0, 0.0})
 	}
 
 	// add triangles for hex top
@@ -90,7 +96,7 @@ func (pc *pointCollection) addOrGetHex(h hex.Hex, t Transformer, invisible bool)
 	return hp
 }
 
-type hexPoints struct {
+type hexPointCollection struct {
 	h         hex.Hex
 	invisible bool
 	center    *point
@@ -103,9 +109,15 @@ type point struct {
 	// rectIndex is the index for the vertical side face, if present.
 	// if not present, this is 0.
 	rectIndex uint16
-	vert      [3]float32
-	normal    [3]float32
+	vert      vec3.T
+	normal    vec3.T
 	color     [3]uint8
+}
+
+func pushToCenter(hexPoints *pointCollection, center *vec3.T, toMove *point, t float32) {
+	center[1] = toMove.vert[1]
+	toMove.vert = vec3.Interpolate(copy(toMove.vert), center, t)
+	hexPoints.verts[toMove.index] = toMove.vert
 }
 
 // EncodeDetailedMesh
@@ -129,78 +141,13 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 		hexPoints.addOrGetHex(a, t, false)
 	}
 
-	// second pass: add edge rects by looking at every neighboring hex pair
-	seen := struct{}{}
-	seenHexPairs := make(map[[2]hex.Hex]struct{})
-	for _, h := range hexPoints.hexMap {
-		if h.invisible {
-			continue
-		}
-
-		for i, n := range h.h.Neighbors() {
-			// only look at each hex pair once
-			keySlice := []hex.Hex{h.h, n}
-			sort.Sort(hex.Sort(keySlice))
-			key := [2]hex.Hex{keySlice[0], keySlice[1]}
-			if _, ok := seenHexPairs[key]; ok {
-				continue
-			}
-			seenHexPairs[key] = seen
-
-			// get points for the rect
-			a := h.points[hex.BoundFacing(i)]
-			b := h.points[hex.BoundFacing(i-1)]
-			var c, d *point
-
-			nh := hexPoints.addOrGetHex(n, t, true)
-
-			c = nh.points[reverseDirection(i-1)]
-			d = nh.points[reverseDirection(i)]
-
-			// don't draw rects unless this hex is taller on the border
-			if nh.invisible && a.vert[1] < c.vert[1] {
-				continue
-			}
-
-			// find area
-			// TODO: rectArea should only take into account verticle area
-			//       that way, when hex faces are shrunk, they will be snapped
-			//       if they are at the same level
-			rectArea := rectArea(a.vert, b.vert, c.vert)
-			if rectArea < 0.01 && !nh.invisible {
-				// snap together degenerate sides
-				a.vert = c.vert
-				b.vert = d.vert
-				hexPoints.verts[a.index] = hexPoints.verts[c.index]
-				hexPoints.verts[b.index] = hexPoints.verts[d.index]
-				continue
-			}
-
-			// add rect.
-			start := uint16(len(hexPoints.verts))
-			hexPoints.verts = append(hexPoints.verts, a.vert, b.vert, c.vert, d.vert)
-
-			if a.vert[1] > c.vert[1] {
-				topColor, bottomColor := t.EdgeColor(h.h, i)
-				hexPoints.colors = append(hexPoints.colors, topColor, topColor, bottomColor, bottomColor)
-			} else {
-				topColor, bottomColor := t.EdgeColor(nh.h, i)
-				hexPoints.colors = append(hexPoints.colors, bottomColor, bottomColor, topColor, topColor)
-			}
-
-			hexPoints.indices = append(hexPoints.indices, start, start+1, start+2)
-			hexPoints.indices = append(hexPoints.indices, start+1, start+3, start+2)
-
-			a.rectIndex = start
-			b.rectIndex = start + 1
-			c.rectIndex = start + 2
-			d.rectIndex = start + 3
-		}
-	}
-
-	// third pass: add triangle between each triple
+	// second pass: look at each hex triple and identify if the shared point
+	// has 3 levels. if it does, find the middle point and snap it to line
+	// formed by the higher and lower point.
+	slopeStrength := float32(math.Max(0.0, math.Min(1.0, float64(t.EdgeSlopeStrength())))) * 0.2
 	seenHexTriples := make(map[[3]hex.Hex]struct{})
-	for _, h := range hexPoints.hexMap {
+	for _, hp := range areaHexes {
+		h := hexPoints.hexMap[hp]
 		if h.invisible {
 			continue
 		}
@@ -217,29 +164,143 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 			seenHexTriples[key] = seen
 
 			// get points for the triangle
+			var upperHx *hexPointCollection
+			var upper, mid, lower *point
+
+			upperHx = h
+			upper = h.points[hex.BoundFacing(i)]
+			midHx := hexPoints.addOrGetHex(n1, t, true)
+			mid = midHx.points[reverseDirection(i-1)]
+			lowerHx := hexPoints.addOrGetHex(n2, t, true)
+			lower = lowerHx.points[reverseDirection(i+1)]
+
+			if upper.vert[1] < mid.vert[1] {
+				upper, mid = mid, upper
+				upperHx, midHx = midHx, upperHx
+			}
+			if mid.vert[1] < lower.vert[1] {
+				mid, lower = lower, mid
+				midHx, lowerHx = lowerHx, midHx
+			}
+			if upper.vert[1] < mid.vert[1] {
+				upper, mid = mid, upper
+				upperHx, midHx = midHx, upperHx
+			}
+
+			if upper.vert[1]+0.0001 > lower.vert[1] && lower.vert[1]+0.0001 > upper.vert[1] {
+				// they are flat, so no snapping
+				continue // TODO: if I don't do this then everything REALLY breaks
+			}
+
+			// push corners away from eachother. this makes overhangs less likely
+			upperCenterVec := upperHx.center.vert
+			midCenterVec := midHx.center.vert
+			lowerCenterVec := lowerHx.center.vert
+			heightDiff := (upperCenterVec[1] - lowerCenterVec[1]) / (midCenterVec[1] - lowerCenterVec[1])
+			//heightDiff = float32(math.Log(float64(heightDiff) + math.SqrtE))
+			heightDiff = float32(math.Log(float64(heightDiff)))
+			if heightDiff > 1.0 {
+				heightDiff = 1.0
+			}
+
+			pushTargetVec := vec3.Interpolate(&midCenterVec, &upperCenterVec, heightDiff)
+
+			if !upperHx.invisible {
+				pushToCenter(hexPoints, &pushTargetVec, upper, slopeStrength)
+			}
+			if !lowerHx.invisible {
+				pushToCenter(hexPoints, &pushTargetVec, lower, -1*slopeStrength)
+			}
+
+			// snap mid to point along line formed by upper and lower
+			if midHx.invisible {
+				continue
+			}
+			t := (mid.vert[1] - lower.vert[1]) / (upper.vert[1] - lower.vert[1])
+			newMid := vec3.Interpolate((*vec3.T)(&lower.vert), (*vec3.T)(&upper.vert), t)
+
+			mid.vert = newMid
+			hexPoints.verts[mid.index] = mid.vert
+		}
+	}
+
+	// third pass: add edge rects by looking at every neighboring hex pair
+	seenHexPairs := make(map[[2]hex.Hex]struct{})
+	for _, hp := range areaHexes {
+		h := hexPoints.hexMap[hp]
+
+		if h.invisible {
+			continue
+		}
+
+		for i, n := range h.h.Neighbors() {
+			// only look at each hex pair once
+			keySlice := []hex.Hex{h.h, n}
+			sort.Sort(hex.Sort(keySlice))
+			key := [2]hex.Hex{keySlice[0], keySlice[1]}
+			if _, ok := seenHexPairs[key]; ok {
+				continue
+			}
+			seenHexPairs[key] = seen
+
+			if !t.PaintEdge(h.h, i) {
+				continue
+			}
+
+			// get points for the rect
 			a := h.points[hex.BoundFacing(i)]
-			var b, c *point
+			b := h.points[hex.BoundFacing(i-1)]
+			var c, d *point
 
-			nh1 := hexPoints.addOrGetHex(n1, t, false)
-			b = nh1.points[reverseDirection(i-1)]
+			nh := hexPoints.addOrGetHex(n, t, true)
 
-			nh2 := hexPoints.addOrGetHex(n2, t, false)
-			c = nh2.points[reverseDirection(i+1)] //-1
+			c = nh.points[reverseDirection(i-1)]
+			d = nh.points[reverseDirection(i)]
 
-			// don't draw triangle on border unless this hex is taller
-			// TODO: I don't like this. potential for missing triangles.
-			if nh1.invisible && nh2.invisible && a.vert[1] < c.vert[1] {
+			// find normals, which should be average of these two triangles
+			v1 := vec3.Cross(copy(a.vert).Sub(&b.vert), copy(c.vert).Sub(&b.vert))
+			v1 = *v1.Normalize()
+			v2 := vec3.Cross(copy(b.vert).Sub(&d.vert), copy(c.vert).Sub(&d.vert))
+			v2 = *v2.Normalize()
+			shared := vec3.Interpolate(&v1, &v2, 0.5)
+			shared = *shared.Normalize()
+
+			// normals will be 0 if the rect is degenerate
+			if v1.IsZero() || v2.IsZero() || shared.IsZero() {
 				continue
 			}
 
-			// don't bother if there are no rectindexes
-			if a.rectIndex == 0 || b.rectIndex == 0 || c.rectIndex == 0 {
-				continue
+			// soften up originals a bit
+			v1 = vec3.Interpolate(&v1, &shared, 0.5)
+			v1 = *v1.Normalize()
+			v2 = vec3.Interpolate(&v2, &shared, 0.5)
+			v2 = *v2.Normalize()
+
+			// add rect.
+			start := uint16(len(hexPoints.verts))
+			hexPoints.verts = append(hexPoints.verts, a.vert, b.vert, c.vert, d.vert)
+
+			if a.vert[1] > c.vert[1] {
+				topColor, bottomColor := t.EdgeColor(h.h, i)
+				hexPoints.colors = append(hexPoints.colors, topColor, topColor, bottomColor, bottomColor)
+			} else {
+				topColor, bottomColor := t.EdgeColor(nh.h, i)
+				hexPoints.colors = append(hexPoints.colors, bottomColor, bottomColor, topColor, topColor)
 			}
 
-			// find verts used by the rects and attach em
-			hexPoints.indices = append(hexPoints.indices, a.rectIndex, b.rectIndex, c.rectIndex)
+			// add normals
+			hexPoints.normals = append(hexPoints.normals, v1)
+			hexPoints.normals = append(hexPoints.normals, shared)
+			hexPoints.normals = append(hexPoints.normals, shared)
+			hexPoints.normals = append(hexPoints.normals, v2)
 
+			hexPoints.indices = append(hexPoints.indices, start, start+1, start+2)
+			hexPoints.indices = append(hexPoints.indices, start+1, start+3, start+2)
+
+			a.rectIndex = start
+			b.rectIndex = start + 1
+			c.rectIndex = start + 2
+			d.rectIndex = start + 3
 		}
 	}
 
@@ -251,6 +312,7 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 				Attributes: map[string]uint32{
 					gltf.POSITION: modeler.WritePosition(doc, hexPoints.verts),
 					gltf.COLOR_0:  modeler.WriteColor(doc, hexPoints.colors),
+					gltf.NORMAL:   modeler.WriteNormal(doc, hexPoints.normals),
 				},
 			}},
 		},
@@ -264,14 +326,10 @@ func EncodeDetailedMesh(a *area.Area, t Transformer) (doc *gltf.Document, err er
 	return doc, nil
 }
 
-func rectArea(a, b, c [3]float32) float64 {
-
-	s1 := [3]float32{a[0] - b[0], a[1] - b[1], a[2] - b[2]}
-	s2 := [3]float32{b[0] - c[0], b[1] - c[1], b[2] - c[2]}
-
-	return vecMagnitude(vecCross(s1, s2))
-}
-
 func reverseDirection(direction int) int {
 	return hex.BoundFacing(direction - 3)
+}
+
+func copy(vec vec3.T) *vec3.T {
+	return &vec3.T{vec[0], vec[1], vec[2]}
 }

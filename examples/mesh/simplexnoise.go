@@ -31,7 +31,7 @@ Adapted to Go by Lars Pensjö (lars.pensjo@gmail.com)
  * were implemented from scratch by me from Ken Perlin's text.
  */
 
-package internal
+package mesh
 
 // We don't need to include this. It does no harm, but no use either.
 
